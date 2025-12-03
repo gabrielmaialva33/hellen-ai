@@ -1,0 +1,23 @@
+<div class="min-h-full flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+  <div class="sm:mx-auto sm:w-full sm:max-w-md">
+    <div class="flex justify-center">
+      <a href="/" class="flex items-center">
+        <span class="text-3xl font-bold text-indigo-600">Hellen</span>
+        <span class="ml-1 text-sm text-gray-500">AI</span>
+      </a>
+    </div>
+    <h2 :if={assigns[:page_title]} class="mt-6 text-center text-2xl font-bold tracking-tight text-gray-900">
+      <%= assigns[:page_title] %>
+    </h2>
+    <p :if={assigns[:page_subtitle]} class="mt-2 text-center text-sm text-gray-600">
+      <%= assigns[:page_subtitle] %>
+    </p>
+  </div>
+
+  <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+    <div class="bg-white py-8 px-4 shadow-sm rounded-lg sm:px-10 border border-gray-200">
+      <.flash_group flash={@flash} />
+      <%= @inner_content %>
+    </div>
+  </div>
+</div>

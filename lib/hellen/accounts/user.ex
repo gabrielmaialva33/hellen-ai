@@ -19,6 +19,10 @@ defmodule Hellen.Accounts.User do
     field :credits, :integer, default: @signup_bonus
     field :plan, :string, default: "free"
 
+    # Firebase Auth fields
+    field :firebase_uid, :string
+    field :email_verified, :boolean, default: false
+
     belongs_to :institution, Hellen.Accounts.Institution
     has_many :lessons, Hellen.Lessons.Lesson
     has_many :credit_transactions, Hellen.Billing.CreditTransaction
@@ -29,11 +33,12 @@ defmodule Hellen.Accounts.User do
   @doc false
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:email, :name, :role, :credits, :plan, :institution_id])
+    |> cast(attrs, [:email, :name, :role, :credits, :plan, :institution_id, :firebase_uid, :email_verified])
     |> validate_required([:email, :name])
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+$/, message: "must have the @ sign and no spaces")
     |> validate_length(:email, max: 160)
     |> unique_constraint(:email)
+    |> unique_constraint(:firebase_uid)
     |> validate_inclusion(:role, ["teacher", "coordinator", "admin"])
     |> validate_inclusion(:plan, ["free", "pro", "enterprise"])
     |> validate_number(:credits, greater_than_or_equal_to: 0)

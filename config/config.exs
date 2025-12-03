@@ -63,6 +63,15 @@ config :hellen, Oban,
     default: 10
   ]
 
+# Configure Guardian for JWT
+config :hellen, Hellen.Auth.Guardian,
+  issuer: "hellen",
+  secret_key: System.get_env("GUARDIAN_SECRET_KEY") || "dev_secret_key_change_in_production"
+
+# Configure Firebase
+config :hellen, :firebase,
+  project_id: "hellen-ai"
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

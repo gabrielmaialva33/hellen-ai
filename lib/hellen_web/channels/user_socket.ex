@@ -22,9 +22,14 @@ defmodule HellenWeb.UserSocket do
   @impl true
   def id(socket), do: "user_socket:#{socket.assigns.user_id}"
 
-  # Placeholder until Guardian is configured.
-  # Will validate JWT tokens for WebSocket authentication.
-  defp verify_token(_token) do
-    {:ok, "user_id"}
+  # Verify JWT token using Guardian
+  defp verify_token(token) do
+    case Hellen.Auth.Guardian.resource_from_token(token) do
+      {:ok, user, _claims} ->
+        {:ok, user.id}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 end

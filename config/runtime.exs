@@ -8,6 +8,37 @@ if System.get_env("PHX_SERVER") do
   config :hellen, HellenWeb.Endpoint, server: true
 end
 
+# Cloudflare R2 - configured for all environments
+if r2_access_key = System.get_env("R2_ACCESS_KEY_ID") do
+  config :ex_aws,
+    access_key_id: r2_access_key,
+    secret_access_key: System.get_env("R2_SECRET_ACCESS_KEY"),
+    region: "auto"
+
+  r2_endpoint = System.get_env("R2_ENDPOINT")
+
+  config :ex_aws, :s3,
+    scheme: "https://",
+    host: r2_endpoint,
+    region: "auto"
+
+  config :hellen, :r2,
+    bucket: System.get_env("R2_BUCKET") || "hellen-r2",
+    public_url: System.get_env("R2_PUBLIC_URL"),
+    endpoint: r2_endpoint
+end
+
+# Guardian secret - can be set in dev via .env
+if guardian_secret = System.get_env("GUARDIAN_SECRET_KEY") do
+  config :hellen, Hellen.Auth.Guardian,
+    secret_key: guardian_secret
+end
+
+# NVIDIA API - for dev/test with .env
+if nvidia_key = System.get_env("NVIDIA_API_KEY") do
+  config :hellen, :nvidia_api_key, nvidia_key
+end
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||
@@ -49,20 +80,10 @@ if config_env() == :prod do
   # Qdrant
   config :hellen, :qdrant_url, System.get_env("QDRANT_URL") || "http://localhost:6333"
 
-  # NVIDIA NIM API
-  config :hellen,
-         :nvidia_api_key,
-         System.get_env("NVIDIA_API_KEY") ||
-           raise("environment variable NVIDIA_API_KEY is missing.")
+  # NVIDIA NIM API (required in prod)
+  unless System.get_env("NVIDIA_API_KEY") do
+    raise "environment variable NVIDIA_API_KEY is missing."
+  end
 
-  # Cloudflare R2
-  config :ex_aws,
-    access_key_id: System.get_env("R2_ACCESS_KEY_ID"),
-    secret_access_key: System.get_env("R2_SECRET_ACCESS_KEY"),
-    region: "auto"
-
-  config :ex_aws, :s3,
-    scheme: "https://",
-    host: System.get_env("R2_ENDPOINT"),
-    region: "auto"
+  # R2 is configured at the top for all environments
 end
