@@ -17,35 +17,21 @@ defmodule HellenWeb.Plugs.Auth do
   Expects Authorization header: "Bearer <token>"
   """
   def require_auth(conn, _opts) do
-    case get_token_from_header(conn) do
+    with token when not is_nil(token) <- get_token_from_header(conn),
+         {:ok, claims} <- Guardian.decode_and_verify(token),
+         {:ok, user} <- Guardian.resource_from_claims(claims) do
+      conn
+      |> assign(:current_user, user)
+      |> assign(:claims, claims)
+    else
       nil ->
-        conn
-        |> put_status(:unauthorized)
-        |> json(%{error: "Missing authorization header"})
-        |> halt()
+        unauthorized(conn, "Missing authorization header")
 
-      token ->
-        case Guardian.decode_and_verify(token) do
-          {:ok, claims} ->
-            case Guardian.resource_from_claims(claims) do
-              {:ok, user} ->
-                conn
-                |> assign(:current_user, user)
-                |> assign(:claims, claims)
+      {:error, :user_not_found} ->
+        unauthorized(conn, "User not found")
 
-              {:error, _reason} ->
-                conn
-                |> put_status(:unauthorized)
-                |> json(%{error: "User not found"})
-                |> halt()
-            end
-
-          {:error, reason} ->
-            conn
-            |> put_status(:unauthorized)
-            |> json(%{error: "Invalid token: #{inspect(reason)}"})
-            |> halt()
-        end
+      {:error, reason} ->
+        unauthorized(conn, "Invalid token: #{inspect(reason)}")
     end
   end
 
@@ -54,26 +40,14 @@ defmodule HellenWeb.Plugs.Auth do
   Does not halt if no token is provided.
   """
   def load_user(conn, _opts) do
-    case get_token_from_header(conn) do
-      nil ->
-        conn
-
-      token ->
-        case Guardian.decode_and_verify(token) do
-          {:ok, claims} ->
-            case Guardian.resource_from_claims(claims) do
-              {:ok, user} ->
-                conn
-                |> assign(:current_user, user)
-                |> assign(:claims, claims)
-
-              {:error, _} ->
-                conn
-            end
-
-          {:error, _} ->
-            conn
-        end
+    with token when not is_nil(token) <- get_token_from_header(conn),
+         {:ok, claims} <- Guardian.decode_and_verify(token),
+         {:ok, user} <- Guardian.resource_from_claims(claims) do
+      conn
+      |> assign(:current_user, user)
+      |> assign(:claims, claims)
+    else
+      _ -> conn
     end
   end
 
@@ -82,5 +56,12 @@ defmodule HellenWeb.Plugs.Auth do
       ["Bearer " <> token] -> token
       _ -> nil
     end
+  end
+
+  defp unauthorized(conn, message) do
+    conn
+    |> put_status(:unauthorized)
+    |> json(%{error: message})
+    |> halt()
   end
 end

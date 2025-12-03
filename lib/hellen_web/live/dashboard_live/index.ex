@@ -27,8 +27,7 @@ defmodule HellenWeb.DashboardLive.Index do
         </div>
         <.link navigate={~p"/lessons/new"}>
           <.button>
-            <.icon name="hero-plus" class="h-4 w-4 mr-2" />
-            Nova Aula
+            <.icon name="hero-plus" class="h-4 w-4 mr-2" /> Nova Aula
           </.button>
         </.link>
       </div>
@@ -40,8 +39,7 @@ defmodule HellenWeb.DashboardLive.Index do
         <div class="mt-6">
           <.link navigate={~p"/lessons/new"}>
             <.button>
-              <.icon name="hero-plus" class="h-4 w-4 mr-2" />
-              Nova Aula
+              <.icon name="hero-plus" class="h-4 w-4 mr-2" /> Nova Aula
             </.button>
           </.link>
         </div>
@@ -110,10 +108,7 @@ defmodule HellenWeb.DashboardLive.Index do
     minutes = div(seconds, 60)
     secs = rem(seconds, 60)
 
-    cond do
-      minutes > 0 -> "#{minutes}min #{secs}s"
-      true -> "#{secs}s"
-    end
+    if minutes > 0, do: "#{minutes}min #{secs}s", else: "#{secs}s"
   end
 
   defp format_duration(_), do: "-"

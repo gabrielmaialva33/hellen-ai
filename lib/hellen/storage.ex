@@ -151,19 +151,20 @@ defmodule Hellen.Storage do
     |> String.downcase()
   end
 
+  @content_types %{
+    ".mp3" => "audio/mpeg",
+    ".mp4" => "video/mp4",
+    ".m4a" => "audio/mp4",
+    ".wav" => "audio/wav",
+    ".webm" => "video/webm",
+    ".ogg" => "audio/ogg",
+    ".flac" => "audio/flac",
+    ".mov" => "video/quicktime",
+    ".avi" => "video/x-msvideo",
+    ".mkv" => "video/x-matroska"
+  }
+
   defp guess_content_type(key) do
-    case Path.extname(key) do
-      ".mp3" -> "audio/mpeg"
-      ".mp4" -> "video/mp4"
-      ".m4a" -> "audio/mp4"
-      ".wav" -> "audio/wav"
-      ".webm" -> "video/webm"
-      ".ogg" -> "audio/ogg"
-      ".flac" -> "audio/flac"
-      ".mov" -> "video/quicktime"
-      ".avi" -> "video/x-msvideo"
-      ".mkv" -> "video/x-matroska"
-      _ -> "application/octet-stream"
-    end
+    Map.get(@content_types, Path.extname(key), "application/octet-stream")
   end
 end

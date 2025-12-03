@@ -42,7 +42,10 @@ defmodule HellenWeb.SessionController do
           {:ok, %{access_token: token}} ->
             conn
             |> put_session(:user_token, token)
-            |> put_flash(:info, "Conta criada com sucesso! Bem-vindo, #{user.name || user.email}!")
+            |> put_flash(
+              :info,
+              "Conta criada com sucesso! Bem-vindo, #{user.name || user.email}!"
+            )
             |> redirect(to: ~p"/")
 
           {:error, _reason} ->
@@ -76,7 +79,6 @@ defmodule HellenWeb.SessionController do
         String.replace(acc, "%{#{key}}", to_string(value))
       end)
     end)
-    |> Enum.map(fn {field, errors} -> "#{field}: #{Enum.join(errors, ", ")}" end)
-    |> Enum.join("; ")
+    |> Enum.map_join("; ", fn {field, errors} -> "#{field}: #{Enum.join(errors, ", ")}" end)
   end
 end
