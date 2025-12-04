@@ -58,3 +58,6 @@ Thumbs.db
 # Test
 /test/tmp/
 /tmp/
+
+# Claude Code local settings (contains secrets)
+.claude/settings.local.json
