@@ -133,6 +133,34 @@ defmodule Hellen.Storage do
     config[:bucket] != nil && config[:public_url] != nil
   end
 
+  @doc """
+  Generates a presigned URL for direct browser upload to R2.
+
+  This enables External Uploads in Phoenix LiveView, allowing the browser
+  to upload directly to R2 without going through the Phoenix server.
+
+  ## Options
+    * `:content_type` - MIME type of the file (default: "application/octet-stream")
+    * `:expires_in` - URL expiration in seconds (default: 3600)
+
+  ## Examples
+
+      iex> Storage.presigned_put_url("lessons/uuid/audio.mp3", content_type: "audio/mpeg")
+      {:ok, "https://...r2.cloudflarestorage.com/...?X-Amz-Signature=..."}
+  """
+  def presigned_put_url(key, opts \\ []) do
+    bucket = get_bucket()
+    content_type = opts[:content_type] || "application/octet-stream"
+    expires_in = opts[:expires_in] || 3600
+
+    config = ExAws.Config.new(:s3)
+
+    ExAws.S3.presigned_url(config, :put, bucket, key,
+      expires_in: expires_in,
+      query_params: [{"Content-Type", content_type}]
+    )
+  end
+
   # Private functions
 
   defp get_bucket do

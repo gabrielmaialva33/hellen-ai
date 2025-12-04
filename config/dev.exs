@@ -17,7 +17,8 @@ config :hellen, HellenWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "dev_secret_key_base_hellen_ai_2024_change_in_production",
+  secret_key_base:
+    "dev_secret_key_base_hellen_ai_2024_change_in_production_and_make_it_very_long_indeed_to_satisfy_the_requirement",
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:hellen, ~w(--sourcemap=inline --watch)]},
     tailwind: {Tailwind, :install_and_run, [:hellen, ~w(--watch)]}
@@ -57,3 +58,18 @@ config :hellen, :qdrant_url, "http://localhost:6333"
 
 # NVIDIA NIM API (use env var in production)
 config :hellen, :nvidia_api_key, System.get_env("NVIDIA_API_KEY")
+
+# R2 Storage configuration for development
+config :ex_aws,
+  access_key_id: "63e9ee4705f4950ec1d7d6784c7ab66c",
+  secret_access_key: "01d324e74bee9d43004f72be3c481586c880b948d4c9bb2b7f045ca0dc88a572",
+  region: "auto"
+
+config :ex_aws, :s3,
+  scheme: "https://",
+  host: "5e169ace5c37c07688d84589e2ee87b0.r2.cloudflarestorage.com",
+  region: "auto"
+
+config :hellen, :r2,
+  bucket: "hellen-r2",
+  public_url: "https://pub-0914ea82354f49a6a09816c8d7044329.r2.dev"

@@ -39,8 +39,10 @@ defmodule Hellen.Auth.Guardian do
   Generates access and refresh tokens for a user.
   """
   def generate_tokens(user) do
-    with {:ok, access_token, _claims} <- encode_and_sign(user, %{}, token_type: "access", ttl: {1, :hour}),
-         {:ok, refresh_token, _claims} <- encode_and_sign(user, %{}, token_type: "refresh", ttl: {7, :day}) do
+    with {:ok, access_token, _claims} <-
+           encode_and_sign(user, %{}, token_type: "access", ttl: {1, :hour}),
+         {:ok, refresh_token, _claims} <-
+           encode_and_sign(user, %{}, token_type: "refresh", ttl: {7, :day}) do
       {:ok, %{access_token: access_token, refresh_token: refresh_token}}
     end
   end

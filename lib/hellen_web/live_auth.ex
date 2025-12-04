@@ -25,6 +25,7 @@ defmodule HellenWeb.LiveAuth do
   import Phoenix.Component
 
   alias Hellen.Accounts
+  alias Hellen.Auth.Guardian
 
   @doc """
   Called when the LiveView is mounted.
@@ -72,7 +73,7 @@ defmodule HellenWeb.LiveAuth do
         assign(socket, :current_user, nil)
 
       token ->
-        case Hellen.Auth.Guardian.resource_from_token(token) do
+        case Guardian.resource_from_token(token) do
           {:ok, user, _claims} ->
             # Reload user to get fresh data
             user = Accounts.get_user(user.id) || user

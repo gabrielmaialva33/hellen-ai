@@ -84,7 +84,7 @@ defmodule Hellen.Lessons do
 
   def create_transcription(lesson_id, attrs) do
     %Transcription{}
-    |> Transcription.changeset(Map.put(attrs, "lesson_id", lesson_id))
+    |> Transcription.changeset(Map.put(attrs, :lesson_id, lesson_id))
     |> Repo.insert()
   end
 end

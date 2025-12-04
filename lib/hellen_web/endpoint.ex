@@ -9,7 +9,11 @@ defmodule HellenWeb.Endpoint do
   ]
 
   socket "/live", Phoenix.LiveView.Socket,
-    websocket: [connect_info: [session: @session_options]],
+    websocket: [
+      connect_info: [session: @session_options],
+      # 100MB max frame size for large file uploads
+      max_frame_size: 100 * 1024 * 1024
+    ],
     longpoll: [connect_info: [session: @session_options]]
 
   socket "/socket", HellenWeb.UserSocket,

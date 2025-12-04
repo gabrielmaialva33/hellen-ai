@@ -33,31 +33,51 @@ defmodule Hellen.Analysis do
 
   def create_full_analysis(lesson_id, analysis_result) do
     Repo.transaction(fn ->
-      # Create main analysis
-      {:ok, analysis} =
-        create_analysis(%{
-          lesson_id: lesson_id,
-          analysis_type: "full",
-          model_used: analysis_result.model,
-          raw_response: analysis_result.raw,
-          result: analysis_result.structured,
-          overall_score: analysis_result.overall_score,
-          processing_time_ms: analysis_result.processing_time_ms,
-          tokens_used: analysis_result.tokens_used
-        })
-
-      # Create BNCC matches
-      Enum.each(analysis_result.bncc_matches || [], fn match ->
-        create_bncc_match(Map.put(match, :analysis_id, analysis.id))
-      end)
-
-      # Create bullying alerts
-      Enum.each(analysis_result.bullying_alerts || [], fn alert ->
-        create_bullying_alert(Map.put(alert, :analysis_id, analysis.id))
-      end)
-
-      analysis
+      analysis_result
+      |> build_analysis_attrs(lesson_id)
+      |> create_analysis()
+      |> case do
+        {:ok, analysis} -> create_related_records(analysis, analysis_result)
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
     end)
+  end
+
+  defp build_analysis_attrs(analysis_result, lesson_id) do
+    %{
+      lesson_id: lesson_id,
+      analysis_type: "full",
+      model_used: analysis_result.model,
+      raw_response: analysis_result.raw,
+      result: analysis_result.structured,
+      overall_score: analysis_result.overall_score,
+      processing_time_ms: analysis_result.processing_time_ms,
+      tokens_used: analysis_result.tokens_used
+    }
+  end
+
+  defp create_related_records(analysis, analysis_result) do
+    Enum.each(analysis_result.bncc_matches || [], fn match ->
+      create_bncc_match(Map.put(match, :analysis_id, analysis.id))
+    end)
+
+    Enum.each(analysis_result.bullying_alerts || [], fn alert ->
+      create_bullying_alert(Map.put(alert, :analysis_id, analysis.id))
+    end)
+
+    analysis
+  end
+
+  def create_feedback_analysis(lesson_id, analysis_result) do
+    create_analysis(%{
+      lesson_id: lesson_id,
+      analysis_type: "pedagogical_feedback",
+      model_used: analysis_result.model,
+      raw_response: analysis_result.raw,
+      result: analysis_result.structured,
+      processing_time_ms: analysis_result.processing_time_ms,
+      tokens_used: analysis_result.tokens_used
+    })
   end
 
   ## BNCC Matches

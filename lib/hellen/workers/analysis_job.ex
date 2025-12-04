@@ -62,7 +62,8 @@ defmodule Hellen.Workers.AnalysisJob do
 
     %{
       model: nvidia_result.model,
-      raw: nvidia_result.raw,
+      # Wrap raw string in a map to match the :map field type in Analysis schema
+      raw: %{"content" => nvidia_result.raw},
       structured: structured,
       overall_score: parse_float(structured["overall_score"]),
       processing_time_ms: nvidia_result.processing_time_ms,

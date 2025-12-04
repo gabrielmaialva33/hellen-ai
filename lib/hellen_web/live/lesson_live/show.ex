@@ -30,23 +30,24 @@ defmodule HellenWeb.LessonLive.Show do
   end
 
   @impl true
-  def handle_info({:transcription_progress, progress}, socket) do
+  def handle_info({"transcription_progress", %{progress: progress}}, socket) do
     {:noreply, assign(socket, transcription_progress: progress)}
   end
 
   @impl true
-  def handle_info({:transcription_complete, transcription}, socket) do
-    lesson = %{socket.assigns.lesson | transcription: transcription, status: "transcribed"}
+  def handle_info({"transcription_complete", _payload}, socket) do
+    # Reload lesson with transcription
+    lesson = Lessons.get_lesson_with_transcription!(socket.assigns.lesson.id)
     {:noreply, assign(socket, lesson: lesson, transcription_progress: 100)}
   end
 
   @impl true
-  def handle_info({:analysis_progress, progress}, socket) do
+  def handle_info({"analysis_progress", %{progress: progress}}, socket) do
     {:noreply, assign(socket, analysis_progress: progress)}
   end
 
   @impl true
-  def handle_info({:analysis_complete, analysis}, socket) do
+  def handle_info({"analysis_complete", %{analysis: analysis}}, socket) do
     lesson = %{socket.assigns.lesson | status: "completed"}
     analyses = [analysis | socket.assigns.analyses]
 
@@ -57,9 +58,35 @@ defmodule HellenWeb.LessonLive.Show do
   end
 
   @impl true
-  def handle_info({:status_update, status}, socket) do
+  def handle_info({"status_update", %{status: status}}, socket) do
     lesson = %{socket.assigns.lesson | status: status}
     {:noreply, assign(socket, lesson: lesson)}
+  end
+
+  @impl true
+  def handle_info({"transcription_failed", %{error: error}}, socket) do
+    lesson = %{socket.assigns.lesson | status: "failed"}
+
+    {:noreply,
+     socket
+     |> assign(lesson: lesson)
+     |> put_flash(:error, "Transcrição falhou: #{error}")}
+  end
+
+  @impl true
+  def handle_info({"analysis_failed", %{error: error}}, socket) do
+    lesson = %{socket.assigns.lesson | status: "failed"}
+
+    {:noreply,
+     socket
+     |> assign(lesson: lesson)
+     |> put_flash(:error, "Análise falhou: #{error}")}
+  end
+
+  # Catch-all for any other PubSub messages
+  @impl true
+  def handle_info(_msg, socket) do
+    {:noreply, socket}
   end
 
   @impl true
@@ -88,16 +115,19 @@ defmodule HellenWeb.LessonLive.Show do
     <div class="space-y-8">
       <div class="flex justify-between items-start">
         <div>
-          <.link navigate={~p"/"} class="text-sm text-gray-500 hover:text-gray-700 flex items-center mb-2">
-            <.icon name="hero-arrow-left-mini" class="h-4 w-4 mr-1" />
-            Voltar ao Dashboard
+          <.link
+            navigate={~p"/"}
+            class="text-sm text-gray-500 hover:text-gray-700 flex items-center mb-2"
+          >
+            <.icon name="hero-arrow-left-mini" class="h-4 w-4 mr-1" /> Voltar ao Dashboard
           </.link>
           <h1 class="text-2xl font-bold text-gray-900">
             <%= @lesson.title || "Aula sem título" %>
           </h1>
           <p class="mt-1 text-sm text-gray-500">
-            <%= @lesson.subject || "Disciplina não informada" %> •
-            <%= format_date(@lesson.inserted_at) %>
+            <%= @lesson.subject || "Disciplina não informada" %> • <%= format_date(
+              @lesson.inserted_at
+            ) %>
           </p>
         </div>
         <.badge variant={status_variant(@lesson.status)} class="text-sm px-3 py-1">
@@ -115,8 +145,7 @@ defmodule HellenWeb.LessonLive.Show do
             </p>
             <div class="mt-6">
               <.button phx-click="start_processing">
-                <.icon name="hero-play" class="h-4 w-4 mr-2" />
-                Iniciar Processamento
+                <.icon name="hero-play" class="h-4 w-4 mr-2" /> Iniciar Processamento
               </.button>
             </div>
           </div>
@@ -138,9 +167,7 @@ defmodule HellenWeb.LessonLive.Show do
                 else: "Gerando feedback pedagógico baseado na BNCC" %>
             </p>
             <div class="mt-6 max-w-md mx-auto">
-              <.progress
-                value={assigns[:transcription_progress] || assigns[:analysis_progress] || 0}
-              />
+              <.progress value={assigns[:transcription_progress] || assigns[:analysis_progress] || 0} />
             </div>
           </div>
         </.card>
@@ -153,7 +180,10 @@ defmodule HellenWeb.LessonLive.Show do
         </.alert>
       </div>
 
-      <div :if={@lesson.status in ["transcribed", "completed"]} class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div
+        :if={@lesson.status in ["transcribed", "completed"]}
+        class="grid grid-cols-1 lg:grid-cols-2 gap-8"
+      >
         <.card>
           <:header>
             <div class="flex items-center justify-between">
@@ -163,7 +193,7 @@ defmodule HellenWeb.LessonLive.Show do
           </:header>
           <div :if={@lesson.transcription} class="prose prose-sm max-w-none max-h-96 overflow-y-auto">
             <p class="whitespace-pre-wrap text-gray-700">
-              <%= @lesson.transcription.text %>
+              <%= @lesson.transcription.full_text %>
             </p>
           </div>
           <div :if={!@lesson.transcription} class="text-gray-500 text-sm">
@@ -176,7 +206,9 @@ defmodule HellenWeb.LessonLive.Show do
             <div class="flex items-center justify-between">
               <h2 class="text-lg font-semibold text-gray-900">Análise Pedagógica</h2>
               <.badge :if={@latest_analysis} variant="success">Concluída</.badge>
-              <.badge :if={!@latest_analysis && @lesson.status == "completed"} variant="pending">Pendente</.badge>
+              <.badge :if={!@latest_analysis && @lesson.status == "completed"} variant="pending">
+                Pendente
+              </.badge>
             </div>
           </:header>
 

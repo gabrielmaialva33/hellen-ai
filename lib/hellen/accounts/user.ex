@@ -33,7 +33,16 @@ defmodule Hellen.Accounts.User do
   @doc false
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:email, :name, :role, :credits, :plan, :institution_id, :firebase_uid, :email_verified])
+    |> cast(attrs, [
+      :email,
+      :name,
+      :role,
+      :credits,
+      :plan,
+      :institution_id,
+      :firebase_uid,
+      :email_verified
+    ])
     |> validate_required([:email, :name])
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+$/, message: "must have the @ sign and no spaces")
     |> validate_length(:email, max: 160)

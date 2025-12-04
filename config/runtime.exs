@@ -30,13 +30,17 @@ end
 
 # Guardian secret - can be set in dev via .env
 if guardian_secret = System.get_env("GUARDIAN_SECRET_KEY") do
-  config :hellen, Hellen.Auth.Guardian,
-    secret_key: guardian_secret
+  config :hellen, Hellen.Auth.Guardian, secret_key: guardian_secret
 end
 
-# NVIDIA API - for dev/test with .env
+# NVIDIA API - for dev/test with .env (used for LLM analysis)
 if nvidia_key = System.get_env("NVIDIA_API_KEY") do
   config :hellen, :nvidia_api_key, nvidia_key
+end
+
+# Groq API - for dev/test with .env (used for transcription)
+if groq_key = System.get_env("GROQ_API_KEY") do
+  config :hellen, :groq_api_key, groq_key
 end
 
 if config_env() == :prod do

@@ -4,7 +4,8 @@ defmodule HellenWeb.LessonLive.New do
   alias Hellen.Lessons
   alias Hellen.Storage
 
-  @max_file_size 500 * 1024 * 1024  # 500MB
+  # 500MB
+  @max_file_size 500 * 1024 * 1024
   @accepted_types ~w(.mp3 .mp4 .m4a .wav .webm .ogg .flac .mov .avi .mkv)
 
   @impl true
@@ -14,21 +15,36 @@ defmodule HellenWeb.LessonLive.New do
      |> assign(page_title: "Nova Aula")
      |> assign(form: to_form(%{"title" => "", "subject" => ""}, as: :lesson))
      |> assign(uploading: false)
-     |> assign(upload_progress: 0)
      |> allow_upload(:media,
        accept: @accepted_types,
        max_entries: 1,
        max_file_size: @max_file_size,
-       auto_upload: false,
-       progress: &handle_progress/3
+       auto_upload: true,
+       external: &presign_upload/2
      )}
   end
 
-  defp handle_progress(:media, entry, socket) do
-    if entry.done? do
-      {:noreply, assign(socket, upload_progress: 100)}
-    else
-      {:noreply, assign(socket, upload_progress: entry.progress)}
+  # Generate presigned URL for direct R2 upload
+  defp presign_upload(entry, socket) do
+    require Logger
+    Logger.info("presign_upload called for: #{entry.client_name}")
+
+    lesson_id = Ecto.UUID.generate()
+    key = Storage.lesson_key(lesson_id, entry.client_name)
+
+    case Storage.presigned_put_url(key, content_type: entry.client_type) do
+      {:ok, url} ->
+        meta = %{
+          uploader: "S3",
+          key: key,
+          url: url,
+          lesson_id: lesson_id
+        }
+
+        {:ok, meta, socket}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -57,7 +73,10 @@ defmodule HellenWeb.LessonLive.New do
         {:noreply,
          socket
          |> assign(uploading: false)
-         |> put_flash(:error, "Você não tem créditos suficientes. Adquira mais créditos para continuar.")}
+         |> put_flash(
+           :error,
+           "Você não tem créditos suficientes. Adquira mais créditos para continuar."
+         )}
 
       {:error, reason} ->
         {:noreply,
@@ -73,27 +92,33 @@ defmodule HellenWeb.LessonLive.New do
   end
 
   defp upload_and_create_lesson(socket, user, params) do
+    # With external uploads, consume_uploaded_entries receives the meta we returned
+    # from presign_upload/2 instead of a file path
     uploaded_files =
-      consume_uploaded_entries(socket, :media, fn %{path: path}, entry ->
-        # Generate unique key for R2
-        lesson_id = Ecto.UUID.generate()
-        key = Storage.lesson_key(lesson_id, entry.client_name)
-
-        # Upload to R2
-        case Storage.upload_file(key, path, content_type: entry.client_type) do
-          {:ok, url} ->
-            {:ok, %{url: url, key: key, filename: entry.client_name, lesson_id: lesson_id}}
-
-          {:error, reason} ->
-            {:postpone, reason}
-        end
+      consume_uploaded_entries(socket, :media, fn meta, entry ->
+        # meta contains: %{key: key, url: url, lesson_id: lesson_id}
+        # The file was already uploaded directly to R2 by the browser
+        {:ok,
+         %{
+           key: meta.key,
+           url: Storage.public_url(meta.key),
+           filename: entry.client_name,
+           lesson_id: meta.lesson_id
+         }}
       end)
 
     case uploaded_files do
       [%{url: url, key: key, filename: filename, lesson_id: lesson_id}] ->
+        title =
+          case params["title"] do
+            nil -> filename
+            "" -> filename
+            t -> t
+          end
+
         lesson_attrs = %{
           "id" => lesson_id,
-          "title" => params["title"] || filename,
+          "title" => title,
           "subject" => params["subject"],
           "audio_url" => url,
           "audio_key" => key,
@@ -143,28 +168,28 @@ defmodule HellenWeb.LessonLive.New do
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <span class="block text-sm font-medium text-gray-700 mb-2">
               Arquivo de mídia
-            </label>
-
-            <div
+            </span>
+            <%!-- CRITICAL: Keep file input ALWAYS in DOM for LiveView external upload preflight --%>
+            <.live_file_input upload={@uploads.media} class="sr-only peer" id="media-upload-input" />
+            <label
               :if={@uploads.media.entries == []}
-              class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer transition-colors duration-200 hover:border-indigo-400 hover:bg-indigo-50"
+              for="media-upload-input"
               phx-drop-target={@uploads.media.ref}
+              class="relative block border-2 border-dashed border-gray-300 rounded-lg p-8 text-center transition-colors duration-200 hover:border-indigo-400 hover:bg-indigo-50 cursor-pointer"
             >
-              <.live_file_input upload={@uploads.media} class="hidden" />
               <.icon name="hero-cloud-arrow-up" class="mx-auto h-12 w-12 text-gray-400" />
               <div class="mt-4 text-sm text-gray-600">
-                <label for={@uploads.media.ref} class="font-semibold text-indigo-600 cursor-pointer hover:text-indigo-500">
+                <span class="font-semibold text-indigo-600 hover:text-indigo-500">
                   Clique para selecionar
-                </label>
+                </span>
                 ou arraste e solte
               </div>
               <p class="mt-2 text-xs text-gray-500">
                 MP3, MP4, WAV, M4A, WebM, OGG, FLAC, MOV, AVI, MKV até 500MB
               </p>
-            </div>
-
+            </label>
             <div :for={entry <- @uploads.media.entries} class="mt-4 p-4 bg-gray-50 rounded-lg">
               <div class="flex items-center justify-between">
                 <div class="flex items-center min-w-0">
@@ -206,10 +231,20 @@ defmodule HellenWeb.LessonLive.New do
             </.link>
             <.button
               type="submit"
-              disabled={@uploading || @uploads.media.entries == []}
+              disabled={
+                @uploading || @uploads.media.entries == [] ||
+                  Enum.any?(@uploads.media.entries, &(!&1.done?))
+              }
               phx-disable-with="Enviando..."
             >
-              <%= if @uploading, do: "Enviando...", else: "Enviar Aula" %>
+              <%= cond do %>
+                <% @uploading -> %>
+                  Enviando...
+                <% @uploads.media.entries != [] and Enum.any?(@uploads.media.entries, &(!&1.done?)) -> %>
+                  Carregando... <%= Enum.at(@uploads.media.entries, 0).progress %>%
+                <% true -> %>
+                  Enviar Aula
+              <% end %>
             </.button>
           </div>
         </form>

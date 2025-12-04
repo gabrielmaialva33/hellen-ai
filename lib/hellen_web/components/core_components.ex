@@ -86,8 +86,12 @@ defmodule HellenWeb.CoreComponents do
   defp button_size("md"), do: "px-4 py-2 text-sm"
   defp button_size("lg"), do: "px-6 py-3 text-base"
 
-  defp button_variant("primary"), do: "bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500"
-  defp button_variant("secondary"), do: "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-indigo-500"
+  defp button_variant("primary"),
+    do: "bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500"
+
+  defp button_variant("secondary"),
+    do: "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-indigo-500"
+
   defp button_variant("danger"), do: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
   defp button_variant("ghost"), do: "text-gray-600 hover:bg-gray-100 focus:ring-gray-500"
 
@@ -140,7 +144,7 @@ defmodule HellenWeb.CoreComponents do
   def input(%{type: "checkbox"} = assigns) do
     assigns =
       assign_new(assigns, :checked, fn ->
-        Phoenix.HTML.Form.normalize_value("checkbox", assigns[:value])
+        normalize_value("checkbox", assigns[:value])
       end)
 
     ~H"""
@@ -192,7 +196,8 @@ defmodule HellenWeb.CoreComponents do
         class={[
           "mt-1 block w-full rounded-lg border-gray-300 shadow-sm",
           "focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm",
-          @errors != [] && "border-red-300 text-red-900 placeholder-red-300 focus:border-red-500 focus:ring-red-500"
+          @errors != [] &&
+            "border-red-300 text-red-900 placeholder-red-300 focus:border-red-500 focus:ring-red-500"
         ]}
         {@rest}
       ><%= Phoenix.HTML.Form.normalize_value("textarea", @value) %></textarea>
@@ -213,7 +218,8 @@ defmodule HellenWeb.CoreComponents do
         class={[
           "mt-1 block w-full rounded-lg border-gray-300 shadow-sm",
           "focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm",
-          @errors != [] && "border-red-300 text-red-900 placeholder-red-300 focus:border-red-500 focus:ring-red-500"
+          @errors != [] &&
+            "border-red-300 text-red-900 placeholder-red-300 focus:border-red-500 focus:ring-red-500"
         ]}
         {@rest}
       />
@@ -273,7 +279,10 @@ defmodule HellenWeb.CoreComponents do
 
   def card(assigns) do
     ~H"""
-    <div class={["bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden", @class]} {@rest}>
+    <div
+      class={["bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden", @class]}
+      {@rest}
+    >
       <div :if={@header != []} class="px-6 py-4 border-b border-gray-200">
         <%= render_slot(@header) %>
       </div>
@@ -336,7 +345,10 @@ defmodule HellenWeb.CoreComponents do
       <.badge variant="success">Completed</.badge>
       <.badge variant="warning">Processing</.badge>
   """
-  attr :variant, :string, default: "default", values: ~w(default pending processing completed failed success warning error)
+  attr :variant, :string,
+    default: "default",
+    values: ~w(default pending processing completed failed success warning error)
+
   attr :class, :string, default: nil
   attr :rest, :global
 
@@ -407,7 +419,11 @@ defmodule HellenWeb.CoreComponents do
             <%= render_slot(@inner_block) %>
           </div>
         </div>
-        <button :if={@dismissible} type="button" class="ml-auto -mx-1.5 -my-1.5 p-1.5 rounded-lg hover:bg-black/10">
+        <button
+          :if={@dismissible}
+          type="button"
+          class="ml-auto -mx-1.5 -my-1.5 p-1.5 rounded-lg hover:bg-black/10"
+        >
           <.icon name="hero-x-mark-mini" class="h-5 w-5" />
         </button>
       </div>
@@ -459,7 +475,11 @@ defmodule HellenWeb.CoreComponents do
       data-cancel={JS.exec(@on_cancel, "phx-remove")}
       class="relative z-50 hidden"
     >
-      <div id={"#{@id}-bg"} class="bg-gray-900/50 fixed inset-0 transition-opacity" aria-hidden="true" />
+      <div
+        id={"#{@id}-bg"}
+        class="bg-gray-900/50 fixed inset-0 transition-opacity"
+        aria-hidden="true"
+      />
       <div
         class="fixed inset-0 overflow-y-auto"
         aria-labelledby={"#{@id}-title"}
@@ -528,7 +548,9 @@ defmodule HellenWeb.CoreComponents do
               Nova Aula
             </a>
             <div class="flex items-center gap-2">
-              <span class="text-sm text-gray-600"><%= @current_user.name || @current_user.email %></span>
+              <span class="text-sm text-gray-600">
+                <%= @current_user.name || @current_user.email %>
+              </span>
               <a href="/logout" class="text-gray-400 hover:text-gray-500">
                 <.icon name="hero-arrow-right-on-rectangle" class="h-5 w-5" />
               </a>
@@ -623,8 +645,7 @@ defmodule HellenWeb.CoreComponents do
       <div class="space-y-2">
         <.icon name="hero-cloud-arrow-up" class="mx-auto h-12 w-12 text-gray-400" />
         <div class="text-sm text-gray-600">
-          <span class="font-semibold text-indigo-600">Clique para enviar</span>
-          ou arraste e solte
+          <span class="font-semibold text-indigo-600">Clique para enviar</span> ou arraste e solte
         </div>
         <p class="text-xs text-gray-500">
           <%= @accept %>
@@ -682,7 +703,10 @@ defmodule HellenWeb.CoreComponents do
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
-            <th :for={col <- @col} class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th
+              :for={col <- @col}
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
               <%= col[:label] %>
             </th>
             <th :if={@action != []} class="relative px-6 py-3">
@@ -699,7 +723,10 @@ defmodule HellenWeb.CoreComponents do
             <td
               :for={{col, _i} <- Enum.with_index(@col)}
               phx-click={@row_click && @row_click.(row)}
-              class={["px-6 py-4 whitespace-nowrap text-sm text-gray-900", @row_click && "cursor-pointer"]}
+              class={[
+                "px-6 py-4 whitespace-nowrap text-sm text-gray-900",
+                @row_click && "cursor-pointer"
+              ]}
             >
               <%= render_slot(col, @row_item.(row)) %>
             </td>

@@ -1,6 +1,8 @@
 defmodule HellenWeb.UserSocket do
   use Phoenix.Socket
 
+  alias Hellen.Auth.Guardian
+
   channel "lesson:*", HellenWeb.LessonChannel
 
   @impl true
@@ -24,7 +26,7 @@ defmodule HellenWeb.UserSocket do
 
   # Verify JWT token using Guardian
   defp verify_token(token) do
-    case Hellen.Auth.Guardian.resource_from_token(token) do
+    case Guardian.resource_from_token(token) do
       {:ok, user, _claims} ->
         {:ok, user.id}
 

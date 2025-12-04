@@ -21,17 +21,43 @@ defmodule Hellen.Workers.TranscriptionJob do
 
     lesson = Lessons.get_lesson!(lesson_id)
 
+    # Check if transcription already exists (retry scenario)
+    case Lessons.get_transcription_by_lesson(lesson_id) do
+      %Hellen.Lessons.Transcription{} = existing ->
+        Logger.info("Transcription already exists for lesson #{lesson_id}, skipping to analysis")
+        proceed_to_analysis(lesson, existing)
+
+      nil ->
+        perform_transcription(lesson)
+    end
+  end
+
+  defp perform_transcription(lesson) do
     with {:ok, lesson} <- Lessons.update_lesson_status(lesson, "transcribing"),
          {:ok, result} <- transcribe_audio(lesson),
-         {:ok, _transcription} <- save_transcription(lesson, result),
-         {:ok, lesson} <- Lessons.update_lesson_status(lesson, "analyzing"),
+         {:ok, transcription} <- save_transcription(lesson, result) do
+      Logger.info(
+        "Transcription result: text=#{String.length(result.text || "")} chars, segments=#{length(result.segments || [])}"
+      )
+
+      Logger.info("Transcription saved successfully")
+      proceed_to_analysis(lesson, transcription)
+    else
+      {:error, reason} ->
+        Logger.error("Transcription failed for lesson #{lesson.id}: #{inspect(reason)}")
+        handle_failure(lesson, reason)
+    end
+  end
+
+  defp proceed_to_analysis(lesson, _transcription) do
+    with {:ok, lesson} <- Lessons.update_lesson_status(lesson, "analyzing"),
          {:ok, _job} <- enqueue_analysis(lesson) do
-      Logger.info("Transcription completed for lesson #{lesson_id}")
-      broadcast_progress(lesson_id, "transcription_complete", %{})
+      Logger.info("Transcription completed for lesson #{lesson.id}")
+      broadcast_progress(lesson.id, "transcription_complete", %{})
       :ok
     else
       {:error, reason} ->
-        Logger.error("Transcription failed for lesson #{lesson_id}: #{inspect(reason)}")
+        Logger.error("Failed to proceed to analysis for lesson #{lesson.id}: #{inspect(reason)}")
         handle_failure(lesson, reason)
     end
   end

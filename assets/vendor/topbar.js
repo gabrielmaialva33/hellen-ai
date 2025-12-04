@@ -154,7 +154,7 @@
       },
     };
 
-  this.topbar = topbar;
-}.call(this, window, document));
+  window.topbar = topbar;
+}.call(window, window, document));
 
 export default window.topbar;

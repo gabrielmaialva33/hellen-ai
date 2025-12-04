@@ -56,7 +56,9 @@ defmodule HellenWeb.Router do
   scope "/", HellenWeb do
     pipe_through :browser
 
-    live_session :public, on_mount: [{HellenWeb.LiveAuth, :none}], layout: {HellenWeb.Layouts, :auth} do
+    live_session :public,
+      on_mount: [{HellenWeb.LiveAuth, :none}],
+      layout: {HellenWeb.Layouts, :auth} do
       live "/login", AuthLive.Login, :index
       live "/register", AuthLive.Register, :index
     end

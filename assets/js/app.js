@@ -4,6 +4,47 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 
+// External Uploaders for direct S3/R2 uploads
+let Uploaders = {}
+
+// S3/R2 Direct Upload - uploads directly to storage without going through Phoenix
+Uploaders.S3 = function(entries, onViewError) {
+  console.log("S3 Uploader called with", entries.length, "entries")
+  entries.forEach(entry => {
+    console.log("Starting upload for:", entry.file.name, "URL:", entry.meta.url)
+    let xhr = new XMLHttpRequest()
+    onViewError(() => xhr.abort())
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        entry.progress(100)
+      } else {
+        console.error("Upload failed:", xhr.status, xhr.statusText)
+        entry.error()
+      }
+    }
+
+    xhr.onerror = () => {
+      console.error("Upload error")
+      entry.error()
+    }
+
+    xhr.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable) {
+        let percent = Math.round((event.loaded / event.total) * 100)
+        if (percent < 100) {
+          entry.progress(percent)
+        }
+      }
+    })
+
+    // Use the presigned URL from the meta
+    xhr.open("PUT", entry.meta.url, true)
+    xhr.setRequestHeader("Content-Type", entry.file.type)
+    xhr.send(entry.file)
+  })
+}
+
 // LiveView Hooks
 let Hooks = {}
 
@@ -86,6 +127,7 @@ Hooks.StatusUpdater = {
 // LiveSocket setup
 let csrfToken = document.querySelector("meta[name='csrf-token']")?.getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
+  uploaders: Uploaders,
   hooks: Hooks,
   params: {_csrf_token: csrfToken}
 })

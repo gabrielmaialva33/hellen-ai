@@ -1,44 +1,197 @@
 defmodule Hellen.AI.NvidiaClient do
   @moduledoc """
-  Client for NVIDIA NIM API.
-  Handles transcription (Whisper/Parakeet) and analysis (Qwen3).
+  Client for AI APIs.
+  - Transcription: Groq Whisper (fast, OpenAI-compatible REST API)
+  - Analysis: NVIDIA NIM Qwen3 (pedagogical feedback)
   """
 
-  @base_url "https://integrate.api.nvidia.com/v1"
+  # Groq for transcription (OpenAI-compatible REST API)
+  @transcription_base_url "https://api.groq.com/openai/v1"
+  @transcription_model "whisper-large-v3-turbo"
 
-  @transcription_model "nvidia/parakeet-ctc-1.1b-asr"
+  # NVIDIA for LLM analysis
+  @analysis_base_url "https://integrate.api.nvidia.com/v1"
   @analysis_model "qwen/qwen3-next-80b-a3b-instruct"
 
   @doc """
-  Transcribes audio using NVIDIA Parakeet/Whisper.
+  Transcribes audio using Groq Whisper.
+
+  The audio_url should be a publicly accessible URL to the audio file.
+  This function downloads the file and sends it as multipart/form-data.
   """
   def transcribe(audio_url, opts \\ []) do
+    require Logger
     language = Keyword.get(opts, :language, "pt")
+
+    Logger.info("Starting transcription for URL: #{audio_url}")
+
+    start_time = System.monotonic_time(:millisecond)
+
+    # Download the audio file from R2
+    with {:ok, audio_binary, content_type} <- download_audio(audio_url),
+         {:ok, response} <- send_transcription_request(audio_binary, content_type, language) do
+      processing_time = System.monotonic_time(:millisecond) - start_time
+      Logger.info("Transcription completed in #{processing_time}ms")
+
+      {:ok,
+       %{
+         text: response["text"],
+         segments: parse_segments(response["segments"] || []),
+         language: response["language"] || language,
+         duration: response["duration"],
+         processing_time_ms: processing_time
+       }}
+    else
+      {:error, reason} = error ->
+        Logger.error("Transcription failed: #{inspect(reason)}")
+        error
+    end
+  end
+
+  defp download_audio(url) do
+    require Logger
+    Logger.info("Downloading audio from: #{url}")
+
+    case Req.get(url, receive_timeout: 120_000) do
+      {:ok, %{status: 200, body: body, headers: headers}} ->
+        content_type =
+          headers
+          |> Enum.find(fn {k, _v} -> String.downcase(k) == "content-type" end)
+          |> case do
+            {_, ct} -> ct
+            nil -> guess_content_type(url)
+          end
+
+        Logger.info("Downloaded #{byte_size(body)} bytes, content-type: #{content_type}")
+        {:ok, body, content_type}
+
+      {:ok, %{status: status}} ->
+        {:error, {:download_failed, status}}
+
+      {:error, reason} ->
+        {:error, {:download_error, reason}}
+    end
+  end
+
+  defp send_transcription_request(audio_binary, content_type, language) do
+    require Logger
+
+    filename = "audio.#{content_type_to_extension(content_type)}"
+
+    Logger.info(
+      "Sending transcription request with filename: #{filename}, size: #{byte_size(audio_binary)} bytes"
+    )
+
+    "#{@transcription_base_url}/audio/transcriptions"
+    |> Req.post(
+      form_multipart: [
+        file: {audio_binary, filename: filename, content_type: content_type},
+        model: @transcription_model,
+        language: language,
+        response_format: "verbose_json"
+      ],
+      headers: groq_auth_headers(),
+      receive_timeout: 300_000
+    )
+    |> handle_transcription_response()
+  end
+
+  @content_type_extensions %{
+    "audio/mpeg" => "mp3",
+    "audio/mp3" => "mp3",
+    "audio/wav" => "wav",
+    "audio/x-wav" => "wav",
+    "audio/mp4" => "m4a",
+    "audio/m4a" => "m4a",
+    "video/mp4" => "mp4",
+    "audio/ogg" => "ogg",
+    "audio/flac" => "flac",
+    "video/webm" => "webm"
+  }
+
+  defp content_type_to_extension(content_type) do
+    Map.get(@content_type_extensions, content_type, "mp3")
+  end
+
+  defp handle_transcription_response({:ok, %{status: 200, body: body}}) do
+    require Logger
+    Logger.info("Transcription API returned success")
+    {:ok, body}
+  end
+
+  defp handle_transcription_response({:ok, %{status: status, body: body}}) do
+    require Logger
+    error_msg = if is_map(body), do: body["error"] || body, else: body
+    Logger.error("Transcription API error #{status}: #{inspect(error_msg)}")
+    {:error, %{status: status, message: error_msg}}
+  end
+
+  defp handle_transcription_response({:error, reason}) do
+    require Logger
+    Logger.error("Transcription request failed: #{inspect(reason)}")
+    {:error, reason}
+  end
+
+  defp guess_content_type(url) do
+    ext = url |> URI.parse() |> Map.get(:path, "") |> Path.extname() |> String.downcase()
+
+    case ext do
+      ".mp3" -> "audio/mpeg"
+      ".wav" -> "audio/wav"
+      ".m4a" -> "audio/mp4"
+      ".mp4" -> "video/mp4"
+      ".ogg" -> "audio/ogg"
+      ".flac" -> "audio/flac"
+      ".webm" -> "video/webm"
+      _ -> "audio/mpeg"
+    end
+  end
+
+  defp groq_auth_headers do
+    api_key = Application.get_env(:hellen, :groq_api_key)
+
+    [
+      {"Authorization", "Bearer #{api_key}"}
+    ]
+  end
+
+  @doc """
+  Analyzes transcription using Qwen3 for pedagogical feedback.
+  """
+  def analyze_pedagogy(transcription, context \\ %{}) do
+    system_prompt = build_pedagogical_prompt(context)
 
     start_time = System.monotonic_time(:millisecond)
 
     result =
-      Req.post("#{@base_url}/audio/transcriptions",
+      Req.post("#{@analysis_base_url}/chat/completions",
         json: %{
-          model: @transcription_model,
-          file: audio_url,
-          language: language,
-          response_format: "verbose_json"
+          model: @analysis_model,
+          messages: [
+            %{role: "system", content: system_prompt},
+            %{role: "user", content: build_analysis_request(transcription, context)}
+          ],
+          temperature: 0.3,
+          max_tokens: 4096,
+          response_format: %{type: "json_object"}
         },
-        headers: auth_headers(),
-        receive_timeout: 300_000
+        headers: nvidia_auth_headers(),
+        receive_timeout: 120_000
       )
 
     processing_time = System.monotonic_time(:millisecond) - start_time
 
     case result do
       {:ok, %{status: 200, body: body}} ->
+        message = get_in(body, ["choices", Access.at(0), "message", "content"])
+        usage = body["usage"]
+
         {:ok,
          %{
-           text: body["text"],
-           segments: parse_segments(body["segments"] || []),
-           language: body["language"],
-           duration: body["duration"],
+           raw: message,
+           structured: parse_analysis_response(message),
+           model: @analysis_model,
+           tokens_used: (usage["prompt_tokens"] || 0) + (usage["completion_tokens"] || 0),
            processing_time_ms: processing_time
          }}
 
@@ -51,26 +204,26 @@ defmodule Hellen.AI.NvidiaClient do
   end
 
   @doc """
-  Analyzes transcription using Qwen3 for pedagogical feedback.
+  Generates a structured pedagogical feedback using the Sandwich Method.
   """
-  def analyze_pedagogy(transcription, context \\ %{}) do
-    system_prompt = build_pedagogical_prompt(context)
+  def analyze_feedback(transcription, context \\ %{}) do
+    system_prompt = build_feedback_prompt(context)
 
     start_time = System.monotonic_time(:millisecond)
 
     result =
-      Req.post("#{@base_url}/chat/completions",
+      Req.post("#{@analysis_base_url}/chat/completions",
         json: %{
           model: @analysis_model,
           messages: [
             %{role: "system", content: system_prompt},
-            %{role: "user", content: build_analysis_request(transcription, context)}
+            %{role: "user", content: build_feedback_request(transcription)}
           ],
-          temperature: 0.3,
+          temperature: 0.4,
           max_tokens: 4096,
           response_format: %{type: "json_object"}
         },
-        headers: auth_headers(),
+        headers: nvidia_auth_headers(),
         receive_timeout: 120_000
       )
 
@@ -100,7 +253,7 @@ defmodule Hellen.AI.NvidiaClient do
 
   # Private functions
 
-  defp auth_headers do
+  defp nvidia_auth_headers do
     api_key = Application.get_env(:hellen, :nvidia_api_key)
 
     [
@@ -142,6 +295,47 @@ defmodule Hellen.AI.NvidiaClient do
     """
   end
 
+  defp build_feedback_prompt(context) do
+    """
+    Você é um Coordenador Pedagógico Sênior especialista em formação de professores.
+    Seu objetivo é criar um ROTEIRO DE FEEDBACK estruturado e acolhedor para o professor, baseado na transcrição da aula.
+
+    METODOLOGIA: TÉCNICA SANDUÍCHE
+    1. Abertura Positiva (Acolhimento + Pontos Fortes)
+    2. Recheio Construtivo (Oportunidades de Melhoria com Evidências)
+    3. Fechamento Motivador (Plano de Ação + Encorajamento)
+
+    Contexto da aula:
+    - Disciplina: #{context[:subject] || "Não especificada"}
+    - Nível: #{context[:grade_level] || "Não especificado"}
+
+    Retorne APENAS um JSON com a seguinte estrutura:
+    {
+      "opening": "Texto de abertura acolhedor e empático",
+      "strengths": [
+        {
+          "title": "Título do ponto forte",
+          "description": "Descrição detalhada",
+          "evidence": "Citação ou momento específico da transcrição que comprova"
+        }
+      ],
+      "improvements": [
+        {
+          "title": "Título da oportunidade de melhoria",
+          "observation": "O que foi observado (evidência/citação)",
+          "suggestion": "Sugestão prática e acionável de como melhorar (cite técnicas pedagógicas se aplicável)"
+        }
+      ],
+      "action_plan": [
+        "Passo 1 do plano de ação",
+        "Passo 2 do plano de ação",
+        "Passo 3 do plano de ação"
+      ],
+      "closing": "Texto de encerramento motivador e parceiro"
+    }
+    """
+  end
+
   defp build_analysis_request(transcription, _context) do
     """
     Analise a seguinte transcrição de aula e forneça seu feedback pedagógico:
@@ -150,6 +344,17 @@ defmodule Hellen.AI.NvidiaClient do
     #{transcription}
 
     Responda APENAS em formato JSON válido.
+    """
+  end
+
+  defp build_feedback_request(transcription) do
+    """
+    Gere o Roteiro de Feedback Pedagógico baseado nesta transcrição:
+
+    TRANSCRIÇÃO:
+    #{transcription}
+
+    Responda APENAS o JSON estruturado.
     """
   end
 
