@@ -63,3 +63,6 @@ Thumbs.db
 .claude/settings.local.json
 
 /.playwright-mcp/
+
+# Repomix output
+repomix-output.md
