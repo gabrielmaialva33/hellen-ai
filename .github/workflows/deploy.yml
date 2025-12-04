@@ -81,7 +81,7 @@ jobs:
           echo "=== Hellen AI Deployment ==="
           cd $APP_DIR
 
-          # Login to GHCR and pull pre-built image
+          # Login to GHCR and pull pre-built image BEFORE stopping (zero downtime)
           echo "Pulling pre-built image from GHCR..."
           echo "$GITHUB_TOKEN" | docker login ghcr.io -u gabrielmaialva33 --password-stdin
           docker pull $IMAGE
@@ -110,38 +110,21 @@ jobs:
             --add-host=host.docker.internal:172.17.0.1 \
             hellen-ai:latest
 
-          # Wait and verify
-          sleep 10
-          if docker ps | grep -q hellen; then
-            echo "=== Deployment successful! ==="
-            curl -s http://localhost:4001/health || true
-          else
-            echo "=== Deployment failed! ==="
-            docker logs hellen
-            exit 1
-          fi
-
-          # Cleanup old images
-          docker image prune -f --filter "until=24h" 2>/dev/null || true
-          ENDSSH
-
-      - name: Verify Deployment
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-        run: |
-          ssh -o StrictHostKeyChecking=no root@$VPS_HOST << 'ENDSSH'
+          # Fast health check loop (3s intervals, max 30s)
           echo "Waiting for application to be ready..."
-          for i in {1..12}; do
+          for i in {1..10}; do
+            sleep 3
             if curl -sf http://localhost:4001/health > /dev/null 2>&1; then
-              echo "✓ Health check passed!"
+              echo "✓ Health check passed on attempt $i!"
               docker ps | grep hellen
               curl -s http://localhost:4001/health
+              docker image prune -f --filter "until=24h" 2>/dev/null || true
               exit 0
             fi
-            echo "Attempt $i/12: App not ready yet, waiting 5s..."
-            sleep 5
+            echo "Attempt $i/10: App not ready yet..."
           done
-          echo "✗ Health check failed after 60 seconds"
+
+          echo "✗ Health check failed after 30 seconds"
           docker logs --tail 50 hellen
           exit 1
           ENDSSH
