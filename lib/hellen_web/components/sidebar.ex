@@ -116,7 +116,12 @@ defmodule HellenWeb.Sidebar do
             label="Equipe"
             current_path={@current_path}
           />
-          <.nav_item_disabled icon="hero-bell-alert" label="Alertas" />
+          <.nav_item
+            path={~p"/alerts"}
+            icon="hero-bell-alert"
+            label="Alertas"
+            current_path={@current_path}
+          />
         </div>
       </nav>
       <!-- User Section -->

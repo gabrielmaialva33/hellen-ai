@@ -36,7 +36,7 @@ defmodule HellenWeb.UIComponents do
 
   attr :variant, :string,
     default: "default",
-    values: ~w(default success processing pending warning)
+    values: ~w(default success processing pending warning error)
 
   attr :subtitle, :string, default: nil
 
@@ -66,18 +66,21 @@ defmodule HellenWeb.UIComponents do
   defp stat_card_border("processing"), do: "border-l-4 border-l-blue-500"
   defp stat_card_border("pending"), do: "border-l-4 border-l-yellow-500"
   defp stat_card_border("warning"), do: "border-l-4 border-l-orange-500"
+  defp stat_card_border("error"), do: "border-l-4 border-l-red-500"
   defp stat_card_border(_), do: "border-l-4 border-l-indigo-500"
 
   defp stat_icon_bg("success"), do: "bg-green-100 dark:bg-green-900/30"
   defp stat_icon_bg("processing"), do: "bg-blue-100 dark:bg-blue-900/30"
   defp stat_icon_bg("pending"), do: "bg-yellow-100 dark:bg-yellow-900/30"
   defp stat_icon_bg("warning"), do: "bg-orange-100 dark:bg-orange-900/30"
+  defp stat_icon_bg("error"), do: "bg-red-100 dark:bg-red-900/30"
   defp stat_icon_bg(_), do: "bg-indigo-100 dark:bg-indigo-900/30"
 
   defp stat_icon_color("success"), do: "text-green-600 dark:text-green-400"
   defp stat_icon_color("processing"), do: "text-blue-600 dark:text-blue-400"
   defp stat_icon_color("pending"), do: "text-yellow-600 dark:text-yellow-400"
   defp stat_icon_color("warning"), do: "text-orange-600 dark:text-orange-400"
+  defp stat_icon_color("error"), do: "text-red-600 dark:text-red-400"
   defp stat_icon_color(_), do: "text-indigo-600 dark:text-indigo-400"
 
   # ============================================================================

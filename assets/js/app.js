@@ -13,6 +13,12 @@ Hooks.ScrollAnimation = ScrollAnimation
 Hooks.ThemeHook = ThemeHook
 Hooks.ThemeToggle = ThemeToggle
 
+// Chart hooks
+import { ScoreChart, BnccHeatmap, AlertsChart } from "./hooks/charts"
+Hooks.ScoreChart = ScoreChart
+Hooks.BnccHeatmap = BnccHeatmap
+Hooks.AlertsChart = AlertsChart
+
 let csrfToken = document.querySelector("meta[name='csrf-token']")?.getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
   hooks: Hooks,
