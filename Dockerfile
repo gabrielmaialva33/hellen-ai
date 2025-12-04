@@ -58,9 +58,9 @@ RUN mix release
 # =============================================================================
 FROM ${RUNNER_IMAGE}
 
-# Install runtime dependencies (FFmpeg for audio extraction)
+# Install runtime dependencies (FFmpeg for audio extraction, curl for healthcheck)
 RUN apt-get update -y && \
-    apt-get install -y libstdc++6 openssl libncurses5 locales ca-certificates ffmpeg \
+    apt-get install -y libstdc++6 openssl libncurses5 locales ca-certificates ffmpeg curl \
     && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
 # Set the locale
