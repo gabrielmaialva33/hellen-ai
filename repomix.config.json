@@ -1,0 +1,66 @@
+{
+  "$schema": "https://repomix.com/schemas/latest/schema.json",
+  "output": {
+    "filePath": "repomix-output.md",
+    "style": "markdown",
+    "headerText": "# Hellen AI - Codebase Context\n\nThis file contains the complete source code of the Hellen AI project, a lesson analysis platform built with Phoenix/Elixir.\n\n## Quick Reference\n\n- **Framework**: Phoenix 1.7.14 + Elixir\n- **Database**: TimescaleDB (PostgreSQL)\n- **Background Jobs**: Oban\n- **Auth**: Guardian (JWT)\n- **Storage**: Cloudflare R2 (S3-compatible)\n- **AI**: NVIDIA NIM API (Parakeet ASR + Qwen3)\n\n## Architecture\n\n```\nAudio Upload → Transcription Job → Analysis Job → Results\n     ↓              ↓                   ↓            ↓\n  R2 Storage    NVIDIA Parakeet     NVIDIA Qwen3   WebSocket\n```",
+    "instructionFilePath": "CLAUDE.md",
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "topFilesLength": 10,
+    "showLineNumbers": true,
+    "copyToClipboard": false
+  },
+  "include": [
+    "lib/**/*.ex",
+    "lib/**/*.html.heex",
+    "config/*.exs",
+    "priv/repo/migrations/*.exs",
+    "priv/repo/seeds.exs",
+    "priv/gettext/**/*.po",
+    "assets/js/**/*.js",
+    "assets/css/**/*.css",
+    "test/**/*.exs",
+    "mix.exs",
+    "README.md",
+    "CLAUDE.md",
+    "docker-compose.yml",
+    ".env.example",
+    ".formatter.exs"
+  ],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "_build/**",
+      "deps/**",
+      "node_modules/**",
+      ".git/**",
+      ".elixir_ls/**",
+      "priv/static/**",
+      "erl_crash.dump",
+      ".env",
+      ".env.local",
+      ".env.*.local",
+      "tmp/**",
+      "cover/**",
+      ".DS_Store",
+      ".idea/**",
+      ".vscode/**",
+      ".claude/**",
+      ".playwright-mcp/**",
+      "*.tar",
+      "*.ez",
+      "mix.lock",
+      "assets/vendor/**",
+      "assets/js/_*.js",
+      "assets/css/_*.css",
+      "repomix-output.md",
+      "**/*.beam",
+      "**/*.dump"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  }
+}
