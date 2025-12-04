@@ -10,17 +10,35 @@ defmodule Hellen.Analysis do
 
   ## Analysis
 
-  def get_analysis!(id), do: Repo.get!(Analysis, id)
-
-  def get_analysis_with_details!(id) do
+  @doc """
+  Gets an analysis by ID, scoped to institution.
+  Raises if not found or institution doesn't match.
+  """
+  @spec get_analysis!(binary(), binary()) :: Analysis.t()
+  def get_analysis!(id, institution_id) do
     Analysis
-    |> Repo.get!(id)
+    |> where([a], a.id == ^id and a.institution_id == ^institution_id)
+    |> Repo.one!()
+  end
+
+  @doc """
+  Gets an analysis with details, scoped to institution.
+  """
+  @spec get_analysis_with_details!(binary(), binary()) :: Analysis.t()
+  def get_analysis_with_details!(id, institution_id) do
+    Analysis
+    |> where([a], a.id == ^id and a.institution_id == ^institution_id)
+    |> Repo.one!()
     |> Repo.preload([:bncc_matches, :bullying_alerts])
   end
 
-  def list_analyses_by_lesson(lesson_id) do
+  @doc """
+  Lists analyses for a lesson, verifying institution ownership.
+  """
+  @spec list_analyses_by_lesson(binary(), binary()) :: [Analysis.t()]
+  def list_analyses_by_lesson(lesson_id, institution_id) do
     Analysis
-    |> where([a], a.lesson_id == ^lesson_id)
+    |> where([a], a.lesson_id == ^lesson_id and a.institution_id == ^institution_id)
     |> order_by([a], desc: a.inserted_at)
     |> Repo.all()
   end
@@ -31,24 +49,33 @@ defmodule Hellen.Analysis do
     |> Repo.insert()
   end
 
+  @doc """
+  Creates a full analysis with related BNCC matches and bullying alerts.
+  Uses Ecto.Multi for transactional consistency.
+  """
+  @spec create_full_analysis(binary(), map()) :: {:ok, Analysis.t()} | {:error, term()}
   def create_full_analysis(lesson_id, analysis_result) do
-    Repo.transaction(fn ->
-      analysis_result
-      |> build_analysis_attrs(lesson_id)
-      |> create_analysis()
-      |> case do
-        {:ok, analysis} -> create_related_records(analysis, analysis_result)
-        {:error, changeset} -> Repo.rollback(changeset)
-      end
+    lesson = Repo.get!(Hellen.Lessons.Lesson, lesson_id)
+
+    Ecto.Multi.new()
+    |> Ecto.Multi.insert(:analysis, build_analysis_changeset(lesson, analysis_result))
+    |> Ecto.Multi.run(:bncc_matches, fn _repo, %{analysis: analysis} ->
+      insert_bncc_matches(analysis, analysis_result.bncc_matches || [])
     end)
+    |> Ecto.Multi.run(:bullying_alerts, fn _repo, %{analysis: analysis} ->
+      insert_bullying_alerts(analysis, analysis_result.bullying_alerts || [])
+    end)
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{analysis: analysis}} -> {:ok, analysis}
+      {:error, _failed_op, changeset, _changes} -> {:error, changeset}
+    end
   end
 
-  defp build_analysis_attrs(analysis_result, lesson_id) do
-    # Get institution_id from lesson
-    lesson = Hellen.Repo.get!(Hellen.Lessons.Lesson, lesson_id)
-
-    %{
-      lesson_id: lesson_id,
+  defp build_analysis_changeset(lesson, analysis_result) do
+    %Analysis{}
+    |> Analysis.changeset(%{
+      lesson_id: lesson.id,
       institution_id: lesson.institution_id,
       analysis_type: "full",
       model_used: analysis_result.model,
@@ -57,19 +84,35 @@ defmodule Hellen.Analysis do
       overall_score: analysis_result.overall_score,
       processing_time_ms: analysis_result.processing_time_ms,
       tokens_used: analysis_result.tokens_used
-    }
+    })
   end
 
-  defp create_related_records(analysis, analysis_result) do
-    Enum.each(analysis_result.bncc_matches || [], fn match ->
-      create_bncc_match(Map.put(match, :analysis_id, analysis.id))
-    end)
+  defp insert_bncc_matches(analysis, matches) do
+    results =
+      Enum.map(matches, fn match ->
+        %BnccMatch{}
+        |> BnccMatch.changeset(Map.put(match, :analysis_id, analysis.id))
+        |> Repo.insert()
+      end)
 
-    Enum.each(analysis_result.bullying_alerts || [], fn alert ->
-      create_bullying_alert(Map.put(alert, :analysis_id, analysis.id))
-    end)
+    case Enum.find(results, &match?({:error, _}, &1)) do
+      nil -> {:ok, Enum.map(results, fn {:ok, m} -> m end)}
+      {:error, changeset} -> {:error, changeset}
+    end
+  end
 
-    analysis
+  defp insert_bullying_alerts(analysis, alerts) do
+    results =
+      Enum.map(alerts, fn alert ->
+        %BullyingAlert{}
+        |> BullyingAlert.changeset(Map.put(alert, :analysis_id, analysis.id))
+        |> Repo.insert()
+      end)
+
+    case Enum.find(results, &match?({:error, _}, &1)) do
+      nil -> {:ok, Enum.map(results, fn {:ok, a} -> a end)}
+      {:error, changeset} -> {:error, changeset}
+    end
   end
 
   def create_feedback_analysis(lesson_id, analysis_result) do

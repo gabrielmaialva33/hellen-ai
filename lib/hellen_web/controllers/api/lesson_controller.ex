@@ -1,4 +1,8 @@
 defmodule HellenWeb.API.LessonController do
+  @moduledoc """
+  API controller for lesson management.
+  All actions are scoped to the user's institution for security.
+  """
   use HellenWeb, :controller
 
   alias Hellen.Lessons
@@ -23,12 +27,14 @@ defmodule HellenWeb.API.LessonController do
   end
 
   def show(conn, %{"id" => id}) do
-    lesson = Lessons.get_lesson_with_transcription!(id)
+    user = conn.assigns.current_user
+    lesson = Lessons.get_lesson_with_transcription!(id, user.institution_id)
     render(conn, :show, lesson: lesson)
   end
 
   def update(conn, %{"id" => id, "lesson" => lesson_params}) do
-    lesson = Lessons.get_lesson!(id)
+    user = conn.assigns.current_user
+    lesson = Lessons.get_lesson!(id, user.institution_id)
 
     with {:ok, %Lesson{} = lesson} <- Lessons.update_lesson(lesson, lesson_params) do
       render(conn, :show, lesson: lesson)
@@ -36,7 +42,8 @@ defmodule HellenWeb.API.LessonController do
   end
 
   def delete(conn, %{"id" => id}) do
-    lesson = Lessons.get_lesson!(id)
+    user = conn.assigns.current_user
+    lesson = Lessons.get_lesson!(id, user.institution_id)
 
     with {:ok, %Lesson{}} <- Lessons.delete_lesson(lesson) do
       send_resp(conn, :no_content, "")
@@ -45,7 +52,7 @@ defmodule HellenWeb.API.LessonController do
 
   def analyze(conn, %{"id" => id}) do
     user = conn.assigns.current_user
-    lesson = Lessons.get_lesson!(id)
+    lesson = Lessons.get_lesson!(id, user.institution_id)
 
     with {:ok, lesson} <- Lessons.start_processing(lesson, user) do
       conn

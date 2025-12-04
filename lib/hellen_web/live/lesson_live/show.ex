@@ -10,8 +10,8 @@ defmodule HellenWeb.LessonLive.Show do
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     user = socket.assigns.current_user
-    lesson = Lessons.get_lesson_with_transcription!(id)
-    analyses = Analysis.list_analyses_by_lesson(id)
+    lesson = Lessons.get_lesson_with_transcription!(id, user.institution_id)
+    analyses = Analysis.list_analyses_by_lesson(id, user.institution_id)
     latest_analysis = List.first(analyses)
 
     # Subscribe to real-time updates

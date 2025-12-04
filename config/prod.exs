@@ -7,6 +7,13 @@ import Config
 # before starting your production server.
 config :hellen, HellenWeb.Endpoint, cache_static_manifest: "priv/static/cache_manifest.json"
 
+# Database connection pool tuning for production
+# These are defaults that can be overridden via DATABASE_URL or runtime.exs
+config :hellen, Hellen.Repo,
+  pool_size: 20,
+  queue_target: 500,
+  queue_interval: 1000
+
 # Configures Swoosh API Client
 config :swoosh, api_client: Swoosh.ApiClient.Finch, finch_name: Hellen.Finch
 

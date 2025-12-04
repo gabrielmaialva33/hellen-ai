@@ -52,13 +52,22 @@ config :logger, :console,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
-# Configure Oban
+# Configure Oban with optimized queue sizes
 config :hellen, Oban,
   repo: Hellen.Repo,
-  plugins: [Oban.Plugins.Pruner],
+  plugins: [
+    Oban.Plugins.Pruner,
+    {Oban.Plugins.Cron,
+     crontab: [
+       # Cleanup old job records daily at 2 AM
+       {"0 2 * * *", Hellen.Workers.CleanupJob}
+     ]}
+  ],
   queues: [
-    transcription: 2,
-    analysis: 3,
+    # Increased for better throughput
+    transcription: 3,
+    # Increased for parallel analysis
+    analysis: 5,
     reports: 2,
     default: 10
   ]
