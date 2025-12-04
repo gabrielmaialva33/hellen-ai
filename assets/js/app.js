@@ -28,6 +28,10 @@ Hooks.OfflineIndicator = OfflineIndicator
 Hooks.UpdateAvailable = UpdateAvailable
 registerServiceWorker()
 
+// Firebase Authentication hooks
+import { GoogleSignIn } from "./hooks/firebase"
+Hooks.GoogleSignIn = GoogleSignIn
+
 let csrfToken = document.querySelector("meta[name='csrf-token']")?.getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
   hooks: Hooks,

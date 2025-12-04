@@ -2,7 +2,10 @@ defmodule HellenWeb.SessionController do
   use HellenWeb, :controller
 
   alias Hellen.Accounts
+  alias Hellen.Auth.Firebase
   alias Hellen.Auth.Guardian
+
+  require Logger
 
   @doc """
   Handles login form submission.
@@ -61,6 +64,47 @@ defmodule HellenWeb.SessionController do
         |> put_flash(:error, "Erro ao criar conta: #{errors}")
         |> redirect(to: ~p"/register")
     end
+  end
+
+  @doc """
+  Handles Firebase login (Google Sign-In).
+  Receives Firebase ID token, verifies it, and creates session.
+  """
+  def firebase_login(conn, %{"id_token" => id_token}) do
+    with {:ok, claims} <- Firebase.verify_id_token(id_token),
+         user_info <- Firebase.extract_user_info(claims),
+         {:ok, user} <- Accounts.find_or_create_from_firebase(user_info),
+         {:ok, %{access_token: token}} <- Guardian.generate_tokens(user) do
+      Logger.info("Firebase login successful for user: #{user.email}")
+
+      conn
+      |> put_session(:user_token, token)
+      |> put_status(:ok)
+      |> json(%{redirect: ~p"/dashboard"})
+    else
+      {:error, :invalid_token_format} ->
+        json_error(conn, "Token invalido")
+
+      {:error, :token_expired} ->
+        json_error(conn, "Token expirado. Tente novamente.")
+
+      {:error, :invalid_signature} ->
+        json_error(conn, "Assinatura do token invalida")
+
+      {:error, reason} ->
+        Logger.warning("Firebase login failed: #{inspect(reason)}")
+        json_error(conn, "Erro ao autenticar com Google")
+    end
+  end
+
+  def firebase_login(conn, _params) do
+    json_error(conn, "Token nao fornecido")
+  end
+
+  defp json_error(conn, message) do
+    conn
+    |> put_status(:unauthorized)
+    |> json(%{error: message})
   end
 
   @doc """

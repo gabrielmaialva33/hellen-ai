@@ -97,6 +97,12 @@ defmodule HellenWeb.Sidebar do
             label="Analytics"
             current_path={@current_path}
           />
+          <.nav_item
+            path={~p"/billing"}
+            icon="hero-credit-card"
+            label="Creditos"
+            current_path={@current_path}
+          />
         </div>
         <!-- Future Features (Disabled) -->
         <div class="mt-6 space-y-1">

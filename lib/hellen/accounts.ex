@@ -623,21 +623,26 @@ defmodule Hellen.Accounts do
   @spec accept_invitation(String.t(), map()) ::
           {:ok, User.t()} | {:error, atom() | Ecto.Changeset.t()}
   def accept_invitation(token, user_attrs) do
-    case get_invitation_by_token(token) do
-      nil ->
-        {:error, :not_found}
+    with {:ok, invitation} <- fetch_invitation_by_token(token),
+         :ok <- validate_invitation(invitation) do
+      do_accept_invitation(invitation, user_attrs)
+    end
+  end
 
-      invitation ->
-        if Invitation.valid?(invitation) do
-          do_accept_invitation(invitation, user_attrs)
-        else
-          cond do
-            invitation.accepted_at -> {:error, :already_accepted}
-            invitation.revoked_at -> {:error, :revoked}
-            Invitation.expired?(invitation) -> {:error, :expired}
-            true -> {:error, :invalid}
-          end
-        end
+  defp fetch_invitation_by_token(token) do
+    case get_invitation_by_token(token) do
+      nil -> {:error, :not_found}
+      invitation -> {:ok, invitation}
+    end
+  end
+
+  defp validate_invitation(invitation) do
+    cond do
+      invitation.accepted_at -> {:error, :already_accepted}
+      invitation.revoked_at -> {:error, :revoked}
+      Invitation.expired?(invitation) -> {:error, :expired}
+      Invitation.valid?(invitation) -> :ok
+      true -> {:error, :invalid}
     end
   end
 

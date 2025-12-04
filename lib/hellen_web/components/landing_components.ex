@@ -233,10 +233,10 @@ defmodule HellenWeb.LandingComponents do
             </a>
 
             <a
-              href="#demo"
+              href="#features"
               class="inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 text-base font-semibold text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 border-2 border-indigo-200 dark:border-indigo-800 rounded-xl transition-all duration-200 w-full sm:w-auto"
             >
-              <.icon name="hero-play-circle" class="mr-2 h-5 w-5" /> Ver Demo
+              <.icon name="hero-sparkles" class="mr-2 h-5 w-5" /> Ver Recursos
             </a>
           </div>
           <!-- Social Proof -->
@@ -643,52 +643,52 @@ defmodule HellenWeb.LandingComponents do
             name="Gratuito"
             price="R$ 0"
             period=""
-            description="Para testar a plataforma"
+            description="Para conhecer a plataforma"
             features={[
-              "2 créditos/mês",
-              "Transcrição automática",
-              "Análise BNCC básica",
-              "Detecção anti-bullying",
-              "Suporte por email"
+              "3 creditos gratis ao cadastrar",
+              "Transcricao automatica de audio",
+              "Analise pedagogica BNCC",
+              "Deteccao anti-bullying",
+              "Historico de aulas"
             ]}
-            cta_text="Começar Grátis"
+            cta_text="Comecar Gratis"
             cta_link="/register"
           />
 
           <.pricing_card
-            name="Pro"
-            price="R$ 49"
-            period="/mês"
-            description="Para professores ativos"
+            name="Creditos"
+            price="R$ 4,90"
+            period="/credito"
+            description="Pague apenas pelo que usar"
             features={[
-              "20 créditos/mês",
-              "Tudo do plano Gratuito",
-              "Análise BNCC completa",
-              "Plano de ação detalhado",
-              "Histórico ilimitado",
-              "Suporte prioritário"
+              "Compre creditos avulsos",
+              "1 credito = 1 analise completa",
+              "Sem mensalidade",
+              "Creditos nao expiram",
+              "Todas as funcionalidades",
+              "Suporte por email"
             ]}
             popular={true}
-            cta_text="Assinar Pro"
-            cta_link="/register?plan=pro"
+            cta_text="Comprar Creditos"
+            cta_link="/register"
           />
 
           <.pricing_card
             name="Escola"
             price="Sob consulta"
             period=""
-            description="Para instituições de ensino"
+            description="Para instituicoes de ensino"
             features={[
-              "Créditos ilimitados",
-              "Tudo do plano Pro",
-              "Múltiplos professores",
-              "Relatórios institucionais",
-              "Dashboard coordenação",
+              "Creditos em volume",
+              "Dashboard de coordenacao",
+              "Multiplos professores",
+              "Relatorios institucionais",
+              "Alertas anti-bullying",
               "Suporte dedicado",
               "Treinamento incluso"
             ]}
             cta_text="Falar com Vendas"
-            cta_link="#contact"
+            cta_link="mailto:contato@hellen.ai"
           />
         </div>
       </div>
@@ -867,7 +867,7 @@ defmodule HellenWeb.LandingComponents do
         </div>
 
         <p class="mt-6 text-sm text-indigo-100">
-          Sem cartão de crédito • Teste grátis por 30 dias • Cancele quando quiser
+          Sem cartao de credito para comecar • 3 creditos gratis • Pague apenas pelo que usar
         </p>
       </div>
     </section>
@@ -912,32 +912,31 @@ defmodule HellenWeb.LandingComponents do
               Análise pedagógica inteligente para professores que buscam excelência. Baseado na BNCC e Lei 13.185.
             </p>
             <div class="flex gap-4">
-              <a href="#" class="text-gray-400 hover:text-white transition-colors">
-                <svg class="h-5 w-5 sm:h-6 sm:w-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                </svg>
-              </a>
-              <a href="#" class="text-gray-400 hover:text-white transition-colors">
-                <svg class="h-5 w-5 sm:h-6 sm:w-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
-                </svg>
-              </a>
-              <a href="#" class="text-gray-400 hover:text-white transition-colors">
-                <svg class="h-5 w-5 sm:h-6 sm:w-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.441 16.892c-2.102.144-6.784.144-8.883 0C5.282 16.736 5.017 15.622 5 12c.017-3.629.285-4.736 2.558-4.892 2.099-.144 6.782-.144 8.883 0C18.718 7.264 18.982 8.378 19 12c-.018 3.629-.285 4.736-2.559 4.892zM10 9.658l4.917 2.338L10 14.342V9.658z" />
+              <a
+                href="mailto:contato@hellen.ai"
+                class="text-gray-400 hover:text-white transition-colors"
+                title="Email"
+              >
+                <svg
+                  class="h-5 w-5 sm:h-6 sm:w-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
                 </svg>
               </a>
             </div>
           </div>
           <!-- Links -->
           <div>
-            <h3 class="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Empresa</h3>
+            <h3 class="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Plataforma</h3>
             <ul class="space-y-1.5 sm:space-y-2">
-              <li>
-                <a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">
-                  Sobre nós
-                </a>
-              </li>
               <li>
                 <a href="#features" class="text-sm text-gray-400 hover:text-white transition-colors">
                   Recursos
@@ -945,7 +944,7 @@ defmodule HellenWeb.LandingComponents do
               </li>
               <li>
                 <a href="#pricing" class="text-sm text-gray-400 hover:text-white transition-colors">
-                  Preços
+                  Precos
                 </a>
               </li>
               <li>
@@ -956,31 +955,37 @@ defmodule HellenWeb.LandingComponents do
                   Depoimentos
                 </a>
               </li>
+              <li>
+                <a href="/register" class="text-sm text-gray-400 hover:text-white transition-colors">
+                  Criar Conta
+                </a>
+              </li>
             </ul>
           </div>
-          <!-- Legal -->
+          <!-- Contato -->
           <div>
-            <h3 class="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Legal</h3>
+            <h3 class="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Contato</h3>
             <ul class="space-y-1.5 sm:space-y-2">
               <li>
-                <a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">
-                  Termos de Uso
+                <a
+                  href="mailto:contato@hellen.ai"
+                  class="text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  contato@hellen.ai
                 </a>
               </li>
               <li>
-                <a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">
-                  Privacidade
+                <a
+                  href="mailto:suporte@hellen.ai"
+                  class="text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  suporte@hellen.ai
                 </a>
               </li>
               <li>
-                <a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">
-                  Cookies
-                </a>
-              </li>
-              <li>
-                <a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">
-                  Contato
-                </a>
+                <span class="text-sm text-gray-500">
+                  Brasil
+                </span>
               </li>
             </ul>
           </div>
@@ -989,7 +994,7 @@ defmodule HellenWeb.LandingComponents do
         <div class="pt-6 sm:pt-8 border-t border-gray-800">
           <div class="flex flex-col sm:flex-row justify-between items-center gap-2">
             <p class="text-xs sm:text-sm text-gray-400 text-center sm:text-left">
-              © 2026 Hellen AI. Todos os direitos reservados.
+              © 2025 Hellen AI. Todos os direitos reservados.
             </p>
             <p class="text-xs sm:text-sm text-gray-400">
               Feito com <span class="text-red-500">♥</span> para educadores

@@ -80,7 +80,8 @@ config :swoosh, :api_client, false
 # Stripe test keys (development)
 config :stripity_stripe,
   api_key:
-    "sk_test_51Sahg4Ge6PyigxRcP5MGjlJRWazTecpTul2utjt7GLZdRFkSMytATPJmKgPkHw6TY9Je3GIZsRmSCcr42hn7AbbQ00cmngXgul"
+    "sk_test_51Sahg4Ge6PyigxRcP5MGjlJRWazTecpTul2utjt7GLZdRFkSMytATPJmKgPkHw6TY9Je3GIZsRmSCcr42hn7AbbQ00cmngXgul",
+  webhook_secret: "whsec_f0113e8b5b1aaf135582c55745c7886131506f8230c1e6a1b2aef9d35a448a95"
 
 config :hellen, :stripe,
   publishable_key:

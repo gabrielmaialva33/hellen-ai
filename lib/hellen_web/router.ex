@@ -139,6 +139,7 @@ defmodule HellenWeb.Router do
 
     post "/session/login", SessionController, :create
     post "/session/register", SessionController, :register
+    post "/session/firebase", SessionController, :firebase_login
     get "/logout", SessionController, :logout
   end
 

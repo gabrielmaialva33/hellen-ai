@@ -61,29 +61,24 @@ defmodule HellenWeb.AdminLive.Health do
   end
 
   defp get_database_info do
-    try do
-      pool_size = Application.get_env(:hellen, Hellen.Repo)[:pool_size] || 10
-
-      %{status: :ok, pool_size: pool_size}
-    rescue
-      _ -> %{status: :error, message: "Database unavailable"}
-    end
+    pool_size = Application.get_env(:hellen, Hellen.Repo)[:pool_size] || 10
+    %{status: :ok, pool_size: pool_size}
+  rescue
+    _ -> %{status: :error, message: "Database unavailable"}
   end
 
   defp get_oban_info do
-    try do
-      queues = Application.get_env(:hellen, Oban)[:queues] || []
+    queues = Application.get_env(:hellen, Oban)[:queues] || []
 
-      %{
-        status: :ok,
-        queues:
-          Enum.map(queues, fn {name, limit} ->
-            %{name: name, limit: limit}
-          end)
-      }
-    rescue
-      _ -> %{status: :error, message: "Oban unavailable"}
-    end
+    %{
+      status: :ok,
+      queues:
+        Enum.map(queues, fn {name, limit} ->
+          %{name: name, limit: limit}
+        end)
+    }
+  rescue
+    _ -> %{status: :error, message: "Oban unavailable"}
   end
 
   defp get_redis_info do

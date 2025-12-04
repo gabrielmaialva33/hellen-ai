@@ -105,6 +105,11 @@ defmodule HellenWeb.LessonsLive.Index do
     {:noreply, socket}
   end
 
+  # PWA OfflineIndicator hook events - ignore silently
+  @impl true
+  def handle_event("online", _params, socket), do: {:noreply, socket}
+  def handle_event("offline", _params, socket), do: {:noreply, socket}
+
   @impl true
   def handle_event("filter", %{"status" => status}, socket) do
     user = socket.assigns.current_user

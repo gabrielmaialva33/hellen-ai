@@ -31,6 +31,11 @@ defmodule HellenWeb.DashboardLive.Index do
     end
   end
 
+  # PWA OfflineIndicator hook events - ignore silently
+  @impl true
+  def handle_event("online", _params, socket), do: {:noreply, socket}
+  def handle_event("offline", _params, socket), do: {:noreply, socket}
+
   @impl true
   def handle_async(:load_lessons, {:ok, lessons}, socket) do
     {:noreply, stream(socket, :recent_lessons, lessons)}

@@ -48,6 +48,11 @@ defmodule HellenWeb.AnalyticsLive.Index do
     end
   end
 
+  # PWA OfflineIndicator hook events - ignore silently
+  @impl true
+  def handle_event("online", _params, socket), do: {:noreply, socket}
+  def handle_event("offline", _params, socket), do: {:noreply, socket}
+
   @impl true
   def handle_event("change_period", %{"period" => period}, socket) do
     period = String.to_integer(period)

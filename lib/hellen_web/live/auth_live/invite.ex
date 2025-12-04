@@ -5,6 +5,7 @@ defmodule HellenWeb.AuthLive.Invite do
   use HellenWeb, :live_view
 
   alias Hellen.Accounts
+  alias Hellen.Accounts.Invitation
 
   @impl true
   def mount(%{"token" => token}, _session, socket) do
@@ -32,7 +33,7 @@ defmodule HellenWeb.AuthLive.Invite do
          |> assign(status: :revoked)
          |> assign(invitation: invitation)}
 
-      Hellen.Accounts.Invitation.expired?(invitation) ->
+      Invitation.expired?(invitation) ->
         {:ok,
          socket
          |> assign(page_title: "Convite Expirado")

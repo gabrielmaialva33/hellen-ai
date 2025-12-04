@@ -40,6 +40,11 @@ defmodule HellenWeb.SettingsLive.Index do
     assign(socket, preferences_form: to_form(changeset))
   end
 
+  # PWA OfflineIndicator hook events - ignore silently
+  @impl true
+  def handle_event("online", _params, socket), do: {:noreply, socket}
+  def handle_event("offline", _params, socket), do: {:noreply, socket}
+
   @impl true
   def handle_event("change_tab", %{"tab" => tab}, socket) do
     {:noreply, assign(socket, active_tab: tab)}

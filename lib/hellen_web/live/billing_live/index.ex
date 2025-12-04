@@ -81,6 +81,11 @@ defmodule HellenWeb.BillingLive.Index do
      |> assign(transactions_total: total)}
   end
 
+  # PWA OfflineIndicator hook events - ignore silently
+  @impl true
+  def handle_event("online", _params, socket), do: {:noreply, socket}
+  def handle_event("offline", _params, socket), do: {:noreply, socket}
+
   @impl true
   def handle_event("filter_transactions", %{"reason" => reason}, socket) do
     reason = if reason == "", do: nil, else: reason
