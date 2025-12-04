@@ -15,6 +15,8 @@ defmodule Hellen.Application do
       # Start Redis connection
       {Redix,
        {Application.get_env(:hellen, :redis_url, "redis://localhost:6379"), [name: :redix]}},
+      # Start ChromicPDF for PDF generation
+      {ChromicPDF, Application.get_env(:hellen, :chromic_pdf, [])},
       # Start the Endpoint (http/https)
       HellenWeb.Endpoint
     ]

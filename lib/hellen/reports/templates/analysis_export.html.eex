@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Analise - <%= @lesson.title || "Aula" %></title>
+  <%= @styles %>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-content">
+      <div>
+        <div class="logo">Hellen AI</div>
+        <h1><%= @lesson.title || "Aula sem titulo" %></h1>
+        <p class="subtitle">Relatorio de Analise Pedagogica</p>
+      </div>
+      <div class="meta">
+        <p>Professor: <%= @teacher.name || "N/A" %></p>
+        <p>Data da aula: <%= @h.format_date(@lesson.inserted_at) %></p>
+        <p>Gerado em: <%= @h.format_datetime(@generated_at) %></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Score Section -->
+  <div class="section">
+    <h2 class="section-title">Score Geral</h2>
+    <div class="stats-grid">
+      <%= if @analysis.overall_score do %>
+        <div class="stat-card highlight">
+          <h3><%= @analysis.overall_score %>/10</h3>
+          <p>Score da Aula</p>
+        </div>
+      <% end %>
+      <div class="stat-card">
+        <h3><%= length(@bncc_matches) %></h3>
+        <p>Competencias BNCC</p>
+      </div>
+      <div class="stat-card">
+        <h3><%= length(@bullying_alerts) %></h3>
+        <p>Alertas</p>
+      </div>
+      <div class="stat-card">
+        <h3><%= @analysis.processing_time_ms || 0 %>ms</h3>
+        <p>Tempo de Processamento</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Analysis Result -->
+  <%= if @result do %>
+    <div class="section">
+      <h2 class="section-title">Analise Detalhada</h2>
+
+      <!-- Summary -->
+      <%= if @result["summary"] do %>
+        <div style="background: #f9fafb; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
+          <h3 style="font-size: 12px; font-weight: 600; margin-bottom: 8px;">Resumo</h3>
+          <p style="font-size: 11px; color: #374151; line-height: 1.6;"><%= @result["summary"] %></p>
+        </div>
+      <% end %>
+
+      <!-- Strengths -->
+      <%= if @result["strengths"] && length(@result["strengths"]) > 0 do %>
+        <div style="margin-bottom: 16px;">
+          <h3 style="font-size: 12px; font-weight: 600; margin-bottom: 8px; color: #059669;">Pontos Fortes</h3>
+          <ul style="list-style: none; padding: 0; margin: 0;">
+            <%= for strength <- @result["strengths"] do %>
+              <li style="padding: 8px 0; border-bottom: 1px solid #f3f4f6; font-size: 11px;">
+                <span style="color: #059669; margin-right: 8px;">+</span>
+                <%= strength %>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <!-- Areas for Improvement -->
+      <%= if @result["improvements"] && length(@result["improvements"]) > 0 do %>
+        <div style="margin-bottom: 16px;">
+          <h3 style="font-size: 12px; font-weight: 600; margin-bottom: 8px; color: #d97706;">Areas de Melhoria</h3>
+          <ul style="list-style: none; padding: 0; margin: 0;">
+            <%= for improvement <- @result["improvements"] do %>
+              <li style="padding: 8px 0; border-bottom: 1px solid #f3f4f6; font-size: 11px;">
+                <span style="color: #d97706; margin-right: 8px;">!</span>
+                <%= improvement %>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <!-- Recommendations -->
+      <%= if @result["recommendations"] && length(@result["recommendations"]) > 0 do %>
+        <div style="margin-bottom: 16px;">
+          <h3 style="font-size: 12px; font-weight: 600; margin-bottom: 8px; color: #4f46e5;">Recomendacoes</h3>
+          <ul style="list-style: none; padding: 0; margin: 0;">
+            <%= for recommendation <- @result["recommendations"] do %>
+              <li style="padding: 8px 0; border-bottom: 1px solid #f3f4f6; font-size: 11px;">
+                <span style="color: #4f46e5; margin-right: 8px;">-></span>
+                <%= recommendation %>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <!-- BNCC Matches -->
+  <%= if length(@bncc_matches) > 0 do %>
+    <div class="section">
+      <h2 class="section-title">Competencias BNCC Identificadas</h2>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 100px;">Codigo</th>
+            <th>Competencia</th>
+            <th class="text-center" style="width: 80px;">Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          <%= for match <- @bncc_matches do %>
+            <tr>
+              <td>
+                <span class="bncc-code"><%= match.competencia_code %></span>
+              </td>
+              <td style="font-size: 10px;"><%= @h.truncate(match.competencia_name, 60) %></td>
+              <td class="text-center">
+                <%= if match.match_score do %>
+                  <span class="<%= @h.score_class(match.match_score * 10) %>">
+                    <%= Float.round(match.match_score * 10, 1) %>
+                  </span>
+                <% else %>
+                  -
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+
+  <!-- Bullying Alerts -->
+  <%= if length(@bullying_alerts) > 0 do %>
+    <div class="section">
+      <h2 class="section-title">Alertas de Conformidade</h2>
+      <%= for alert <- @bullying_alerts do %>
+        <div class="alert-box <%= alert.severity %>">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div class="alert-title">
+              <%= @h.alert_type_label(alert.alert_type) %>
+            </div>
+            <span class="badge <%= @h.severity_badge_class(alert.severity) %>">
+              <%= @h.severity_label(alert.severity) %>
+            </span>
+          </div>
+          <div class="alert-description" style="margin-top: 8px;">
+            <%= alert.description %>
+          </div>
+          <%= if alert.timestamp do %>
+            <div style="margin-top: 8px; font-size: 9px; color: #9ca3af;">
+              Momento: <%= alert.timestamp %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <!-- Metadata -->
+  <div class="section">
+    <h2 class="section-title">Informacoes Tecnicas</h2>
+    <table>
+      <tbody>
+        <tr>
+          <td style="font-weight: 600; width: 200px;">ID da Analise</td>
+          <td style="font-family: monospace; font-size: 10px;"><%= @analysis.id %></td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Modelo Utilizado</td>
+          <td><%= @analysis.model_used || "N/A" %></td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Tokens Utilizados</td>
+          <td><%= @analysis.tokens_used || "N/A" %></td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Data da Analise</td>
+          <td><%= @h.format_datetime(@analysis.inserted_at) %></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span>Relatorio gerado automaticamente por Hellen AI</span>
+    <span>Analise ID: <%= String.slice(@analysis.id || "", 0, 8) %>...</span>
+  </div>
+</body>
+</html>

@@ -114,6 +114,15 @@ defmodule HellenWeb.Router do
     get "/logout", SessionController, :logout
   end
 
+  # Report download routes (coordinator only, requires session)
+  scope "/reports", HellenWeb do
+    pipe_through [:browser, :fetch_current_user]
+
+    get "/download/monthly", ReportController, :monthly
+    get "/download/teacher/:id", ReportController, :teacher
+    get "/download/analysis/:id", ReportController, :analysis
+  end
+
   # Enable LiveDashboard in development
   if Application.compile_env(:hellen, :dev_routes) do
     import Phoenix.LiveDashboard.Router

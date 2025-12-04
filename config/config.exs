@@ -80,6 +80,12 @@ config :hellen, Hellen.Auth.Guardian,
 # Configure Firebase
 config :hellen, :firebase, project_id: "hellen-ai"
 
+# Configure ChromicPDF for PDF generation
+config :hellen, :chromic_pdf,
+  session_pool: [size: 2],
+  no_sandbox: true,
+  offline: true
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

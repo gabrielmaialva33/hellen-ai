@@ -64,4 +64,27 @@ defmodule HellenWeb.Plugs.Auth do
     |> json(%{error: message})
     |> halt()
   end
+
+  @doc """
+  Plug to fetch current user from session for browser routes.
+  Uses the same session token as LiveAuth.
+  """
+  def fetch_current_user(conn, _opts) do
+    token = get_session(conn, "user_token")
+
+    case token do
+      nil ->
+        assign(conn, :current_user, nil)
+
+      token ->
+        case Guardian.resource_from_token(token) do
+          {:ok, user, _claims} ->
+            user = Hellen.Accounts.get_user(user.id) || user
+            assign(conn, :current_user, user)
+
+          {:error, _reason} ->
+            assign(conn, :current_user, nil)
+        end
+    end
+  end
 end
