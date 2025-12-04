@@ -72,6 +72,11 @@ defmodule Hellen.MixProject do
       {:guardian, "~> 2.3"},
       {:bcrypt_elixir, "~> 3.0"},
 
+      # Email
+      {:swoosh, "~> 1.14"},
+      {:finch, "~> 0.16"},
+      {:gen_smtp, "~> 1.0"},
+
       # Code quality
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]

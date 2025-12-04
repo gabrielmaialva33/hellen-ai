@@ -75,8 +75,7 @@ defmodule HellenWeb.InstitutionLive.Reports do
               phx-click="clear_selection"
               class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
             >
-              <.icon name="hero-arrow-left" class="h-4 w-4" />
-              Voltar
+              <.icon name="hero-arrow-left" class="h-4 w-4" /> Voltar
             </button>
 
             <div class="flex items-center gap-4">
@@ -95,7 +94,6 @@ defmodule HellenWeb.InstitutionLive.Reports do
                 </p>
               </div>
             </div>
-
             <!-- Configuration Form -->
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <!-- Month Selection -->
@@ -113,7 +111,6 @@ defmodule HellenWeb.InstitutionLive.Reports do
                   <% end %>
                 </select>
               </div>
-
               <!-- Year Selection -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -129,7 +126,6 @@ defmodule HellenWeb.InstitutionLive.Reports do
                   <% end %>
                 </select>
               </div>
-
               <!-- Teacher Selection (for teacher report) -->
               <%= if @selected_type == "teacher" do %>
                 <div>
@@ -151,7 +147,6 @@ defmodule HellenWeb.InstitutionLive.Reports do
                 </div>
               <% end %>
             </div>
-
             <!-- Generate Button -->
             <div class="flex justify-end pt-4 border-t border-gray-100 dark:border-slate-700">
               <.link
@@ -159,12 +154,13 @@ defmodule HellenWeb.InstitutionLive.Reports do
                 target="_blank"
                 class={[
                   "inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors",
-                  can_generate?(@selected_type, assigns) && "bg-indigo-600 hover:bg-indigo-700 text-white",
-                  !can_generate?(@selected_type, assigns) && "bg-gray-200 dark:bg-slate-600 text-gray-400 dark:text-gray-500 cursor-not-allowed pointer-events-none"
+                  can_generate?(@selected_type, assigns) &&
+                    "bg-indigo-600 hover:bg-indigo-700 text-white",
+                  !can_generate?(@selected_type, assigns) &&
+                    "bg-gray-200 dark:bg-slate-600 text-gray-400 dark:text-gray-500 cursor-not-allowed pointer-events-none"
                 ]}
               >
-                <.icon name="hero-document-arrow-down" class="h-5 w-5" />
-                Gerar PDF
+                <.icon name="hero-document-arrow-down" class="h-5 w-5" /> Gerar PDF
               </.link>
             </div>
           </div>
@@ -181,10 +177,7 @@ defmodule HellenWeb.InstitutionLive.Reports do
           >
             <div class="flex items-start gap-4">
               <div class="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl group-hover:bg-indigo-200 dark:group-hover:bg-indigo-900/50 transition-colors">
-                <.icon
-                  name="hero-chart-bar"
-                  class="h-6 w-6 text-indigo-600 dark:text-indigo-400"
-                />
+                <.icon name="hero-chart-bar" class="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div>
                 <h3 class="font-semibold text-gray-900 dark:text-white">Relatorio Mensal</h3>
@@ -194,7 +187,6 @@ defmodule HellenWeb.InstitutionLive.Reports do
               </div>
             </div>
           </button>
-
           <!-- Teacher Report -->
           <button
             type="button"
@@ -214,15 +206,11 @@ defmodule HellenWeb.InstitutionLive.Reports do
               </div>
             </div>
           </button>
-
           <!-- Analysis Export (Coming Soon) -->
           <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6 opacity-60">
             <div class="flex items-start gap-4">
               <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl">
-                <.icon
-                  name="hero-document-text"
-                  class="h-6 w-6 text-purple-600 dark:text-purple-400"
-                />
+                <.icon name="hero-document-text" class="h-6 w-6 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
                 <h3 class="font-semibold text-gray-900 dark:text-white">
@@ -236,7 +224,6 @@ defmodule HellenWeb.InstitutionLive.Reports do
             </div>
           </div>
         </div>
-
         <!-- Info Card -->
         <.card>
           <div class="flex items-start gap-4">

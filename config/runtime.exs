@@ -90,4 +90,12 @@ if config_env() == :prod do
   end
 
   # R2 is configured at the top for all environments
+
+  # Email configuration (Mailgun in production)
+  if mailgun_api_key = System.get_env("MAILGUN_API_KEY") do
+    config :hellen, Hellen.Notifications.Mailer,
+      adapter: Swoosh.Adapters.Mailgun,
+      api_key: mailgun_api_key,
+      domain: System.get_env("MAILGUN_DOMAIN") || "hellen.ai"
+  end
 end

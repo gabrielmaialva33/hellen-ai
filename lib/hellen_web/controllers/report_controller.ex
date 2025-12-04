@@ -52,7 +52,9 @@ defmodule HellenWeb.ReportController do
 
       case Reports.generate_teacher_report(teacher_id, month: month, year: year) do
         {:ok, pdf_binary} ->
-          teacher_name = String.replace(teacher.name || "professor", " ", "-") |> String.downcase()
+          teacher_name =
+            String.replace(teacher.name || "professor", " ", "-") |> String.downcase()
+
           filename = "relatorio-#{teacher_name}-#{month}-#{year}.pdf"
           send_pdf(conn, pdf_binary, filename)
 

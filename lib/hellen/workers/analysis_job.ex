@@ -11,6 +11,7 @@ defmodule Hellen.Workers.AnalysisJob do
   alias Hellen.AI.NvidiaClient
   alias Hellen.Analysis
   alias Hellen.Lessons
+  alias Hellen.Notifications
 
   require Logger
 
@@ -26,6 +27,10 @@ defmodule Hellen.Workers.AnalysisJob do
          {:ok, _lesson} <- Lessons.update_lesson_status(lesson, "completed") do
       Logger.info("Analysis completed for lesson #{lesson_id}")
       broadcast_progress(lesson_id, "analysis_complete", %{analysis_id: analysis.id})
+
+      # Send notifications asynchronously
+      send_notifications(analysis)
+
       :ok
     else
       {:error, reason} ->
@@ -128,5 +133,30 @@ defmodule Hellen.Workers.AnalysisJob do
       "lesson:#{lesson_id}",
       {event, Map.put(payload, :lesson_id, lesson_id)}
     )
+  end
+
+  defp send_notifications(analysis) do
+    # Preload required associations
+    analysis = Hellen.Repo.preload(analysis, [:bullying_alerts, lesson: [:user, :institution]])
+
+    # Notify about analysis completion
+    Task.start(fn ->
+      try do
+        Notifications.notify_analysis_complete(analysis)
+      rescue
+        e -> Logger.warning("Failed to send analysis notification: #{inspect(e)}")
+      end
+    end)
+
+    # Notify about each bullying alert
+    Enum.each(analysis.bullying_alerts, fn alert ->
+      Task.start(fn ->
+        try do
+          Notifications.notify_alert(alert)
+        rescue
+          e -> Logger.warning("Failed to send alert notification: #{inspect(e)}")
+        end
+      end)
+    end)
   end
 end

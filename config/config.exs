@@ -69,6 +69,7 @@ config :hellen, Oban,
     # Increased for parallel analysis
     analysis: 5,
     reports: 2,
+    notifications: 5,
     default: 10
   ]
 
@@ -85,6 +86,12 @@ config :hellen, :chromic_pdf,
   session_pool: [size: 2],
   no_sandbox: true,
   offline: true
+
+# Configure Swoosh for email
+config :hellen, Hellen.Notifications.Mailer, adapter: Swoosh.Adapters.Local
+
+# Swoosh API client (uses Finch)
+config :swoosh, :api_client, Swoosh.ApiClient.Finch
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

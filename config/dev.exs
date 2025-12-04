@@ -73,3 +73,6 @@ config :ex_aws, :s3,
 config :hellen, :r2,
   bucket: "hellen-r2",
   public_url: "https://pub-0914ea82354f49a6a09816c8d7044329.r2.dev"
+
+# Swoosh local mailbox (dev only)
+config :swoosh, :api_client, false

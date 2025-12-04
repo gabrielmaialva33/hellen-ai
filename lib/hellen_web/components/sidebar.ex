@@ -23,6 +23,8 @@ defmodule HellenWeb.Sidebar do
   attr :current_user, :map, required: true
   attr :current_path, :string, default: "/"
 
+  slot :notification_bell
+
   def sidebar(assigns) do
     ~H"""
     <!-- Mobile Menu Button -->
@@ -141,6 +143,8 @@ defmodule HellenWeb.Sidebar do
         </div>
 
         <div class="flex items-center justify-between">
+          <!-- Notification Bell (from slot) -->
+          <%= render_slot(@notification_bell) %>
           <!-- Theme Toggle -->
           <button
             type="button"

@@ -17,6 +17,8 @@ defmodule Hellen.Application do
        {Application.get_env(:hellen, :redis_url, "redis://localhost:6379"), [name: :redix]}},
       # Start ChromicPDF for PDF generation
       {ChromicPDF, Application.get_env(:hellen, :chromic_pdf, [])},
+      # Start Finch for HTTP client (Swoosh API)
+      {Finch, name: Hellen.Finch},
       # Start the Endpoint (http/https)
       HellenWeb.Endpoint
     ]
