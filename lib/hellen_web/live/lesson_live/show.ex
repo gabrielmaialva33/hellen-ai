@@ -125,7 +125,7 @@ defmodule HellenWeb.LessonLive.Show do
             <%= @lesson.title || "Aula sem título" %>
           </h1>
           <p class="mt-1 text-sm text-gray-500">
-            <%= @lesson.subject || "Disciplina não informada" %> • <%= format_date(
+            <%= @lesson.subject || "Disciplina não informada" %> • <%= format_datetime(
               @lesson.inserted_at
             ) %>
           </p>
@@ -214,12 +214,10 @@ defmodule HellenWeb.LessonLive.Show do
 
           <div :if={@latest_analysis} class="space-y-4">
             <div :if={@latest_analysis.overall_score} class="flex items-center justify-center">
-              <div class="text-center">
-                <div class="text-4xl font-bold text-indigo-600">
-                  <%= round(@latest_analysis.overall_score * 100) %>%
-                </div>
-                <div class="text-sm text-gray-500">Pontuação Geral</div>
-              </div>
+              <.score_display
+                score={round(@latest_analysis.overall_score * 100)}
+                label="Pontuação Geral"
+              />
             </div>
 
             <div :if={@latest_analysis.result} class="space-y-4">
@@ -267,37 +265,4 @@ defmodule HellenWeb.LessonLive.Show do
     """
   end
 
-  defp analysis_section(assigns) do
-    ~H"""
-    <div class="border-t pt-4 first:border-t-0 first:pt-0">
-      <h3 class="flex items-center text-sm font-medium text-gray-900 mb-2">
-        <.icon name={@icon} class="h-4 w-4 mr-2 text-indigo-500" />
-        <%= @title %>
-      </h3>
-      <div class="text-sm text-gray-600">
-        <%= render_slot(@inner_block) %>
-      </div>
-    </div>
-    """
-  end
-
-  defp status_variant("pending"), do: "pending"
-  defp status_variant("transcribing"), do: "processing"
-  defp status_variant("transcribed"), do: "processing"
-  defp status_variant("analyzing"), do: "processing"
-  defp status_variant("completed"), do: "completed"
-  defp status_variant("failed"), do: "failed"
-  defp status_variant(_), do: "default"
-
-  defp status_label("pending"), do: "Pendente"
-  defp status_label("transcribing"), do: "Transcrevendo"
-  defp status_label("transcribed"), do: "Analisando"
-  defp status_label("analyzing"), do: "Analisando"
-  defp status_label("completed"), do: "Concluído"
-  defp status_label("failed"), do: "Falhou"
-  defp status_label(_), do: "Desconhecido"
-
-  defp format_date(datetime) do
-    Calendar.strftime(datetime, "%d/%m/%Y às %H:%M")
-  end
 end
