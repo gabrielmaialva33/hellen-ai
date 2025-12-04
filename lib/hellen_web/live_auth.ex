@@ -60,7 +60,7 @@ defmodule HellenWeb.LiveAuth do
         {:halt,
          socket
          |> put_flash(:error, "Acesso restrito a coordenadores")
-         |> redirect(to: "/")}
+         |> redirect(to: "/dashboard")}
 
       true ->
         {:cont, socket}

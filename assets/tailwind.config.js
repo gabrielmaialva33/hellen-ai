@@ -11,6 +11,7 @@ module.exports = {
     "../lib/hellen_web.ex",
     "../lib/hellen_web/**/*.*ex"
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -26,7 +27,28 @@ module.exports = {
           800: "#075985",
           900: "#0c4a6e",
           950: "#082f49"
-        }
+        },
+        primary: {
+          DEFAULT: 'rgb(var(--color-primary) / <alpha-value>)',
+          light: 'rgb(var(--color-primary-light) / <alpha-value>)',
+          dark: 'rgb(var(--color-primary-dark) / <alpha-value>)',
+        },
+        success: 'rgb(var(--color-success) / <alpha-value>)',
+        warning: 'rgb(var(--color-warning) / <alpha-value>)',
+        danger: 'rgb(var(--color-danger) / <alpha-value>)',
+        info: 'rgb(var(--color-info) / <alpha-value>)',
+        background: 'rgb(var(--color-background) / <alpha-value>)',
+        foreground: 'rgb(var(--color-foreground) / <alpha-value>)',
+        muted: 'rgb(var(--color-muted) / <alpha-value>)',
+        border: 'rgb(var(--color-border) / <alpha-value>)',
+        card: {
+          DEFAULT: 'rgb(var(--color-card) / <alpha-value>)',
+          hover: 'rgb(var(--color-card-hover) / <alpha-value>)',
+        },
+        sidebar: {
+          DEFAULT: 'rgb(var(--color-sidebar) / <alpha-value>)',
+          foreground: 'rgb(var(--color-sidebar-foreground) / <alpha-value>)',
+        },
       },
       fontFamily: {
         sans: ['Inter var', 'system-ui', 'sans-serif']

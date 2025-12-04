@@ -16,7 +16,7 @@ defmodule HellenWeb.SessionController do
             conn
             |> put_session(:user_token, token)
             |> put_flash(:info, "Bem-vindo de volta, #{user.name || user.email}!")
-            |> redirect(to: ~p"/")
+            |> redirect(to: ~p"/dashboard")
 
           {:error, _reason} ->
             conn
@@ -46,7 +46,7 @@ defmodule HellenWeb.SessionController do
               :info,
               "Conta criada com sucesso! Bem-vindo, #{user.name || user.email}!"
             )
-            |> redirect(to: ~p"/")
+            |> redirect(to: ~p"/dashboard")
 
           {:error, _reason} ->
             conn

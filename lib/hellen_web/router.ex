@@ -52,7 +52,17 @@ defmodule HellenWeb.Router do
     get "/credits/history", CreditController, :history
   end
 
-  # Public LiveView routes (no auth required)
+  # Public landing page (no auth required)
+  scope "/", HellenWeb do
+    pipe_through :browser
+
+    live_session :landing,
+      on_mount: [{HellenWeb.LiveAuth, :none}] do
+      live "/", LandingLive, :index
+    end
+  end
+
+  # Public auth routes (no auth required)
   scope "/", HellenWeb do
     pipe_through :browser
 
@@ -69,7 +79,7 @@ defmodule HellenWeb.Router do
     pipe_through :browser
 
     live_session :authenticated, on_mount: [{HellenWeb.LiveAuth, :require_auth}] do
-      live "/", DashboardLive.Index, :index
+      live "/dashboard", DashboardLive.Index, :index
       live "/lessons/new", LessonLive.New, :new
       live "/lessons/:id", LessonLive.Show, :show
       live "/lessons/:id/analysis", LessonLive.Show, :analysis

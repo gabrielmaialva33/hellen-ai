@@ -125,6 +125,17 @@ Hooks.StatusUpdater = {
 }
 
 // LiveSocket setup
+import UploadDragDrop from "./hooks/upload_drag_drop"
+import { ThemeHook } from "./hooks/theme_hook"
+import ChartHook from "./hooks/chart_hook"
+import { ScrollAnimation, ThemeToggle } from "./hooks/scroll_animation"
+
+Hooks.UploadDragDrop = UploadDragDrop
+Hooks.ThemeHook = ThemeHook
+Hooks.ChartHook = ChartHook
+Hooks.ScrollAnimation = ScrollAnimation
+Hooks.ThemeToggle = ThemeToggle
+
 let csrfToken = document.querySelector("meta[name='csrf-token']")?.getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
   uploaders: Uploaders,

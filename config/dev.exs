@@ -61,8 +61,8 @@ config :hellen, :nvidia_api_key, System.get_env("NVIDIA_API_KEY")
 
 # R2 Storage configuration for development
 config :ex_aws,
-  access_key_id: "63e9ee4705f4950ec1d7d6784c7ab66c",
-  secret_access_key: "01d324e74bee9d43004f72be3c481586c880b948d4c9bb2b7f045ca0dc88a572",
+  access_key_id: "62c911de26cc59e22b31b153920d35ca",
+  secret_access_key: "693ce5ae9fa33925bd7601ebbf7bdfcf7610ec4fe9b398bfb4d72623ada3944a",
   region: "auto"
 
 config :ex_aws, :s3,

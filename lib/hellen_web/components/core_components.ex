@@ -533,32 +533,57 @@ defmodule HellenWeb.CoreComponents do
 
   def navbar(assigns) do
     ~H"""
-    <nav class="bg-white shadow-sm border-b border-gray-200">
+    <nav class="bg-white dark:bg-slate-900 shadow-sm border-b border-gray-200 dark:border-slate-700 transition-colors duration-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <div class="flex items-center">
-            <a href="/" class="flex items-center">
-              <span class="text-xl font-bold text-indigo-600">Hellen</span>
-              <span class="ml-1 text-xs text-gray-500">AI</span>
+            <a href={if @current_user, do: "/dashboard", else: "/"} class="flex items-center">
+              <span class="text-xl font-bold text-indigo-600 dark:text-indigo-400">Hellen</span>
+              <span class="ml-1 text-xs text-gray-500 dark:text-gray-400">AI</span>
             </a>
           </div>
 
           <div :if={@current_user} class="flex items-center gap-4">
-            <a href="/lessons/new" class="text-gray-600 hover:text-gray-900 text-sm font-medium">
+            <a
+              href="/lessons/new"
+              class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-sm font-medium"
+            >
               Nova Aula
             </a>
+            <button
+              phx-click={JS.dispatch("click", to: "#theme-wrapper")}
+              class="p-2 text-gray-400 dark:text-gray-300 hover:text-gray-500 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              title="Alternar tema"
+            >
+              <.icon name="hero-sun" class="h-5 w-5 dark:hidden" />
+              <.icon name="hero-moon" class="h-5 w-5 hidden dark:block" />
+            </button>
             <div class="flex items-center gap-2">
-              <span class="text-sm text-gray-600">
+              <span class="text-sm text-gray-600 dark:text-gray-300">
                 <%= @current_user.name || @current_user.email %>
               </span>
-              <a href="/logout" class="text-gray-400 hover:text-gray-500">
+              <a
+                href="/logout"
+                class="text-gray-400 dark:text-gray-300 hover:text-gray-500 dark:hover:text-white"
+              >
                 <.icon name="hero-arrow-right-on-rectangle" class="h-5 w-5" />
               </a>
             </div>
           </div>
 
           <div :if={!@current_user} class="flex items-center gap-4">
-            <a href="/login" class="text-gray-600 hover:text-gray-900 text-sm font-medium">
+            <button
+              phx-click={JS.dispatch("click", to: "#theme-wrapper")}
+              class="p-2 text-gray-400 dark:text-gray-300 hover:text-gray-500 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              title="Alternar tema"
+            >
+              <.icon name="hero-sun" class="h-5 w-5 dark:hidden" />
+              <.icon name="hero-moon" class="h-5 w-5 hidden dark:block" />
+            </button>
+            <a
+              href="/login"
+              class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-sm font-medium"
+            >
               Entrar
             </a>
             <a href="/register" class="btn btn-primary text-sm">

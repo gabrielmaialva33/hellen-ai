@@ -11,7 +11,8 @@ defmodule HellenWeb.DashboardLive.Index do
     {:ok,
      socket
      |> assign(page_title: "Dashboard")
-     |> assign(lessons: lessons)}
+     |> assign(lessons: lessons)
+     |> assign(stats: compute_stats(lessons))}
   end
 
   @impl true
@@ -20,8 +21,8 @@ defmodule HellenWeb.DashboardLive.Index do
     <div class="space-y-8">
       <div class="flex justify-between items-center">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">Minhas Aulas</h1>
-          <p class="mt-1 text-sm text-gray-500">
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Minhas Aulas</h1>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Gerencie suas aulas e veja os resultados das análises
           </p>
         </div>
@@ -30,6 +31,54 @@ defmodule HellenWeb.DashboardLive.Index do
             <.icon name="hero-plus" class="h-4 w-4 mr-2" /> Nova Aula
           </.button>
         </.link>
+      </div>
+
+      <div :if={@lessons != []} class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <.stat_card title="Total de Aulas" value={@stats.total} icon="hero-academic-cap" />
+        <.stat_card
+          title="Concluídas"
+          value={@stats.completed}
+          icon="hero-check-circle"
+          variant="success"
+        />
+        <.stat_card
+          title="Em Progresso"
+          value={@stats.processing}
+          icon="hero-arrow-path"
+          variant="processing"
+        />
+        <.stat_card title="Pendentes" value={@stats.pending} icon="hero-clock" variant="pending" />
+      </div>
+
+      <div :if={@lessons != [] && @stats.has_charts} class="grid gap-6 lg:grid-cols-2">
+        <.card>
+          <:header>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Status das Aulas
+            </h2>
+          </:header>
+          <.chart
+            id="status-breakdown"
+            type="donut"
+            series={[@stats.completed, @stats.processing, @stats.pending, @stats.failed]}
+            labels={["Concluídas", "Em Progresso", "Pendentes", "Falhadas"]}
+            colors={["#22c55e", "#3b82f6", "#eab308", "#ef4444"]}
+            height="300"
+          />
+        </.card>
+
+        <.card>
+          <:header>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Últimas Aulas</h2>
+          </:header>
+          <.trend_chart
+            id="recent-lessons"
+            categories={@stats.recent_dates}
+            data={@stats.recent_counts}
+            label="Aulas"
+            height="300"
+          />
+        </.card>
       </div>
 
       <div :if={@lessons == []} class="text-center py-12">
@@ -112,4 +161,88 @@ defmodule HellenWeb.DashboardLive.Index do
   end
 
   defp format_duration(_), do: "-"
+
+  defp stat_card(assigns) do
+    assigns = assign_new(assigns, :variant, fn -> "default" end)
+
+    ~H"""
+    <.card class={stat_card_class(@variant)}>
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400"><%= @title %></p>
+          <p class="mt-1 text-3xl font-semibold text-gray-900 dark:text-gray-100">
+            <%= @value %>
+          </p>
+        </div>
+        <div class={stat_icon_class(@variant)}>
+          <.icon name={@icon} class="h-8 w-8" />
+        </div>
+      </div>
+    </.card>
+    """
+  end
+
+  defp stat_card_class("success"), do: "border-l-4 border-green-500"
+  defp stat_card_class("processing"), do: "border-l-4 border-blue-500"
+  defp stat_card_class("pending"), do: "border-l-4 border-yellow-500"
+  defp stat_card_class(_), do: "border-l-4 border-indigo-500"
+
+  defp stat_icon_class("success"), do: "text-green-500"
+  defp stat_icon_class("processing"), do: "text-blue-500"
+  defp stat_icon_class("pending"), do: "text-yellow-500"
+  defp stat_icon_class(_), do: "text-indigo-500"
+
+  defp compute_stats(lessons) do
+    total = length(lessons)
+    completed = Enum.count(lessons, &(&1.status == "completed"))
+    processing = Enum.count(lessons, &(&1.status in ["transcribing", "analyzing", "transcribed"]))
+    pending = Enum.count(lessons, &(&1.status == "pending"))
+    failed = Enum.count(lessons, &(&1.status == "failed"))
+
+    # Get last 7 days of lesson counts for trend chart
+    {recent_dates, recent_counts} = compute_recent_trend(lessons)
+
+    %{
+      total: total,
+      completed: completed,
+      processing: processing,
+      pending: pending,
+      failed: failed,
+      has_charts: total > 0,
+      recent_dates: recent_dates,
+      recent_counts: recent_counts
+    }
+  end
+
+  defp compute_recent_trend(lessons) do
+    today = Date.utc_today()
+
+    # Create a map of dates to counts for the last 7 days
+    date_counts =
+      lessons
+      |> Enum.map(fn lesson ->
+        DateTime.to_date(lesson.inserted_at)
+      end)
+      |> Enum.frequencies()
+
+    # Generate last 7 days
+    dates =
+      Enum.map(6..0//-1, fn days_ago ->
+        Date.add(today, -days_ago)
+      end)
+
+    # Get counts for each day
+    counts =
+      Enum.map(dates, fn date ->
+        Map.get(date_counts, date, 0)
+      end)
+
+    # Format dates for display (day/month)
+    formatted_dates =
+      Enum.map(dates, fn date ->
+        Calendar.strftime(date, "%d/%m")
+      end)
+
+    {formatted_dates, counts}
+  end
 end

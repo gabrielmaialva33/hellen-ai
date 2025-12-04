@@ -67,6 +67,7 @@ defmodule HellenWeb do
     quote do
       import Phoenix.HTML
       import HellenWeb.CoreComponents
+      import HellenWeb.Components.Charts
       import HellenWeb.Gettext
 
       alias Phoenix.LiveView.JS
