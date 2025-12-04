@@ -50,36 +50,6 @@ defmodule HellenWeb.DashboardLive.Index do
         <.stat_card title="Pendentes" value={@stats.pending} icon="hero-clock" variant="pending" />
       </div>
 
-      <div :if={@lessons != [] && @stats.has_charts} class="grid gap-6 lg:grid-cols-2">
-        <.card>
-          <:header>
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Status das Aulas
-            </h2>
-          </:header>
-          <.chart
-            id="status-breakdown"
-            type="donut"
-            series={[@stats.completed, @stats.processing, @stats.pending, @stats.failed]}
-            labels={["Concluídas", "Em Progresso", "Pendentes", "Falhadas"]}
-            colors={["#22c55e", "#3b82f6", "#eab308", "#ef4444"]}
-            height="300"
-          />
-        </.card>
-
-        <.card>
-          <:header>
-            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Últimas Aulas</h2>
-          </:header>
-          <.trend_chart
-            id="recent-lessons"
-            categories={@stats.recent_dates}
-            data={@stats.recent_counts}
-            label="Aulas"
-            height="300"
-          />
-        </.card>
-      </div>
 
       <div :if={@lessons == []} class="text-center py-12">
         <.icon name="hero-document-text" class="mx-auto h-12 w-12 text-gray-400" />

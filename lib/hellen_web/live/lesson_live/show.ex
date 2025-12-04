@@ -214,11 +214,12 @@ defmodule HellenWeb.LessonLive.Show do
 
           <div :if={@latest_analysis} class="space-y-4">
             <div :if={@latest_analysis.overall_score} class="flex items-center justify-center">
-              <.score_gauge
-                id="overall-score-gauge"
-                score={round(@latest_analysis.overall_score * 100)}
-                label="Pontuação Geral"
-              />
+              <div class="text-center">
+                <div class="text-4xl font-bold text-indigo-600">
+                  <%= round(@latest_analysis.overall_score * 100) %>%
+                </div>
+                <div class="text-sm text-gray-500">Pontuação Geral</div>
+              </div>
             </div>
 
             <div :if={@latest_analysis.result} class="space-y-4">
