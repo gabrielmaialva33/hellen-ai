@@ -5,6 +5,7 @@ defmodule HellenWeb.BillingLive.Index do
   use HellenWeb, :live_view
 
   alias Hellen.Billing
+  alias Hellen.Billing.StripeService
 
   @impl true
   def mount(_params, _session, socket) do
@@ -14,6 +15,11 @@ defmodule HellenWeb.BillingLive.Index do
     daily_usage = Billing.get_daily_usage(user.id, 30)
     analyses_count = Billing.get_analyses_count(user.id)
     packages = Billing.credit_packages()
+
+    # Subscribe to credits updates
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Hellen.PubSub, "user:#{user.id}")
+    end
 
     {:ok,
      socket
@@ -27,7 +33,52 @@ defmodule HellenWeb.BillingLive.Index do
      |> assign(show_purchase_modal: false)
      |> assign(selected_package: nil)
      |> assign(filter_reason: nil)
-     |> assign(page: 1)}
+     |> assign(page: 1)
+     |> assign(purchasing: false)
+     |> assign(flash_success: nil)
+     |> assign(flash_canceled: nil)}
+  end
+
+  @impl true
+  def handle_params(params, _url, socket) do
+    socket =
+      case params do
+        %{"success" => "true"} ->
+          # Reload user data after successful purchase
+          user = Hellen.Accounts.get_user(socket.assigns.current_user.id)
+          stats = Billing.get_usage_stats(user.id, 30)
+          {transactions, total} = Billing.list_transactions_filtered(user.id, limit: 10)
+
+          socket
+          |> assign(current_user: user)
+          |> assign(stats: stats)
+          |> assign(transactions: transactions)
+          |> assign(transactions_total: total)
+          |> put_flash(:info, "Pagamento confirmado! Creditos adicionados com sucesso.")
+
+        %{"canceled" => "true"} ->
+          socket
+          |> put_flash(:error, "Pagamento cancelado.")
+
+        _ ->
+          socket
+      end
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:credits_updated, new_balance}, socket) do
+    user = %{socket.assigns.current_user | credits: new_balance}
+    stats = Billing.get_usage_stats(user.id, 30)
+    {transactions, total} = Billing.list_transactions_filtered(user.id, limit: 10)
+
+    {:noreply,
+     socket
+     |> assign(current_user: user)
+     |> assign(stats: stats)
+     |> assign(transactions: transactions)
+     |> assign(transactions_total: total)}
   end
 
   @impl true
@@ -70,7 +121,25 @@ defmodule HellenWeb.BillingLive.Index do
   end
 
   def handle_event("close_modal", _params, socket) do
-    {:noreply, assign(socket, show_purchase_modal: false, selected_package: nil)}
+    {:noreply,
+     assign(socket, show_purchase_modal: false, selected_package: nil, purchasing: false)}
+  end
+
+  def handle_event("purchase", %{"package" => package_id}, socket) do
+    socket = assign(socket, purchasing: true)
+    user = socket.assigns.current_user
+    base_url = HellenWeb.Endpoint.url()
+
+    case StripeService.create_checkout_session(user, package_id, base_url) do
+      {:ok, checkout_url} ->
+        {:noreply, redirect(socket, external: checkout_url)}
+
+      {:error, _reason} ->
+        {:noreply,
+         socket
+         |> assign(purchasing: false)
+         |> put_flash(:error, "Erro ao criar sessao de pagamento. Tente novamente.")}
+    end
   end
 
   @impl true
@@ -166,9 +235,26 @@ defmodule HellenWeb.BillingLive.Index do
             </div>
           </div>
         </div>
-        <p class="mt-4 text-sm text-gray-500 dark:text-gray-400 text-center">
-          Pagamento via Stripe (em breve)
-        </p>
+        <div class="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+          <svg class="h-5 w-5" viewBox="0 0 60 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M26.1 6.4h-3.3l2.1-12.3h3.3L26.1 6.4zM19.5-5.9l-3.2 12.3 3.1.7.8-2h3.8l.4 2h3l-2.6-13H19.5zm1.5 8l1.3-5.2 1.2 5.2h-2.5zM8.2 6.4l1.9-5.7L6.8-5.9H3.3L.2 6.4h3l.6-2.3h3.2l.3 2.3h2.9zM4.8 1.4l1.3-5.2h.1l1.2 5.2H4.8z"
+              fill="currentColor"
+              transform="translate(0, 12)"
+            />
+            <path
+              d="M35 6.4h-3l.6-3.6h-4l-.6 3.6h-3l2.1-12.3h3l-.6 3.6h4l.6-3.6h3L35 6.4z"
+              fill="currentColor"
+              transform="translate(0, 12)"
+            />
+            <path
+              d="M45.9 6.4h-6.5l2.1-12.3h6.4l-.4 2.7h-3.4l-.3 1.8h3.2l-.4 2.6h-3.2l-.3 2.5h3.5l-.7 2.7zM55.4-5.9h-3l-2 7.1L47.8-5.9h-3.3l3.8 12.3h3.5l3.6-12.3z"
+              fill="currentColor"
+              transform="translate(0, 12)"
+            />
+          </svg>
+          <span>Pagamento seguro via Stripe</span>
+        </div>
       </div>
       <!-- Transaction History -->
       <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
@@ -184,13 +270,11 @@ defmodule HellenWeb.BillingLive.Index do
               <option value="lesson_analysis" selected={@filter_reason == "lesson_analysis"}>
                 Analise de Aula
               </option>
+              <option value="purchase" selected={@filter_reason == "purchase"}>Compra</option>
               <option value="signup_bonus" selected={@filter_reason == "signup_bonus"}>
                 Bonus de Cadastro
               </option>
               <option value="refund" selected={@filter_reason == "refund"}>Reembolso</option>
-              <option value="admin_grant" selected={@filter_reason == "admin_grant"}>
-                Bonus Admin
-              </option>
             </select>
           </div>
         </div>
@@ -256,7 +340,7 @@ defmodule HellenWeb.BillingLive.Index do
           </button>
         </div>
       </div>
-      <!-- Purchase Modal (Stripe-ready placeholder) -->
+      <!-- Purchase Modal -->
       <div
         :if={@show_purchase_modal && @selected_package}
         class="fixed inset-0 z-50 overflow-y-auto"
@@ -291,15 +375,10 @@ defmodule HellenWeb.BillingLive.Index do
               </p>
             </div>
 
-            <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-6">
-              <div class="flex items-start gap-3">
-                <.icon
-                  name="hero-information-circle"
-                  class="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
-                />
-                <p class="text-sm text-amber-800 dark:text-amber-200">
-                  Integracao com Stripe em desenvolvimento. Por enquanto, entre em contato para adquirir creditos.
-                </p>
+            <div class="bg-gray-50 dark:bg-slate-900/50 rounded-lg p-4 mb-6">
+              <div class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                <.icon name="hero-shield-check" class="h-5 w-5 text-emerald-500" />
+                <span>Pagamento seguro processado pelo Stripe</span>
               </div>
             </div>
 
@@ -309,7 +388,44 @@ defmodule HellenWeb.BillingLive.Index do
                 phx-click="close_modal"
                 class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-slate-700 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600"
               >
-                Fechar
+                Cancelar
+              </button>
+              <button
+                type="button"
+                phx-click="purchase"
+                phx-value-package={@selected_package.id}
+                disabled={@purchasing}
+                class={[
+                  "px-6 py-2 text-sm font-medium text-white rounded-lg",
+                  if(@purchasing,
+                    do: "bg-indigo-400 cursor-not-allowed",
+                    else: "bg-indigo-600 hover:bg-indigo-700"
+                  )
+                ]}
+              >
+                <%= if @purchasing do %>
+                  <span class="flex items-center gap-2">
+                    <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle
+                        class="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        stroke-width="4"
+                        fill="none"
+                      />
+                      <path
+                        class="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Redirecionando...
+                  </span>
+                <% else %>
+                  Pagar com Stripe
+                <% end %>
               </button>
             </div>
           </div>
@@ -352,7 +468,7 @@ defmodule HellenWeb.BillingLive.Index do
 
   defp reason_label("lesson_analysis"), do: "Analise de Aula"
   defp reason_label("signup_bonus"), do: "Bonus de Cadastro"
+  defp reason_label("purchase"), do: "Compra de Creditos"
   defp reason_label("refund"), do: "Reembolso"
-  defp reason_label("admin_grant"), do: "Bonus Administrativo"
   defp reason_label(reason), do: reason
 end

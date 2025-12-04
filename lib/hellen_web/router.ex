@@ -16,6 +16,18 @@ defmodule HellenWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :stripe_webhook do
+    plug :accepts, ["json"]
+    plug HellenWeb.Plugs.StripeWebhookPlug
+  end
+
+  # Stripe webhook (needs raw body for signature verification)
+  scope "/webhooks", HellenWeb do
+    pipe_through :stripe_webhook
+
+    post "/stripe", StripeWebhookController, :webhook
+  end
+
   # Health check endpoint (no auth)
   scope "/health", HellenWeb do
     pipe_through :api

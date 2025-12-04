@@ -77,6 +77,9 @@ defmodule Hellen.MixProject do
       {:finch, "~> 0.16"},
       {:gen_smtp, "~> 1.0"},
 
+      # Payments
+      {:stripity_stripe, "~> 3.2"},
+
       # Code quality
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]

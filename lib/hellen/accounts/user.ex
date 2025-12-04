@@ -23,6 +23,9 @@ defmodule Hellen.Accounts.User do
     field :firebase_uid, :string
     field :email_verified, :boolean, default: false
 
+    # Stripe fields
+    field :stripe_customer_id, :string
+
     belongs_to :institution, Hellen.Accounts.Institution
     has_many :lessons, Hellen.Lessons.Lesson
     has_many :credit_transactions, Hellen.Billing.CreditTransaction
@@ -41,7 +44,8 @@ defmodule Hellen.Accounts.User do
       :plan,
       :institution_id,
       :firebase_uid,
-      :email_verified
+      :email_verified,
+      :stripe_customer_id
     ])
     |> validate_required([:email, :name])
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+$/, message: "must have the @ sign and no spaces")

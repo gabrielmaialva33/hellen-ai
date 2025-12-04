@@ -76,3 +76,12 @@ config :hellen, :r2,
 
 # Swoosh local mailbox (dev only)
 config :swoosh, :api_client, false
+
+# Stripe test keys (development)
+config :stripity_stripe,
+  api_key:
+    "sk_test_51Sahg4Ge6PyigxRcP5MGjlJRWazTecpTul2utjt7GLZdRFkSMytATPJmKgPkHw6TY9Je3GIZsRmSCcr42hn7AbbQ00cmngXgul"
+
+config :hellen, :stripe,
+  publishable_key:
+    "pk_test_51Sahg4Ge6PyigxRcjONule4vS8EUOyIOXdRi5lQXOtmsXnu5cwCPHBXsEeOlngRA1RCExge6JpiP3hZ01QA6ohUs00rc1RwPZc"

@@ -90,6 +90,16 @@ config :hellen, :chromic_pdf,
 # Configure Swoosh for email
 config :hellen, Hellen.Notifications.Mailer, adapter: Swoosh.Adapters.Local
 
+# Configure Stripe
+config :stripity_stripe,
+  api_key: System.get_env("STRIPE_SECRET_KEY"),
+  webhook_secret: System.get_env("STRIPE_WEBHOOK_SECRET")
+
+config :hellen, :stripe,
+  publishable_key: System.get_env("STRIPE_PUBLISHABLE_KEY"),
+  success_url: "/billing?success=true",
+  cancel_url: "/billing?canceled=true"
+
 # Swoosh API client (uses Finch)
 config :swoosh, :api_client, Swoosh.ApiClient.Finch
 

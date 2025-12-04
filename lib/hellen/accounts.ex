@@ -112,6 +112,17 @@ defmodule Hellen.Accounts do
   end
 
   @doc """
+  Update user's Stripe customer ID.
+  """
+  @spec update_stripe_customer_id(User.t(), String.t()) ::
+          {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def update_stripe_customer_id(%User{} = user, customer_id) do
+    user
+    |> User.changeset(%{stripe_customer_id: customer_id})
+    |> Repo.update()
+  end
+
+  @doc """
   Update user profile (name and email only).
   """
   @spec update_user_profile(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}

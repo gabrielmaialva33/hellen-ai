@@ -42,13 +42,44 @@ defmodule Hellen.Billing do
   @spec add_credits(User.t(), pos_integer(), String.t(), binary() | nil) ::
           {:ok, User.t()} | {:error, term()}
   def add_credits(%User{} = user, amount, reason, lesson_id \\ nil) when amount > 0 do
+    add_credits_internal(user, amount, reason, lesson_id, nil)
+  end
+
+  @doc """
+  Adds credits with Stripe payment tracking.
+  """
+  @spec add_credits_with_stripe(User.t(), pos_integer(), String.t(), String.t()) ::
+          {:ok, User.t()} | {:error, term()}
+  def add_credits_with_stripe(%User{} = user, amount, package_id, payment_intent_id)
+      when amount > 0 do
+    add_credits_internal(user, amount, "purchase", nil, payment_intent_id, %{
+      package_id: package_id
+    })
+  end
+
+  defp add_credits_internal(
+         user,
+         amount,
+         reason,
+         lesson_id,
+         stripe_payment_intent_id,
+         metadata \\ %{}
+       ) do
     new_balance = user.credits + amount
 
     Ecto.Multi.new()
     |> Ecto.Multi.update(:user, User.changeset(user, %{credits: new_balance}))
     |> Ecto.Multi.insert(
       :transaction,
-      build_transaction_changeset(user, amount, new_balance, reason, lesson_id)
+      build_transaction_changeset(
+        user,
+        amount,
+        new_balance,
+        reason,
+        lesson_id,
+        stripe_payment_intent_id,
+        metadata
+      )
     )
     |> Repo.transaction()
     |> case do
@@ -71,7 +102,7 @@ defmodule Hellen.Billing do
       |> Ecto.Multi.update(:user, User.changeset(user, %{credits: new_balance}))
       |> Ecto.Multi.insert(
         :transaction,
-        build_transaction_changeset(user, -amount, new_balance, reason, lesson_id)
+        build_transaction_changeset(user, -amount, new_balance, reason, lesson_id, nil, %{})
       )
       |> Repo.transaction()
       |> case do
@@ -83,14 +114,24 @@ defmodule Hellen.Billing do
     end
   end
 
-  defp build_transaction_changeset(user, amount, balance_after, reason, lesson_id) do
+  defp build_transaction_changeset(
+         user,
+         amount,
+         balance_after,
+         reason,
+         lesson_id,
+         stripe_payment_intent_id,
+         metadata
+       ) do
     %CreditTransaction{}
     |> CreditTransaction.changeset(%{
       user_id: user.id,
       amount: amount,
       balance_after: balance_after,
       reason: reason,
-      lesson_id: lesson_id
+      lesson_id: lesson_id,
+      stripe_payment_intent_id: stripe_payment_intent_id,
+      metadata: metadata
     })
   end
 
