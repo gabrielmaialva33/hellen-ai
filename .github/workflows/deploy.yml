@@ -72,6 +72,7 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          ssh -o StrictHostKeyChecking=no root@$VPS_HOST "echo '$GITHUB_TOKEN' | docker login ghcr.io -u gabrielmaialva33 --password-stdin"
           ssh -o StrictHostKeyChecking=no root@$VPS_HOST << 'ENDSSH'
           set -e
 
@@ -81,9 +82,8 @@ jobs:
           echo "=== Hellen AI Deployment ==="
           cd $APP_DIR
 
-          # Login to GHCR and pull pre-built image BEFORE stopping (zero downtime)
+          # Pull pre-built image BEFORE stopping (zero downtime)
           echo "Pulling pre-built image from GHCR..."
-          echo "$GITHUB_TOKEN" | docker login ghcr.io -u gabrielmaialva33 --password-stdin
           docker pull $IMAGE
           docker tag $IMAGE hellen-ai:latest
 
