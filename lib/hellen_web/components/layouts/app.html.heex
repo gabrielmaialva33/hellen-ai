@@ -1,7 +1,19 @@
-<div class="min-h-full" phx-hook="ThemeHook" id="theme-wrapper">
-  <.navbar current_user={assigns[:current_user]} />
+<div
+  class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950/50 transition-colors duration-300"
+  phx-hook="ThemeHook"
+  id="theme-wrapper"
+>
+  <!-- Subtle background decoration -->
+  <div class="fixed inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-br from-indigo-200/20 to-purple-200/20 dark:from-indigo-600/5 dark:to-purple-600/5 rounded-full blur-3xl">
+    </div>
+    <div class="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-br from-purple-200/20 to-pink-200/20 dark:from-purple-600/5 dark:to-pink-600/5 rounded-full blur-3xl">
+    </div>
+  </div>
 
-  <main class="py-10 bg-gray-50 dark:bg-slate-900 transition-colors duration-200">
+  <.app_navbar current_user={assigns[:current_user]} />
+
+  <main class="relative z-10 py-8 sm:py-10">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <.flash_group flash={@flash} />
       <%= @inner_content %>

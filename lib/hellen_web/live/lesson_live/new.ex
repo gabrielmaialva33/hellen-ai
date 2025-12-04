@@ -121,14 +121,14 @@ defmodule HellenWeb.LessonLive.New do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
-      <div class="max-w-4xl mx-auto px-6 py-12">
+    <div class="space-y-8">
+      <div class="max-w-4xl mx-auto">
         <%!-- Header Minimalista --%>
         <div class="mb-12 text-center">
-          <h1 class="text-4xl font-light text-gray-900 tracking-tight mb-3">
+          <h1 class="text-4xl font-light text-gray-900 dark:text-white tracking-tight mb-3">
             Nova Aula
           </h1>
-          <p class="text-lg text-gray-500 font-light">
+          <p class="text-lg text-gray-500 dark:text-gray-400 font-light">
             Envie sua gravação e deixe a IA fazer o resto
           </p>
         </div>
@@ -151,7 +151,7 @@ defmodule HellenWeb.LessonLive.New do
             />
 
             <%!-- Card Visual (Background) --%>
-            <div class="upload-card bg-white rounded-3xl shadow-sm border border-gray-200 p-16 transition-all duration-300 hover:shadow-xl hover:border-indigo-300 hover:scale-[1.02] relative z-10 pointer-events-none">
+            <div class="upload-card bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-700 p-16 transition-all duration-300 hover:shadow-xl hover:border-indigo-300 dark:hover:border-indigo-600 hover:scale-[1.02] relative z-10 pointer-events-none">
               <%!-- Ícone Central --%>
               <div class="flex justify-center mb-8">
                 <div class="relative">
@@ -164,20 +164,20 @@ defmodule HellenWeb.LessonLive.New do
 
               <%!-- Texto Principal --%>
               <div class="text-center space-y-4">
-                <h2 class="text-2xl font-medium text-gray-900">
+                <h2 class="text-2xl font-medium text-gray-900 dark:text-white">
                   Arraste seu arquivo aqui
                 </h2>
-                <p class="text-base text-gray-500">
+                <p class="text-base text-gray-500 dark:text-gray-400">
                   ou
-                  <span class="text-indigo-600 font-medium">
+                  <span class="text-indigo-600 dark:text-indigo-400 font-medium">
                     clique para selecionar
                   </span>
                 </p>
               </div>
 
               <%!-- Info Secundária --%>
-              <div class="mt-12 pt-8 border-t border-gray-100">
-                <div class="flex items-center justify-center gap-8 text-sm text-gray-400">
+              <div class="mt-12 pt-8 border-t border-gray-100 dark:border-slate-700">
+                <div class="flex items-center justify-center gap-8 text-sm text-gray-400 dark:text-gray-500">
                   <div class="flex items-center gap-2">
                     <.icon name="hero-document" class="h-4 w-4" />
                     <span>MP4, MP3, WAV, M4A</span>
@@ -190,10 +190,13 @@ defmodule HellenWeb.LessonLive.New do
               </div>
 
               <%!-- Overlay de Drag (Visual only) --%>
-              <div class="upload-drag-overlay absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 backdrop-blur-sm rounded-3xl opacity-0 transition-opacity duration-300 flex items-center justify-center border-2 border-indigo-500 border-dashed z-30">
+              <div class="upload-drag-overlay absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:from-indigo-500/20 dark:to-purple-500/20 backdrop-blur-sm rounded-3xl opacity-0 transition-opacity duration-300 flex items-center justify-center border-2 border-indigo-500 border-dashed z-30">
                 <div class="text-center">
-                  <.icon name="hero-arrow-down-tray" class="h-16 w-16 text-indigo-600 mx-auto mb-4" />
-                  <p class="text-xl font-medium text-indigo-700">Solte aqui</p>
+                  <.icon
+                    name="hero-arrow-down-tray"
+                    class="h-16 w-16 text-indigo-600 dark:text-indigo-400 mx-auto mb-4"
+                  />
+                  <p class="text-xl font-medium text-indigo-700 dark:text-indigo-300">Solte aqui</p>
                 </div>
               </div>
             </div>
@@ -216,40 +219,44 @@ defmodule HellenWeb.LessonLive.New do
             <%!-- Preview do Arquivo --%>
             <div
               :for={entry <- @uploads.media.entries}
-              class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden"
+              class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden"
             >
               <div class="p-8">
                 <div class="flex items-start gap-6">
                   <%!-- Ícone do Arquivo --%>
                   <div class="flex-shrink-0">
                     <div class="relative">
-                      <div class="absolute inset-0 bg-indigo-500/10 rounded-2xl blur"></div>
-                      <div class="relative bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-5 border border-indigo-100">
-                        <.icon name="hero-film" class="h-10 w-10 text-indigo-600" />
+                      <div class="absolute inset-0 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-2xl blur">
+                      </div>
+                      <div class="relative bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/50 dark:to-purple-900/50 rounded-2xl p-5 border border-indigo-100 dark:border-indigo-800">
+                        <.icon
+                          name="hero-film"
+                          class="h-10 w-10 text-indigo-600 dark:text-indigo-400"
+                        />
                       </div>
                     </div>
                   </div>
 
                   <%!-- Info do Arquivo --%>
                   <div class="flex-1 min-w-0">
-                    <h3 class="text-xl font-medium text-gray-900 truncate mb-2">
+                    <h3 class="text-xl font-medium text-gray-900 dark:text-white truncate mb-2">
                       <%= entry.client_name %>
                     </h3>
-                    <p class="text-base text-gray-500">
+                    <p class="text-base text-gray-500 dark:text-gray-400">
                       <%= format_filesize(entry.client_size) %>
                     </p>
 
                     <%!-- Progress Bar --%>
                     <div :if={entry.progress > 0} class="mt-6">
                       <div class="flex items-center justify-between mb-3">
-                        <span class="text-sm font-medium text-gray-700">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
                           <%= if entry.progress < 100, do: "Enviando...", else: "Pronto!" %>
                         </span>
-                        <span class="text-sm text-gray-500">
+                        <span class="text-sm text-gray-500 dark:text-gray-400">
                           <%= entry.progress %>%
                         </span>
                       </div>
-                      <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div class="h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
                         <div
                           class="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-500 ease-out"
                           style={"width: #{entry.progress}%"}
@@ -274,7 +281,7 @@ defmodule HellenWeb.LessonLive.New do
                     type="button"
                     phx-click="cancel-upload"
                     phx-value-ref={entry.ref}
-                    class="flex-shrink-0 p-3 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200"
+                    class="flex-shrink-0 p-3 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all duration-200"
                     aria-label="Remover arquivo"
                   >
                     <.icon name="hero-x-mark" class="h-6 w-6" />
@@ -285,15 +292,15 @@ defmodule HellenWeb.LessonLive.New do
 
             <%!-- Formulário de Metadados --%>
             <form phx-submit="submit" phx-change="validate" class="space-y-6">
-              <div class="bg-white rounded-3xl shadow-sm border border-gray-200 p-8">
-                <h3 class="text-lg font-medium text-gray-900 mb-6">
+              <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-700 p-8">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-6">
                   Detalhes da Aula
                 </h3>
 
                 <div class="space-y-6">
                   <%!-- Título --%>
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Título (opcional)
                     </label>
                     <input
@@ -301,18 +308,18 @@ defmodule HellenWeb.LessonLive.New do
                       name="lesson[title]"
                       value={@form[:title].value}
                       placeholder="Ex: Aula de Matemática - Frações"
-                      class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-base"
+                      class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-base text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                     />
                   </div>
 
                   <%!-- Disciplina --%>
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Disciplina
                     </label>
                     <select
                       name="lesson[subject]"
-                      class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-base appearance-none cursor-pointer"
+                      class="w-full px-4 py-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 text-base text-gray-900 dark:text-white appearance-none cursor-pointer"
                     >
                       <option value="">Selecione uma disciplina</option>
                       <%= for {label, value} <- subject_options() do %>
@@ -329,7 +336,7 @@ defmodule HellenWeb.LessonLive.New do
               <div class="flex items-center justify-between gap-4">
                 <.link
                   navigate={~p"/"}
-                  class="px-6 py-3 text-gray-600 hover:text-gray-900 font-medium transition-colors duration-200"
+                  class="px-6 py-3 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-medium transition-colors duration-200"
                 >
                   Cancelar
                 </.link>

@@ -8,8 +8,9 @@ import topbar from "../vendor/topbar"
 let Hooks = {}
 
 // Landing page hooks
-import { ScrollAnimation, ThemeToggle } from "./hooks/scroll_animation"
+import { ScrollAnimation, ThemeHook, ThemeToggle } from "./hooks/scroll_animation"
 Hooks.ScrollAnimation = ScrollAnimation
+Hooks.ThemeHook = ThemeHook
 Hooks.ThemeToggle = ThemeToggle
 
 let csrfToken = document.querySelector("meta[name='csrf-token']")?.getAttribute("content")

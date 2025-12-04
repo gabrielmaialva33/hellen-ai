@@ -597,6 +597,162 @@ defmodule HellenWeb.CoreComponents do
   end
 
   @doc """
+  Renders the app navbar with modern styling (for logged-in area).
+
+  ## Examples
+
+      <.app_navbar current_user={@current_user} />
+  """
+  attr :current_user, :map, default: nil
+
+  def app_navbar(assigns) do
+    ~H"""
+    <nav class="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200/50 dark:border-slate-700/50 transition-all duration-300">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+          <!-- Logo -->
+          <div class="flex items-center">
+            <a href={if @current_user, do: "/dashboard", else: "/"} class="flex items-center group">
+              <span class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+                Hellen
+              </span>
+              <span class="ml-1 text-xs font-medium text-gray-500 dark:text-gray-400">AI</span>
+            </a>
+          </div>
+          <!-- Desktop Navigation (logged in) -->
+          <div :if={@current_user} class="hidden md:flex items-center gap-6">
+            <a
+              href="/dashboard"
+              class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-sm font-medium transition-colors"
+            >
+              Dashboard
+            </a>
+            <a
+              href="/lessons/new"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all duration-200"
+            >
+              <.icon name="hero-plus" class="h-4 w-4" /> Nova Aula
+            </a>
+            <button
+              phx-hook="ThemeToggle"
+              id="app-theme-toggle"
+              class="p-2 text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              title="Alternar tema"
+            >
+              <.icon name="hero-sun" class="h-5 w-5 dark:hidden" />
+              <.icon name="hero-moon" class="h-5 w-5 hidden dark:block" />
+            </button>
+            <div class="flex items-center gap-3 pl-4 border-l border-gray-200 dark:border-slate-700">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-sm font-semibold">
+                <%= String.first(@current_user.name || @current_user.email) |> String.upcase() %>
+              </div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-200 hidden lg:block">
+                <%= @current_user.name || @current_user.email %>
+              </span>
+              <a
+                href="/logout"
+                class="p-2 text-gray-400 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                title="Sair"
+              >
+                <.icon name="hero-arrow-right-on-rectangle" class="h-5 w-5" />
+              </a>
+            </div>
+          </div>
+          <!-- Mobile menu button -->
+          <div :if={@current_user} class="flex md:hidden items-center gap-2">
+            <button
+              phx-hook="ThemeToggle"
+              id="app-theme-toggle-mobile"
+              class="p-2 text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              title="Alternar tema"
+            >
+              <.icon name="hero-sun" class="h-5 w-5 dark:hidden" />
+              <.icon name="hero-moon" class="h-5 w-5 hidden dark:block" />
+            </button>
+            <button
+              type="button"
+              class="p-2 text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              phx-click={
+                JS.toggle(to: "#app-mobile-menu", in: "fade-in-scale", out: "fade-out-scale")
+              }
+              aria-expanded="false"
+              aria-controls="app-mobile-menu"
+            >
+              <span class="sr-only">Abrir menu</span>
+              <.icon name="hero-bars-3" class="h-6 w-6" />
+            </button>
+          </div>
+          <!-- Desktop Navigation (not logged in) -->
+          <div :if={!@current_user} class="flex items-center gap-4">
+            <button
+              phx-hook="ThemeToggle"
+              id="app-theme-toggle-guest"
+              class="p-2 text-gray-400 dark:text-gray-300 hover:text-gray-500 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              title="Alternar tema"
+            >
+              <.icon name="hero-sun" class="h-5 w-5 dark:hidden" />
+              <.icon name="hero-moon" class="h-5 w-5 hidden dark:block" />
+            </button>
+            <a
+              href="/login"
+              class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-sm font-medium transition-colors"
+            >
+              Entrar
+            </a>
+            <a
+              href="/register"
+              class="inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-md shadow-indigo-500/20 transition-all duration-200"
+            >
+              Criar Conta
+            </a>
+          </div>
+        </div>
+      </div>
+      <!-- Mobile menu (logged in) -->
+      <div
+        :if={@current_user}
+        id="app-mobile-menu"
+        class="hidden md:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-gray-200/50 dark:border-slate-700/50"
+      >
+        <div class="px-4 py-4 space-y-3">
+          <div class="flex items-center gap-3 pb-3 border-b border-gray-200 dark:border-slate-700">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold">
+              <%= String.first(@current_user.name || @current_user.email) |> String.upcase() %>
+            </div>
+            <div>
+              <p class="text-sm font-medium text-gray-900 dark:text-white">
+                <%= @current_user.name || "Usuário" %>
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400"><%= @current_user.email %></p>
+            </div>
+          </div>
+          <a
+            href="/dashboard"
+            class="block px-3 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+            phx-click={JS.hide(to: "#app-mobile-menu")}
+          >
+            <.icon name="hero-home" class="h-5 w-5 inline mr-2" /> Dashboard
+          </a>
+          <a
+            href="/lessons/new"
+            class="block px-3 py-2 rounded-lg text-base font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
+            phx-click={JS.hide(to: "#app-mobile-menu")}
+          >
+            <.icon name="hero-plus-circle" class="h-5 w-5 inline mr-2" /> Nova Aula
+          </a>
+          <a
+            href="/logout"
+            class="block px-3 py-2 rounded-lg text-base font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+          >
+            <.icon name="hero-arrow-right-on-rectangle" class="h-5 w-5 inline mr-2" /> Sair
+          </a>
+        </div>
+      </div>
+    </nav>
+    """
+  end
+
+  @doc """
   Renders a sidebar for coordinators.
 
   ## Examples

@@ -36,12 +36,34 @@ export const ScrollAnimation = {
 };
 
 /**
+ * Theme Hook
+ * Only initializes theme from localStorage - NO click handler
+ * This hook should be placed on the page wrapper
+ */
+export const ThemeHook = {
+  mounted() {
+    // Initialize theme from localStorage or system preference
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }
+};
+
+/**
  * Theme Toggle Hook
- * Handles theme switching between light and dark modes
+ * Handles click to toggle theme - use this on the toggle button
  */
 export const ThemeToggle = {
   mounted() {
-    this.el.addEventListener('click', () => {
+    this.el.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
       const html = document.documentElement;
       const isDark = html.classList.contains('dark');
 

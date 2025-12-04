@@ -81,9 +81,10 @@ defmodule HellenWeb.LandingComponents do
             </a>
           </div>
           <!-- Actions -->
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2 sm:gap-3">
             <button
-              phx-click={JS.dispatch("click", to: "#theme-wrapper")}
+              id="theme-toggle"
+              phx-hook="ThemeToggle"
               class="p-2 text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
               title="Alternar tema"
             >
@@ -93,16 +94,78 @@ defmodule HellenWeb.LandingComponents do
 
             <a
               href="/login"
-              class="hidden sm:block text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors px-3 py-2"
+              class="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors px-3 py-2"
             >
               Entrar
             </a>
 
             <a
               href="/register"
-              class="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md"
+              class="hidden sm:inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md"
             >
               Criar Conta
+            </a>
+            <!-- Mobile menu button -->
+            <button
+              type="button"
+              class="md:hidden p-2 text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              phx-click={JS.toggle(to: "#mobile-menu", in: "fade-in-scale", out: "fade-out-scale")}
+              aria-expanded="false"
+              aria-controls="mobile-menu"
+            >
+              <span class="sr-only">Abrir menu</span>
+              <.icon name="hero-bars-3" class="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Mobile menu -->
+      <div
+        id="mobile-menu"
+        class="hidden md:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-gray-200/50 dark:border-slate-700/50"
+      >
+        <div class="px-4 py-4 space-y-3">
+          <a
+            href="#features"
+            class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            phx-click={JS.hide(to: "#mobile-menu")}
+          >
+            Recursos
+          </a>
+          <a
+            href="#pricing"
+            class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            phx-click={JS.hide(to: "#mobile-menu")}
+          >
+            Preços
+          </a>
+          <a
+            href="#testimonials"
+            class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            phx-click={JS.hide(to: "#mobile-menu")}
+          >
+            Depoimentos
+          </a>
+          <a
+            href="#contact"
+            class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            phx-click={JS.hide(to: "#mobile-menu")}
+          >
+            Contato
+          </a>
+
+          <div class="pt-3 border-t border-gray-200 dark:border-slate-700 space-y-3">
+            <a
+              href="/login"
+              class="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            >
+              Entrar
+            </a>
+            <a
+              href="/register"
+              class="block w-full text-center px-4 py-2.5 text-base font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors duration-200"
+            >
+              Criar Conta Gratuita
             </a>
           </div>
         </div>
@@ -140,38 +203,38 @@ defmodule HellenWeb.LandingComponents do
         <div class="absolute top-1/2 left-1/2 w-96 h-96 bg-pink-400/10 dark:bg-pink-500/5 rounded-full blur-3xl animate-pulse-glow" />
       </div>
 
-      <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
+      <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-32">
         <div class="text-center max-w-4xl mx-auto">
           <!-- Badge -->
-          <div class="inline-flex items-center px-4 py-1.5 rounded-full bg-indigo-100/80 dark:bg-indigo-900/30 backdrop-blur-sm mb-8 animate-fade-in-up">
-            <span class="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+          <div class="inline-flex items-center px-3 sm:px-4 py-1.5 rounded-full bg-indigo-100/80 dark:bg-indigo-900/30 backdrop-blur-sm mb-6 sm:mb-8 animate-fade-in-up">
+            <span class="text-xs sm:text-sm font-semibold text-indigo-600 dark:text-indigo-400">
               Feedback pedagógico com IA
             </span>
           </div>
           <!-- Headline -->
-          <h1 class="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 dark:text-white mb-6 animate-fade-in-up leading-tight">
+          <h1 class="text-3xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6 animate-fade-in-up leading-tight">
             Transforme suas aulas com
             <span class="bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
               feedback inteligente
             </span>
           </h1>
           <!-- Subtitle -->
-          <p class="text-xl sm:text-2xl text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto animate-fade-in-up leading-relaxed">
+          <p class="text-base sm:text-xl lg:text-2xl text-gray-600 dark:text-gray-300 mb-8 sm:mb-12 max-w-3xl mx-auto animate-fade-in-up leading-relaxed px-2">
             Analise gravações de aulas automaticamente com base na <strong>BNCC</strong>
             e <strong>Lei 13.185</strong>. Receba insights pedagógicos em minutos.
           </p>
           <!-- CTAs -->
-          <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16 animate-fade-in-up">
+          <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center mb-10 sm:mb-16 animate-fade-in-up px-4 sm:px-0">
             <a
               href="/register"
-              class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto"
+              class="inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 text-base font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto"
             >
               Comece Grátis <.icon name="hero-arrow-right" class="ml-2 h-5 w-5" />
             </a>
 
             <a
               href="#demo"
-              class="inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 border-2 border-indigo-200 dark:border-indigo-800 rounded-xl transition-all duration-200 w-full sm:w-auto"
+              class="inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 text-base font-semibold text-indigo-600 dark:text-indigo-400 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 border-2 border-indigo-200 dark:border-indigo-800 rounded-xl transition-all duration-200 w-full sm:w-auto"
             >
               <.icon name="hero-play-circle" class="mr-2 h-5 w-5" /> Ver Demo
             </a>
@@ -318,8 +381,8 @@ defmodule HellenWeb.LandingComponents do
   def feature_card(assigns) do
     ~H"""
     <div class={[
-      "group relative bg-white dark:bg-slate-800 rounded-2xl p-8",
-      "border-2 border-gray-200 dark:border-slate-700",
+      "group relative bg-white dark:bg-slate-800 rounded-xl sm:rounded-2xl p-5 sm:p-8",
+      "border border-gray-200 dark:border-slate-700 sm:border-2",
       "hover:border-transparent hover:shadow-xl",
       "transition-all duration-300",
       "overflow-hidden",
@@ -332,24 +395,24 @@ defmodule HellenWeb.LandingComponents do
       ]} />
       <!-- Icon -->
       <div class={[
-        "inline-flex items-center justify-center w-14 h-14 rounded-xl mb-6",
+        "inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl mb-4 sm:mb-6",
         feature_color_bg(@color)
       ]}>
-        <.icon name={@icon} class={"h-7 w-7 #{feature_color_text(@color)}"} />
+        <.icon name={@icon} class={"h-6 w-6 sm:h-7 sm:w-7 #{feature_color_text(@color)}"} />
       </div>
       <!-- Content -->
-      <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+      <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2 sm:mb-3">
         <%= @title %>
       </h3>
-      <p class="text-gray-600 dark:text-gray-400 mb-6">
+      <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4 sm:mb-6">
         <%= @description %>
       </p>
       <!-- Stats -->
-      <div :if={@stat} class="pt-6 border-t border-gray-200 dark:border-slate-700">
-        <div class={["text-3xl font-bold mb-1", feature_color_text(@color)]}>
+      <div :if={@stat} class="pt-4 sm:pt-6 border-t border-gray-200 dark:border-slate-700">
+        <div class={["text-2xl sm:text-3xl font-bold mb-1", feature_color_text(@color)]}>
           <%= @stat %>
         </div>
-        <div class="text-sm text-gray-500 dark:text-gray-400">
+        <div class="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
           <%= @stat_label %>
         </div>
       </div>
@@ -393,21 +456,21 @@ defmodule HellenWeb.LandingComponents do
     <section
       id="features"
       class={[
-        "py-24 bg-gray-50 dark:bg-slate-950",
+        "py-16 sm:py-24 bg-gray-50 dark:bg-slate-950",
         @class
       ]}
     >
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-16">
-          <h2 class="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+        <div class="text-center mb-10 sm:mb-16">
+          <h2 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4">
             Recursos Poderosos
           </h2>
-          <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+          <p class="text-base sm:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto px-2">
             Tudo que você precisa para melhorar suas aulas
           </p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
           <.feature_card
             icon="hero-microphone"
             title="Transcrição Automática"
@@ -829,38 +892,38 @@ defmodule HellenWeb.LandingComponents do
     <footer
       id="contact"
       class={[
-        "bg-gray-900 dark:bg-slate-950 text-gray-300 py-12",
+        "bg-gray-900 dark:bg-slate-950 text-gray-300 py-10 sm:py-12",
         @class
       ]}
     >
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-8">
           <!-- Logo & Description -->
-          <div class="md:col-span-2">
+          <div class="col-span-2">
             <div class="flex items-center mb-4">
-              <span class="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+              <span class="text-xl sm:text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
                 Hellen
               </span>
               <span class="ml-1.5 text-xs font-semibold text-gray-400">
                 AI
               </span>
             </div>
-            <p class="text-gray-400 max-w-md mb-6">
+            <p class="text-sm sm:text-base text-gray-400 max-w-md mb-6">
               Análise pedagógica inteligente para professores que buscam excelência. Baseado na BNCC e Lei 13.185.
             </p>
             <div class="flex gap-4">
               <a href="#" class="text-gray-400 hover:text-white transition-colors">
-                <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                <svg class="h-5 w-5 sm:h-6 sm:w-6" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                 </svg>
               </a>
               <a href="#" class="text-gray-400 hover:text-white transition-colors">
-                <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                <svg class="h-5 w-5 sm:h-6 sm:w-6" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
                 </svg>
               </a>
               <a href="#" class="text-gray-400 hover:text-white transition-colors">
-                <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                <svg class="h-5 w-5 sm:h-6 sm:w-6" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.441 16.892c-2.102.144-6.784.144-8.883 0C5.282 16.736 5.017 15.622 5 12c.017-3.629.285-4.736 2.558-4.892 2.099-.144 6.782-.144 8.883 0C18.718 7.264 18.982 8.378 19 12c-.018 3.629-.285 4.736-2.559 4.892zM10 9.658l4.917 2.338L10 14.342V9.658z" />
                 </svg>
               </a>
@@ -868,25 +931,28 @@ defmodule HellenWeb.LandingComponents do
           </div>
           <!-- Links -->
           <div>
-            <h3 class="text-white font-semibold mb-4">Empresa</h3>
-            <ul class="space-y-2">
+            <h3 class="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Empresa</h3>
+            <ul class="space-y-1.5 sm:space-y-2">
               <li>
-                <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                <a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">
                   Sobre nós
                 </a>
               </li>
               <li>
-                <a href="#features" class="text-gray-400 hover:text-white transition-colors">
+                <a href="#features" class="text-sm text-gray-400 hover:text-white transition-colors">
                   Recursos
                 </a>
               </li>
               <li>
-                <a href="#pricing" class="text-gray-400 hover:text-white transition-colors">
+                <a href="#pricing" class="text-sm text-gray-400 hover:text-white transition-colors">
                   Preços
                 </a>
               </li>
               <li>
-                <a href="#testimonials" class="text-gray-400 hover:text-white transition-colors">
+                <a
+                  href="#testimonials"
+                  class="text-sm text-gray-400 hover:text-white transition-colors"
+                >
                   Depoimentos
                 </a>
               </li>
@@ -894,25 +960,25 @@ defmodule HellenWeb.LandingComponents do
           </div>
           <!-- Legal -->
           <div>
-            <h3 class="text-white font-semibold mb-4">Legal</h3>
-            <ul class="space-y-2">
+            <h3 class="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Legal</h3>
+            <ul class="space-y-1.5 sm:space-y-2">
               <li>
-                <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                <a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">
                   Termos de Uso
                 </a>
               </li>
               <li>
-                <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                <a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">
                   Privacidade
                 </a>
               </li>
               <li>
-                <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                <a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">
                   Cookies
                 </a>
               </li>
               <li>
-                <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                <a href="#" class="text-sm text-gray-400 hover:text-white transition-colors">
                   Contato
                 </a>
               </li>
@@ -920,12 +986,12 @@ defmodule HellenWeb.LandingComponents do
           </div>
         </div>
         <!-- Bottom bar -->
-        <div class="pt-8 border-t border-gray-800">
-          <div class="flex flex-col md:flex-row justify-between items-center">
-            <p class="text-sm text-gray-400">
-              © 2024 Hellen AI. Todos os direitos reservados.
+        <div class="pt-6 sm:pt-8 border-t border-gray-800">
+          <div class="flex flex-col sm:flex-row justify-between items-center gap-2">
+            <p class="text-xs sm:text-sm text-gray-400 text-center sm:text-left">
+              © 2026 Hellen AI. Todos os direitos reservados.
             </p>
-            <p class="text-sm text-gray-400 mt-2 md:mt-0">
+            <p class="text-xs sm:text-sm text-gray-400">
               Feito com <span class="text-red-500">♥</span> para educadores
             </p>
           </div>

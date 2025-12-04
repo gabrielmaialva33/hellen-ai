@@ -41,24 +41,30 @@ defmodule HellenWeb.DashboardLive.Index do
   end
 
   # Stats computation runs in background
+  # assign_async requires the returned map to include the key name
   defp load_stats(user_id) do
     lessons = Lessons.list_lessons_by_user(user_id)
 
-    stats = %{
-      total: length(lessons),
-      completed: Enum.count(lessons, &(&1.status == "completed")),
-      processing: Enum.count(lessons, &(&1.status in ["transcribing", "analyzing", "transcribed"])),
-      pending: Enum.count(lessons, &(&1.status == "pending"))
-    }
-
-    {:ok, %{stats: stats}}
+    {:ok,
+     %{
+       stats: %{
+         total: length(lessons),
+         completed: Enum.count(lessons, &(&1.status == "completed")),
+         processing:
+           Enum.count(lessons, &(&1.status in ["transcribing", "analyzing", "transcribed"])),
+         pending: Enum.count(lessons, &(&1.status == "pending"))
+       }
+     }}
   end
 
   @impl true
   def render(assigns) do
     ~H"""
     <div class="space-y-8">
-      <.page_header title="Minhas Aulas" description="Gerencie suas aulas e veja os resultados das análises">
+      <.page_header
+        title="Minhas Aulas"
+        description="Gerencie suas aulas e veja os resultados das análises"
+      >
         <:actions>
           <.link navigate={~p"/lessons/new"}>
             <.button>
@@ -80,42 +86,33 @@ defmodule HellenWeb.DashboardLive.Index do
         </:failed>
 
         <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <.stat_card title="Total de Aulas" value={data.stats.total} icon="hero-academic-cap" />
+          <.stat_card title="Total de Aulas" value={data.total} icon="hero-academic-cap" />
           <.stat_card
             title="Concluídas"
-            value={data.stats.completed}
+            value={data.completed}
             icon="hero-check-circle"
             variant="success"
           />
           <.stat_card
             title="Em Progresso"
-            value={data.stats.processing}
+            value={data.processing}
             icon="hero-arrow-path"
             variant="processing"
           />
-          <.stat_card
-            title="Pendentes"
-            value={data.stats.pending}
-            icon="hero-clock"
-            variant="pending"
-          />
+          <.stat_card title="Pendentes" value={data.pending} icon="hero-clock" variant="pending" />
         </div>
       </.async_result>
 
       <%!-- Lessons com streams --%>
       <div id="lessons-container" phx-update="stream">
-        <div
-          :for={{dom_id, lesson} <- @streams.lessons}
-          id={dom_id}
-          class="mb-4"
-        >
+        <div :for={{dom_id, lesson} <- @streams.lessons} id={dom_id} class="mb-4">
           <.lesson_card lesson={lesson} />
         </div>
       </div>
 
       <%!-- Empty state (mostrar apenas se stats carregou e total = 0) --%>
       <.empty_state
-        :if={match?(%{ok?: true, result: %{stats: %{total: 0}}}, @stats)}
+        :if={match?(%{ok?: true, result: %{total: 0}}, @stats)}
         icon="hero-document-text"
         title="Nenhuma aula"
         description="Comece enviando sua primeira aula para análise."

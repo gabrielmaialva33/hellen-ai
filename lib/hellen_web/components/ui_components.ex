@@ -33,17 +33,26 @@ defmodule HellenWeb.UIComponents do
   attr :title, :string, required: true
   attr :value, :any, required: true
   attr :icon, :string, required: true
-  attr :variant, :string, default: "default", values: ~w(default success processing pending warning)
+
+  attr :variant, :string,
+    default: "default",
+    values: ~w(default success processing pending warning)
+
   attr :subtitle, :string, default: nil
 
   def stat_card(assigns) do
     ~H"""
-    <div class={["bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6", stat_card_border(@variant)]}>
+    <div class={[
+      "bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6",
+      stat_card_border(@variant)
+    ]}>
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">{@title}</p>
-          <p class="mt-1 text-3xl font-semibold text-gray-900 dark:text-white">{@value}</p>
-          <p :if={@subtitle} class="mt-1 text-xs text-gray-500 dark:text-gray-400">{@subtitle}</p>
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400"><%= @title %></p>
+          <p class="mt-1 text-3xl font-semibold text-gray-900 dark:text-white"><%= @value %></p>
+          <p :if={@subtitle} class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            <%= @subtitle %>
+          </p>
         </div>
         <div class={["p-3 rounded-full", stat_icon_bg(@variant)]}>
           <.icon name={@icon} class={"h-6 w-6 #{stat_icon_color(@variant)}"} />
@@ -98,10 +107,12 @@ defmodule HellenWeb.UIComponents do
     ~H"""
     <div class="text-center py-12">
       <.icon name={@icon} class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
-      <h3 class="mt-2 text-sm font-semibold text-gray-900 dark:text-white">{@title}</h3>
-      <p :if={@description} class="mt-1 text-sm text-gray-500 dark:text-gray-400">{@description}</p>
+      <h3 class="mt-2 text-sm font-semibold text-gray-900 dark:text-white"><%= @title %></h3>
+      <p :if={@description} class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <%= @description %>
+      </p>
       <div :if={@inner_block != []} class="mt-6">
-        {render_slot(@inner_block)}
+        <%= render_slot(@inner_block) %>
       </div>
     </div>
     """
@@ -127,24 +138,24 @@ defmodule HellenWeb.UIComponents do
         <div class="flex justify-between items-start">
           <div class="flex-1 min-w-0">
             <h3 class="text-base font-semibold text-gray-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
-              {@lesson.title || "Aula sem título"}
+              <%= @lesson.title || "Aula sem título" %>
             </h3>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 truncate">
-              {@lesson.subject || "Disciplina não informada"}
+              <%= @lesson.subject || "Disciplina não informada" %>
             </p>
           </div>
           <.badge variant={status_variant(@lesson.status)}>
-            {status_label(@lesson.status)}
+            <%= status_label(@lesson.status) %>
           </.badge>
         </div>
 
         <div class="mt-4 flex items-center text-xs text-gray-500 dark:text-gray-400">
           <.icon name="hero-calendar-mini" class="h-4 w-4 mr-1" />
-          {format_date(@lesson.inserted_at)}
+          <%= format_date(@lesson.inserted_at) %>
 
           <span :if={@lesson.duration_seconds} class="ml-4 flex items-center">
             <.icon name="hero-clock-mini" class="h-4 w-4 mr-1" />
-            {format_duration(@lesson.duration_seconds)}
+            <%= format_duration(@lesson.duration_seconds) %>
           </span>
         </div>
       </div>
@@ -214,13 +225,13 @@ defmodule HellenWeb.UIComponents do
     ~H"""
     <div class="flex justify-between items-start mb-8">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{@title}</h1>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white"><%= @title %></h1>
         <p :if={@description} class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {@description}
+          <%= @description %>
         </p>
       </div>
       <div :if={@actions != []} class="flex items-center gap-3">
-        {render_slot(@actions)}
+        <%= render_slot(@actions) %>
       </div>
     </div>
     """
@@ -264,10 +275,10 @@ defmodule HellenWeb.UIComponents do
           />
         </svg>
         <span class={["absolute font-bold", score_text_size(@size), score_color(@score)]}>
-          {@score}%
+          <%= @score %>%
         </span>
       </div>
-      <p :if={@label} class="mt-2 text-sm text-gray-500 dark:text-gray-400">{@label}</p>
+      <p :if={@label} class="mt-2 text-sm text-gray-500 dark:text-gray-400"><%= @label %></p>
     </div>
     """
   end
@@ -308,10 +319,10 @@ defmodule HellenWeb.UIComponents do
     <div class={["bg-gray-50 dark:bg-slate-800/50 rounded-lg p-4", @class]}>
       <div class="flex items-center gap-2 mb-3">
         <.icon name={@icon} class="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-        <h4 class="font-semibold text-gray-900 dark:text-white">{@title}</h4>
+        <h4 class="font-semibold text-gray-900 dark:text-white"><%= @title %></h4>
       </div>
       <div class="text-sm text-gray-700 dark:text-gray-300">
-        {render_slot(@inner_block)}
+        <%= render_slot(@inner_block) %>
       </div>
     </div>
     """
