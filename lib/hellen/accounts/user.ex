@@ -70,6 +70,25 @@ defmodule Hellen.Accounts.User do
     end
   end
 
+  @doc "Changeset for updating user password"
+  def password_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:password])
+    |> validate_required([:password])
+    |> validate_length(:password, min: 8, max: 72)
+    |> hash_password()
+  end
+
+  @doc "Changeset for updating profile (name, email only)"
+  def profile_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:name, :email])
+    |> validate_required([:name, :email])
+    |> validate_format(:email, ~r/^[^\s]+@[^\s]+$/, message: "must have the @ sign and no spaces")
+    |> validate_length(:email, max: 160)
+    |> unique_constraint(:email)
+  end
+
   def valid_password?(%__MODULE__{password_hash: hashed_password}, password)
       when is_binary(hashed_password) and byte_size(password) > 0 do
     Bcrypt.verify_pass(password, hashed_password)

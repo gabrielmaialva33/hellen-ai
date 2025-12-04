@@ -5,7 +5,7 @@ defmodule Hellen.Accounts do
 
   import Ecto.Query, warn: false
 
-  alias Hellen.Accounts.{Institution, User}
+  alias Hellen.Accounts.{Institution, Invitation, User}
   alias Hellen.Billing
   alias Hellen.Repo
 
@@ -109,6 +109,32 @@ defmodule Hellen.Accounts do
     user
     |> User.changeset(attrs)
     |> Repo.update()
+  end
+
+  @doc """
+  Update user profile (name and email only).
+  """
+  @spec update_user_profile(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def update_user_profile(%User{} = user, attrs) do
+    user
+    |> User.profile_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Change user password after verifying current password.
+  Returns {:error, :invalid_password} if current password doesn't match.
+  """
+  @spec change_user_password(User.t(), String.t(), String.t()) ::
+          {:ok, User.t()} | {:error, :invalid_password | Ecto.Changeset.t()}
+  def change_user_password(%User{} = user, current_password, new_password) do
+    if User.valid_password?(user, current_password) do
+      user
+      |> User.password_changeset(%{password: new_password})
+      |> Repo.update()
+    else
+      {:error, :invalid_password}
+    end
   end
 
   def list_users_by_institution(institution_id) do
@@ -301,4 +327,386 @@ defmodule Hellen.Accounts do
   end
 
   def update_user_role(_user, _role), do: {:error, :invalid_role}
+
+  ## Admin Functions
+
+  @doc """
+  Get system-wide statistics for admin dashboard.
+  Returns counts for institutions, users, lessons, analyses, and pending alerts.
+  """
+  @spec get_system_stats() :: map()
+  def get_system_stats do
+    institutions_count = Repo.aggregate(Institution, :count)
+    users_count = Repo.aggregate(User, :count)
+
+    lessons_count = Repo.aggregate(Hellen.Lessons.Lesson, :count)
+    analyses_count = Repo.aggregate(Hellen.Analysis.Analysis, :count)
+
+    pending_alerts =
+      Hellen.Analysis.BullyingAlert
+      |> where([b], b.reviewed == false)
+      |> Repo.aggregate(:count)
+
+    users_by_role =
+      User
+      |> group_by([u], u.role)
+      |> select([u], {u.role, count(u.id)})
+      |> Repo.all()
+      |> Map.new()
+
+    users_by_plan =
+      User
+      |> group_by([u], u.plan)
+      |> select([u], {u.plan, count(u.id)})
+      |> Repo.all()
+      |> Map.new()
+
+    %{
+      institutions: institutions_count,
+      users: users_count,
+      lessons: lessons_count,
+      analyses: analyses_count,
+      pending_alerts: pending_alerts,
+      users_by_role: users_by_role,
+      users_by_plan: users_by_plan
+    }
+  end
+
+  @doc """
+  List all institutions with their statistics.
+  """
+  @spec list_institutions_with_stats() :: [map()]
+  def list_institutions_with_stats do
+    institutions = Repo.all(from i in Institution, order_by: [desc: i.inserted_at])
+
+    Enum.map(institutions, fn institution ->
+      users_count =
+        User
+        |> where([u], u.institution_id == ^institution.id)
+        |> Repo.aggregate(:count)
+
+      lessons_count =
+        Hellen.Lessons.Lesson
+        |> where([l], l.institution_id == ^institution.id)
+        |> Repo.aggregate(:count)
+
+      analyses_count =
+        Hellen.Analysis.Analysis
+        |> where([a], a.institution_id == ^institution.id)
+        |> Repo.aggregate(:count)
+
+      %{
+        institution: institution,
+        users_count: users_count,
+        lessons_count: lessons_count,
+        analyses_count: analyses_count
+      }
+    end)
+  end
+
+  @doc """
+  List all users with optional filters.
+  Supports: role, plan, institution_id, search (name/email), pagination.
+  """
+  @spec list_all_users(keyword()) :: {[User.t()], integer()}
+  def list_all_users(opts \\ []) do
+    role = Keyword.get(opts, :role)
+    plan = Keyword.get(opts, :plan)
+    institution_id = Keyword.get(opts, :institution_id)
+    search = Keyword.get(opts, :search)
+    page = Keyword.get(opts, :page, 1)
+    per_page = Keyword.get(opts, :per_page, 20)
+
+    query =
+      User
+      |> order_by([u], desc: u.inserted_at)
+
+    query =
+      if role do
+        where(query, [u], u.role == ^role)
+      else
+        query
+      end
+
+    query =
+      if plan do
+        where(query, [u], u.plan == ^plan)
+      else
+        query
+      end
+
+    query =
+      if institution_id do
+        where(query, [u], u.institution_id == ^institution_id)
+      else
+        query
+      end
+
+    query =
+      if search && search != "" do
+        search_term = "%#{search}%"
+        where(query, [u], ilike(u.name, ^search_term) or ilike(u.email, ^search_term))
+      else
+        query
+      end
+
+    total = Repo.aggregate(query, :count)
+
+    users =
+      query
+      |> limit(^per_page)
+      |> offset(^((page - 1) * per_page))
+      |> preload(:institution)
+      |> Repo.all()
+
+    {users, total}
+  end
+
+  @doc """
+  Admin function to update any user's role.
+  Allows all role transitions including admin.
+  """
+  @spec admin_update_user_role(User.t(), String.t()) :: {:ok, User.t()} | {:error, term()}
+  def admin_update_user_role(%User{} = user, new_role)
+      when new_role in ["teacher", "coordinator", "admin"] do
+    user
+    |> User.changeset(%{role: new_role})
+    |> Repo.update()
+  end
+
+  def admin_update_user_role(_user, _role), do: {:error, :invalid_role}
+
+  @doc """
+  Admin function to assign a user to an institution.
+  Pass nil to remove from institution.
+  """
+  @spec admin_assign_user_to_institution(User.t(), binary() | nil) ::
+          {:ok, User.t()} | {:error, term()}
+  def admin_assign_user_to_institution(%User{} = user, institution_id) do
+    user
+    |> User.changeset(%{institution_id: institution_id})
+    |> Repo.update()
+  end
+
+  @doc """
+  Admin function to update a user's plan.
+  """
+  @spec admin_update_user_plan(User.t(), String.t()) :: {:ok, User.t()} | {:error, term()}
+  def admin_update_user_plan(%User{} = user, new_plan)
+      when new_plan in ["free", "pro", "enterprise"] do
+    user
+    |> User.changeset(%{plan: new_plan})
+    |> Repo.update()
+  end
+
+  def admin_update_user_plan(_user, _plan), do: {:error, :invalid_plan}
+
+  @doc """
+  Admin function to add credits to a user.
+  """
+  @spec admin_add_user_credits(User.t(), integer(), String.t()) ::
+          {:ok, User.t()} | {:error, term()}
+  def admin_add_user_credits(%User{} = user, amount, reason \\ "admin_grant") when amount > 0 do
+    Hellen.Billing.add_credits(user, amount, reason)
+  end
+
+  @doc """
+  Get daily user registrations for the last N days.
+  Used for admin dashboard chart.
+  """
+  @spec get_daily_registrations(integer()) :: [map()]
+  def get_daily_registrations(days \\ 30) do
+    start_date = Date.utc_today() |> Date.add(-days)
+
+    User
+    |> where([u], fragment("?::date", u.inserted_at) >= ^start_date)
+    |> group_by([u], fragment("?::date", u.inserted_at))
+    |> select([u], %{date: fragment("?::date", u.inserted_at), count: count(u.id)})
+    |> order_by([u], fragment("?::date", u.inserted_at))
+    |> Repo.all()
+  end
+
+  @doc """
+  Get recent activity across the platform.
+  Returns recent lessons, analyses, and alerts.
+  """
+  @spec get_recent_platform_activity(integer()) :: map()
+  def get_recent_platform_activity(limit \\ 10) do
+    recent_lessons =
+      Hellen.Lessons.Lesson
+      |> order_by([l], desc: l.inserted_at)
+      |> limit(^limit)
+      |> preload([:user, :institution])
+      |> Repo.all()
+
+    recent_analyses =
+      Hellen.Analysis.Analysis
+      |> order_by([a], desc: a.inserted_at)
+      |> limit(^limit)
+      |> preload(lesson: [:user, :institution])
+      |> Repo.all()
+
+    recent_alerts =
+      Hellen.Analysis.BullyingAlert
+      |> where([b], b.reviewed == false)
+      |> order_by([b], desc: b.inserted_at)
+      |> limit(^limit)
+      |> preload(analysis: [lesson: [:user, :institution]])
+      |> Repo.all()
+
+    %{
+      lessons: recent_lessons,
+      analyses: recent_analyses,
+      alerts: recent_alerts
+    }
+  end
+
+  ## Invitation Functions
+
+  @doc """
+  Creates an invitation to join an institution.
+  """
+  @spec create_invitation(binary(), map(), User.t()) ::
+          {:ok, Invitation.t()} | {:error, Ecto.Changeset.t()}
+  def create_invitation(institution_id, attrs, invited_by) do
+    attrs =
+      attrs
+      |> Map.put(:institution_id, institution_id)
+      |> Map.put(:invited_by_id, invited_by.id)
+
+    %Invitation{}
+    |> Invitation.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Gets an invitation by token.
+  """
+  @spec get_invitation_by_token(String.t()) :: Invitation.t() | nil
+  def get_invitation_by_token(token) when is_binary(token) do
+    Invitation
+    |> where([i], i.token == ^token)
+    |> preload([:institution, :invited_by])
+    |> Repo.one()
+  end
+
+  @doc """
+  Lists pending invitations for an institution.
+  """
+  @spec list_pending_invitations(binary()) :: [Invitation.t()]
+  def list_pending_invitations(institution_id) do
+    now = DateTime.utc_now()
+
+    Invitation
+    |> where([i], i.institution_id == ^institution_id)
+    |> where([i], is_nil(i.accepted_at) and is_nil(i.revoked_at))
+    |> where([i], i.expires_at > ^now)
+    |> order_by([i], desc: i.inserted_at)
+    |> preload(:invited_by)
+    |> Repo.all()
+  end
+
+  @doc """
+  Accepts an invitation and creates/updates the user.
+  """
+  @spec accept_invitation(String.t(), map()) ::
+          {:ok, User.t()} | {:error, atom() | Ecto.Changeset.t()}
+  def accept_invitation(token, user_attrs) do
+    case get_invitation_by_token(token) do
+      nil ->
+        {:error, :not_found}
+
+      invitation ->
+        if Invitation.valid?(invitation) do
+          do_accept_invitation(invitation, user_attrs)
+        else
+          cond do
+            invitation.accepted_at -> {:error, :already_accepted}
+            invitation.revoked_at -> {:error, :revoked}
+            Invitation.expired?(invitation) -> {:error, :expired}
+            true -> {:error, :invalid}
+          end
+        end
+    end
+  end
+
+  defp do_accept_invitation(invitation, user_attrs) do
+    user_attrs =
+      user_attrs
+      |> Map.put(:institution_id, invitation.institution_id)
+      |> Map.put(:role, invitation.role)
+      |> Map.put_new(:name, invitation.name)
+      |> Map.put_new(:email, invitation.email)
+
+    Ecto.Multi.new()
+    |> Ecto.Multi.run(:user, fn _repo, _changes ->
+      case get_user_by_email(invitation.email) do
+        nil ->
+          register_user(user_attrs)
+
+        existing_user ->
+          update_user(existing_user, %{
+            institution_id: invitation.institution_id,
+            role: invitation.role
+          })
+      end
+    end)
+    |> Ecto.Multi.update(:invitation, fn %{user: user} ->
+      Invitation.accept_changeset(invitation, %{
+        user_id: user.id,
+        accepted_at: DateTime.utc_now() |> DateTime.truncate(:second)
+      })
+    end)
+    |> Repo.transaction()
+    |> case do
+      {:ok, %{user: user}} -> {:ok, user}
+      {:error, _op, changeset, _changes} -> {:error, changeset}
+    end
+  end
+
+  @doc """
+  Revokes an invitation.
+  """
+  @spec revoke_invitation(binary()) :: {:ok, Invitation.t()} | {:error, term()}
+  def revoke_invitation(invitation_id) do
+    case Repo.get(Invitation, invitation_id) do
+      nil ->
+        {:error, :not_found}
+
+      invitation ->
+        invitation
+        |> Invitation.revoke_changeset()
+        |> Repo.update()
+    end
+  end
+
+  @doc """
+  Resends an invitation by revoking the old one and creating a new one.
+  """
+  @spec resend_invitation(binary()) :: {:ok, Invitation.t()} | {:error, term()}
+  def resend_invitation(invitation_id) do
+    case Repo.get(Invitation, invitation_id) |> Repo.preload(:invited_by) do
+      nil ->
+        {:error, :not_found}
+
+      invitation ->
+        Ecto.Multi.new()
+        |> Ecto.Multi.update(:revoke, Invitation.revoke_changeset(invitation))
+        |> Ecto.Multi.insert(:new_invitation, fn _changes ->
+          %Invitation{}
+          |> Invitation.changeset(%{
+            email: invitation.email,
+            name: invitation.name,
+            role: invitation.role,
+            institution_id: invitation.institution_id,
+            invited_by_id: invitation.invited_by_id
+          })
+        end)
+        |> Repo.transaction()
+        |> case do
+          {:ok, %{new_invitation: new_invitation}} -> {:ok, new_invitation}
+          {:error, _op, changeset, _changes} -> {:error, changeset}
+        end
+    end
+  end
 end

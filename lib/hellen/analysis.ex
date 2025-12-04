@@ -330,4 +330,241 @@ defmodule Hellen.Analysis do
       by_type: by_type
     }
   end
+
+  ## Advanced Analytics
+
+  @doc """
+  Compare scores between two periods for a user.
+  Returns current vs previous period averages with trend.
+  """
+  def get_score_comparison(user_id, opts \\ []) do
+    days = Keyword.get(opts, :days, 30)
+    now = DateTime.utc_now()
+    current_start = DateTime.add(now, -days, :day)
+    previous_start = DateTime.add(current_start, -days, :day)
+
+    current_avg = get_period_average(user_id, current_start, now)
+    previous_avg = get_period_average(user_id, previous_start, current_start)
+
+    change_percent =
+      if previous_avg && previous_avg > 0 do
+        ((current_avg || 0) - previous_avg) / previous_avg * 100
+      else
+        0.0
+      end
+
+    trend =
+      cond do
+        change_percent > 5 -> :improving
+        change_percent < -5 -> :declining
+        true -> :stable
+      end
+
+    %{
+      current_avg: current_avg || 0.0,
+      previous_avg: previous_avg || 0.0,
+      change_percent: Float.round(change_percent, 1),
+      trend: trend,
+      period_days: days
+    }
+  end
+
+  defp get_period_average(user_id, start_date, end_date) do
+    Analysis
+    |> join(:inner, [a], l in assoc(a, :lesson))
+    |> where([a, l], l.user_id == ^user_id)
+    |> where([a], not is_nil(a.overall_score))
+    |> where([a], a.inserted_at >= ^start_date and a.inserted_at < ^end_date)
+    |> select([a], avg(a.overall_score))
+    |> Repo.one()
+  end
+
+  @doc """
+  Compare institution average with platform average.
+  """
+  def get_institution_comparison(institution_id, opts \\ []) do
+    days = Keyword.get(opts, :days, 30)
+    since = DateTime.add(DateTime.utc_now(), -days, :day)
+
+    institution_avg =
+      Analysis
+      |> where([a], a.institution_id == ^institution_id)
+      |> where([a], not is_nil(a.overall_score))
+      |> where([a], a.inserted_at >= ^since)
+      |> select([a], avg(a.overall_score))
+      |> Repo.one()
+
+    platform_avg =
+      Analysis
+      |> where([a], not is_nil(a.overall_score))
+      |> where([a], a.inserted_at >= ^since)
+      |> select([a], avg(a.overall_score))
+      |> Repo.one()
+
+    # Calculate rank and percentile
+    all_institution_avgs =
+      Analysis
+      |> where([a], not is_nil(a.overall_score))
+      |> where([a], a.inserted_at >= ^since)
+      |> group_by([a], a.institution_id)
+      |> select([a], avg(a.overall_score))
+      |> Repo.all()
+      |> Enum.sort(:desc)
+
+    rank =
+      all_institution_avgs
+      |> Enum.find_index(fn avg -> avg == institution_avg end)
+      |> case do
+        nil -> length(all_institution_avgs)
+        idx -> idx + 1
+      end
+
+    total_institutions = length(all_institution_avgs)
+
+    percentile =
+      if total_institutions > 0,
+        do: ((total_institutions - rank) / total_institutions * 100) |> Float.round(0),
+        else: 0
+
+    %{
+      institution_avg: Float.round(institution_avg || 0.0, 2),
+      platform_avg: Float.round(platform_avg || 0.0, 2),
+      rank: rank,
+      total_institutions: total_institutions,
+      percentile: percentile
+    }
+  end
+
+  @doc """
+  Get alert timeline grouped by day/week/month.
+  """
+  def get_alert_timeline(institution_id, opts \\ []) do
+    days = Keyword.get(opts, :days, 30)
+    group_by_period = Keyword.get(opts, :group_by, :day)
+    since = DateTime.add(DateTime.utc_now(), -days, :day)
+
+    base_query =
+      BullyingAlert
+      |> join(:inner, [b], a in assoc(b, :analysis))
+      |> where([b, a], a.institution_id == ^institution_id)
+      |> where([b], b.inserted_at >= ^since)
+
+    case group_by_period do
+      :day ->
+        base_query
+        |> group_by([b], fragment("DATE(?)", b.inserted_at))
+        |> select([b], %{
+          period: fragment("DATE(?)", b.inserted_at),
+          count: count(b.id),
+          high: count(fragment("CASE WHEN ? = 'high' THEN 1 END", b.severity)),
+          medium: count(fragment("CASE WHEN ? = 'medium' THEN 1 END", b.severity)),
+          low: count(fragment("CASE WHEN ? = 'low' THEN 1 END", b.severity))
+        })
+        |> order_by([b], asc: fragment("DATE(?)", b.inserted_at))
+        |> Repo.all()
+
+      :week ->
+        base_query
+        |> group_by([b], fragment("DATE_TRUNC('week', ?)", b.inserted_at))
+        |> select([b], %{
+          period: fragment("DATE_TRUNC('week', ?)", b.inserted_at),
+          count: count(b.id),
+          high: count(fragment("CASE WHEN ? = 'high' THEN 1 END", b.severity)),
+          medium: count(fragment("CASE WHEN ? = 'medium' THEN 1 END", b.severity)),
+          low: count(fragment("CASE WHEN ? = 'low' THEN 1 END", b.severity))
+        })
+        |> order_by([b], asc: fragment("DATE_TRUNC('week', ?)", b.inserted_at))
+        |> Repo.all()
+
+      :month ->
+        base_query
+        |> group_by([b], fragment("DATE_TRUNC('month', ?)", b.inserted_at))
+        |> select([b], %{
+          period: fragment("DATE_TRUNC('month', ?)", b.inserted_at),
+          count: count(b.id),
+          high: count(fragment("CASE WHEN ? = 'high' THEN 1 END", b.severity)),
+          medium: count(fragment("CASE WHEN ? = 'medium' THEN 1 END", b.severity)),
+          low: count(fragment("CASE WHEN ? = 'low' THEN 1 END", b.severity))
+        })
+        |> order_by([b], asc: fragment("DATE_TRUNC('month', ?)", b.inserted_at))
+        |> Repo.all()
+    end
+  end
+
+  @doc """
+  Get detailed BNCC coverage with drill-down by category.
+  """
+  def get_bncc_coverage_detailed(user_id, opts \\ []) do
+    days = Keyword.get(opts, :days, 90)
+    since = DateTime.add(DateTime.utc_now(), -days, :day)
+
+    BnccMatch
+    |> join(:inner, [m], a in assoc(m, :analysis))
+    |> join(:inner, [m, a], l in assoc(a, :lesson))
+    |> where([m, a, l], l.user_id == ^user_id)
+    |> where([m, a], a.inserted_at >= ^since)
+    |> group_by([m], [m.competencia_code, m.competencia_name])
+    |> select([m], %{
+      code: m.competencia_code,
+      name: m.competencia_name,
+      count: count(m.id),
+      avg_score: avg(m.match_score),
+      min_score: min(m.match_score),
+      max_score: max(m.match_score)
+    })
+    |> order_by([m], desc: count(m.id))
+    |> Repo.all()
+    |> Enum.map(fn item ->
+      # Extract category from code (e.g., "EF06LP01" -> "LP" for Lingua Portuguesa)
+      category = extract_bncc_category(item.code)
+      Map.put(item, :category, category)
+    end)
+  end
+
+  defp extract_bncc_category(code) when is_binary(code) do
+    case Regex.run(~r/[A-Z]{2}/, code) do
+      [cat] -> cat
+      _ -> "Outros"
+    end
+  end
+
+  defp extract_bncc_category(_), do: "Outros"
+
+  @doc """
+  Get daily score history for charts.
+  """
+  def get_daily_scores(user_id, opts \\ []) do
+    days = Keyword.get(opts, :days, 30)
+    since = DateTime.add(DateTime.utc_now(), -days, :day)
+
+    Analysis
+    |> join(:inner, [a], l in assoc(a, :lesson))
+    |> where([a, l], l.user_id == ^user_id)
+    |> where([a], not is_nil(a.overall_score))
+    |> where([a], a.inserted_at >= ^since)
+    |> group_by([a], fragment("DATE(?)", a.inserted_at))
+    |> select([a], %{
+      date: fragment("DATE(?)", a.inserted_at),
+      avg_score: avg(a.overall_score),
+      count: count(a.id)
+    })
+    |> order_by([a], asc: fragment("DATE(?)", a.inserted_at))
+    |> Repo.all()
+  end
+
+  @doc """
+  Get analyses for export with all related data.
+  """
+  def list_analyses_for_export(user_id, opts \\ []) do
+    days = Keyword.get(opts, :days, 90)
+    since = DateTime.add(DateTime.utc_now(), -days, :day)
+
+    Analysis
+    |> join(:inner, [a], l in assoc(a, :lesson))
+    |> where([a, l], l.user_id == ^user_id)
+    |> where([a], a.inserted_at >= ^since)
+    |> order_by([a], desc: a.inserted_at)
+    |> preload([:bncc_matches, :bullying_alerts, :lesson])
+    |> Repo.all()
+  end
 end

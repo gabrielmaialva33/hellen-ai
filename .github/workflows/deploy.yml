@@ -130,5 +130,19 @@ jobs:
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
-          sleep 5
-          ssh -o StrictHostKeyChecking=no root@$VPS_HOST "docker ps | grep hellen && curl -s http://localhost:4001/health"
+          ssh -o StrictHostKeyChecking=no root@$VPS_HOST << 'ENDSSH'
+          echo "Waiting for application to be ready..."
+          for i in {1..12}; do
+            if curl -sf http://localhost:4001/health > /dev/null 2>&1; then
+              echo "✓ Health check passed!"
+              docker ps | grep hellen
+              curl -s http://localhost:4001/health
+              exit 0
+            fi
+            echo "Attempt $i/12: App not ready yet, waiting 5s..."
+            sleep 5
+          done
+          echo "✗ Health check failed after 60 seconds"
+          docker logs --tail 50 hellen
+          exit 1
+          ENDSSH

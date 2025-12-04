@@ -91,6 +91,12 @@ defmodule HellenWeb.Sidebar do
             label="Minhas Aulas"
             current_path={@current_path}
           />
+          <.nav_item
+            path={~p"/analytics"}
+            icon="hero-chart-bar-square"
+            label="Analytics"
+            current_path={@current_path}
+          />
         </div>
         <!-- Future Features (Disabled) -->
         <div class="mt-6 space-y-1">
@@ -125,6 +131,36 @@ defmodule HellenWeb.Sidebar do
             current_path={@current_path}
           />
         </div>
+        <!-- Admin Menu (conditional) -->
+        <div :if={admin?(@current_user)} class="mt-6 space-y-1">
+          <p class="px-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
+            Administracao
+          </p>
+          <.nav_item
+            path={~p"/admin"}
+            icon="hero-shield-check"
+            label="Painel Admin"
+            current_path={@current_path}
+          />
+          <.nav_item
+            path={~p"/admin/institutions"}
+            icon="hero-building-office-2"
+            label="Instituicoes"
+            current_path={@current_path}
+          />
+          <.nav_item
+            path={~p"/admin/users"}
+            icon="hero-user-group"
+            label="Usuarios"
+            current_path={@current_path}
+          />
+          <.nav_item
+            path={~p"/admin/health"}
+            icon="hero-server-stack"
+            label="Sistema"
+            current_path={@current_path}
+          />
+        </div>
       </nav>
       <!-- User Section -->
       <div class="border-t border-gray-200 dark:border-slate-700 p-4">
@@ -145,6 +181,14 @@ defmodule HellenWeb.Sidebar do
         <div class="flex items-center justify-between">
           <!-- Notification Bell (from slot) -->
           <%= render_slot(@notification_bell) %>
+          <!-- Settings -->
+          <a
+            href="/settings"
+            class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors text-gray-500 dark:text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400"
+            title="Configuracoes"
+          >
+            <.icon name="hero-cog-6-tooth" class="h-5 w-5" />
+          </a>
           <!-- Theme Toggle -->
           <button
             type="button"
@@ -220,6 +264,10 @@ defmodule HellenWeb.Sidebar do
 
   defp coordinator?(user) do
     user && user.role in ["coordinator", "admin"]
+  end
+
+  defp admin?(user) do
+    user && user.role == "admin"
   end
 
   defp role_label("admin"), do: "Administrador"

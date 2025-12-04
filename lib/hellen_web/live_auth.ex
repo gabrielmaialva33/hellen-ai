@@ -30,10 +30,11 @@ defmodule HellenWeb.LiveAuth do
   @doc """
   Called when the LiveView is mounted.
 
-  Supports three modes:
+  Supports four modes:
   - `:none` - No authentication required, but loads user if present
   - `:require_auth` - Requires authentication, redirects to login if not authenticated
-  - `:require_coordinator` - Requires coordinator role
+  - `:require_coordinator` - Requires coordinator or admin role
+  - `:require_admin` - Requires admin role only
   """
   def on_mount(:none, _params, session, socket) do
     socket =
@@ -78,8 +79,33 @@ defmodule HellenWeb.LiveAuth do
     end
   end
 
+  def on_mount(:require_admin, _params, session, socket) do
+    socket =
+      socket
+      |> assign_current_user(session)
+      |> assign_current_path()
+
+    cond do
+      is_nil(socket.assigns.current_user) ->
+        {:halt, redirect(socket, to: "/login")}
+
+      not admin?(socket.assigns.current_user) ->
+        {:halt,
+         socket
+         |> put_flash(:error, "Acesso restrito a administradores")
+         |> redirect(to: "/dashboard")}
+
+      true ->
+        {:cont, socket}
+    end
+  end
+
   defp coordinator?(user) do
     user.role in ["coordinator", "admin", :coordinator, :admin]
+  end
+
+  defp admin?(user) do
+    user.role in ["admin", :admin]
   end
 
   defp assign_current_user(socket, session) do

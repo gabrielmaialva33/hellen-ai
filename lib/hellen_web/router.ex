@@ -77,6 +77,7 @@ defmodule HellenWeb.Router do
       layout: {HellenWeb.Layouts, :auth} do
       live "/login", AuthLive.Login, :index
       live "/register", AuthLive.Register, :index
+      live "/invite/:token", AuthLive.Invite, :index
     end
   end
 
@@ -90,6 +91,9 @@ defmodule HellenWeb.Router do
       live "/lessons/new", LessonLive.New, :new
       live "/lessons/:id", LessonLive.Show, :show
       live "/lessons/:id/analysis", LessonLive.Show, :analysis
+      live "/analytics", AnalyticsLive.Index, :index
+      live "/settings", SettingsLive.Index, :index
+      live "/billing", BillingLive.Index, :index
     end
   end
 
@@ -102,6 +106,18 @@ defmodule HellenWeb.Router do
       live "/institution/teachers", InstitutionLive.Teachers, :index
       live "/institution/reports", InstitutionLive.Reports, :index
       live "/alerts", AlertsLive.Index, :index
+    end
+  end
+
+  # Admin LiveView routes
+  scope "/", HellenWeb do
+    pipe_through :browser
+
+    live_session :admin, on_mount: [{HellenWeb.LiveAuth, :require_admin}] do
+      live "/admin", AdminLive.Index, :index
+      live "/admin/institutions", AdminLive.Institutions, :index
+      live "/admin/users", AdminLive.Users, :index
+      live "/admin/health", AdminLive.Health, :index
     end
   end
 

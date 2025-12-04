@@ -403,3 +403,117 @@ export const AlertsChart = {
     }
   }
 }
+
+// Generic Analytics Chart - supports line, bar, and stacked bar
+export const AnalyticsChart = {
+  mounted() {
+    this.chart = null
+    this.renderChart()
+  },
+
+  updated() {
+    this.renderChart()
+  },
+
+  destroyed() {
+    if (this.chart) {
+      this.chart.destroy()
+    }
+  },
+
+  renderChart() {
+    const chartData = JSON.parse(this.el.dataset.chart || '{}')
+    const chartType = this.el.dataset.type || 'line'
+
+    if (!chartData.labels || chartData.labels.length === 0) {
+      this.el.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-8">Sem dados suficientes para exibir o grafico</p>'
+      return
+    }
+
+    const isDark = document.documentElement.classList.contains('dark')
+
+    let options = {
+      chart: {
+        type: chartType,
+        height: '100%',
+        fontFamily: 'inherit',
+        toolbar: { show: false },
+        background: 'transparent',
+        stacked: chartType === 'bar' && chartData.datasets.length > 1
+      },
+      xaxis: {
+        categories: chartData.labels,
+        labels: {
+          style: {
+            colors: isDark ? '#94a3b8' : '#64748b',
+            fontSize: '12px'
+          }
+        },
+        axisBorder: { show: false },
+        axisTicks: { show: false }
+      },
+      yaxis: {
+        labels: {
+          style: {
+            colors: isDark ? '#94a3b8' : '#64748b',
+            fontSize: '12px'
+          }
+        }
+      },
+      grid: {
+        borderColor: isDark ? '#334155' : '#e2e8f0',
+        strokeDashArray: 4
+      },
+      tooltip: {
+        theme: isDark ? 'dark' : 'light'
+      },
+      legend: {
+        position: 'top',
+        horizontalAlign: 'right',
+        labels: {
+          colors: isDark ? '#94a3b8' : '#64748b'
+        }
+      }
+    }
+
+    // Build series from datasets
+    options.series = chartData.datasets.map(ds => ({
+      name: ds.label,
+      data: ds.data
+    }))
+
+    // Chart type specific options
+    if (chartType === 'line') {
+      options.stroke = {
+        curve: 'smooth',
+        width: 3
+      }
+      options.fill = {
+        type: 'gradient',
+        gradient: {
+          shadeIntensity: 1,
+          opacityFrom: 0.4,
+          opacityTo: 0.1,
+          stops: [0, 90, 100]
+        }
+      }
+      options.colors = chartData.datasets.map(ds => ds.borderColor || '#6366f1')
+    } else if (chartType === 'bar') {
+      options.plotOptions = {
+        bar: {
+          borderRadius: 4,
+          columnWidth: '60%'
+        }
+      }
+      options.colors = chartData.datasets.map(ds => ds.backgroundColor || '#6366f1')
+      options.dataLabels = { enabled: false }
+    }
+
+    if (this.chart) {
+      this.chart.updateOptions(options)
+    } else {
+      this.chart = new ApexCharts(this.el, options)
+      this.chart.render()
+    }
+  }
+}
