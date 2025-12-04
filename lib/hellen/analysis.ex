@@ -44,8 +44,12 @@ defmodule Hellen.Analysis do
   end
 
   defp build_analysis_attrs(analysis_result, lesson_id) do
+    # Get institution_id from lesson
+    lesson = Hellen.Repo.get!(Hellen.Lessons.Lesson, lesson_id)
+
     %{
       lesson_id: lesson_id,
+      institution_id: lesson.institution_id,
       analysis_type: "full",
       model_used: analysis_result.model,
       raw_response: analysis_result.raw,

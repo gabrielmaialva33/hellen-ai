@@ -1,11 +1,13 @@
 defmodule HellenWeb.HealthController do
   use HellenWeb, :controller
 
+  alias Ecto.Adapters.SQL
+
   def index(conn, _params) do
     # Check database connection
     db_status =
       try do
-        Ecto.Adapters.SQL.query!(Hellen.Repo, "SELECT 1")
+        SQL.query!(Hellen.Repo, "SELECT 1")
         :ok
       rescue
         _ -> :error

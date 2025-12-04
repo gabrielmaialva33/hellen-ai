@@ -36,11 +36,19 @@ defmodule HellenWeb.LiveAuth do
   - `:require_coordinator` - Requires coordinator role
   """
   def on_mount(:none, _params, session, socket) do
-    {:cont, assign_current_user(socket, session)}
+    socket =
+      socket
+      |> assign_current_user(session)
+      |> assign_current_path()
+
+    {:cont, socket}
   end
 
   def on_mount(:require_auth, _params, session, socket) do
-    socket = assign_current_user(socket, session)
+    socket =
+      socket
+      |> assign_current_user(session)
+      |> assign_current_path()
 
     if socket.assigns.current_user do
       {:cont, socket}
@@ -50,13 +58,16 @@ defmodule HellenWeb.LiveAuth do
   end
 
   def on_mount(:require_coordinator, _params, session, socket) do
-    socket = assign_current_user(socket, session)
+    socket =
+      socket
+      |> assign_current_user(session)
+      |> assign_current_path()
 
     cond do
       is_nil(socket.assigns.current_user) ->
         {:halt, redirect(socket, to: "/login")}
 
-      socket.assigns.current_user.role != :coordinator ->
+      not coordinator?(socket.assigns.current_user) ->
         {:halt,
          socket
          |> put_flash(:error, "Acesso restrito a coordenadores")
@@ -65,6 +76,10 @@ defmodule HellenWeb.LiveAuth do
       true ->
         {:cont, socket}
     end
+  end
+
+  defp coordinator?(user) do
+    user.role in ["coordinator", "admin", :coordinator, :admin]
   end
 
   defp assign_current_user(socket, session) do
@@ -83,5 +98,15 @@ defmodule HellenWeb.LiveAuth do
             assign(socket, :current_user, nil)
         end
     end
+  end
+
+  defp assign_current_path(socket) do
+    path =
+      case socket.private[:live_view_module] do
+        nil -> "/"
+        _module -> socket.private[:connect_info][:request_path] || "/"
+      end
+
+    assign(socket, :current_path, path)
   end
 end

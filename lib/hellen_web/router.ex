@@ -86,6 +86,7 @@ defmodule HellenWeb.Router do
 
     live_session :authenticated, on_mount: [{HellenWeb.LiveAuth, :require_auth}] do
       live "/dashboard", DashboardLive.Index, :index
+      live "/aulas", LessonsLive.Index, :index
       live "/lessons/new", LessonLive.New, :new
       live "/lessons/:id", LessonLive.Show, :show
       live "/lessons/:id/analysis", LessonLive.Show, :analysis

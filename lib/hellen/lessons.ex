@@ -14,9 +14,29 @@ defmodule Hellen.Lessons do
 
   def get_lesson!(id), do: Repo.get!(Lesson, id)
 
+  @doc """
+  Gets a lesson and verifies it belongs to the given institution.
+  Raises if not found or institution doesn't match.
+  """
+  def get_lesson!(id, institution_id) do
+    Lesson
+    |> where([l], l.id == ^id and l.institution_id == ^institution_id)
+    |> Repo.one!()
+  end
+
   def get_lesson_with_transcription!(id) do
     Lesson
     |> Repo.get!(id)
+    |> Repo.preload(:transcription)
+  end
+
+  @doc """
+  Gets a lesson with transcription, scoped to institution.
+  """
+  def get_lesson_with_transcription!(id, institution_id) do
+    Lesson
+    |> where([l], l.id == ^id and l.institution_id == ^institution_id)
+    |> Repo.one!()
     |> Repo.preload(:transcription)
   end
 
@@ -32,12 +52,47 @@ defmodule Hellen.Lessons do
     |> Repo.all()
   end
 
+  @doc """
+  Lists all lessons for an institution with optional filters.
+  """
+  def list_lessons_by_institution(institution_id, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 50)
+    offset = Keyword.get(opts, :offset, 0)
+    status = Keyword.get(opts, :status)
+    subject = Keyword.get(opts, :subject)
+    user_id = Keyword.get(opts, :user_id)
+
+    Lesson
+    |> where([l], l.institution_id == ^institution_id)
+    |> maybe_filter_by_status(status)
+    |> maybe_filter_by_subject(subject)
+    |> maybe_filter_by_user(user_id)
+    |> order_by([l], desc: l.inserted_at)
+    |> limit(^limit)
+    |> offset(^offset)
+    |> Repo.all()
+  end
+
+  defp maybe_filter_by_status(query, nil), do: query
+  defp maybe_filter_by_status(query, status), do: where(query, [l], l.status == ^status)
+
+  defp maybe_filter_by_subject(query, nil), do: query
+  defp maybe_filter_by_subject(query, subject), do: where(query, [l], l.subject == ^subject)
+
+  defp maybe_filter_by_user(query, nil), do: query
+  defp maybe_filter_by_user(query, user_id), do: where(query, [l], l.user_id == ^user_id)
+
   def create_lesson(user, attrs \\ %{}) do
     # Check credits first
     case Billing.check_credits(user) do
       :ok ->
+        attrs_with_ids =
+          attrs
+          |> Map.put("user_id", user.id)
+          |> Map.put("institution_id", user.institution_id)
+
         %Lesson{}
-        |> Lesson.changeset(Map.put(attrs, "user_id", user.id))
+        |> Lesson.changeset(attrs_with_ids)
         |> Repo.insert()
 
       {:error, :insufficient_credits} = error ->
@@ -86,5 +141,54 @@ defmodule Hellen.Lessons do
     %Transcription{}
     |> Transcription.changeset(Map.put(attrs, :lesson_id, lesson_id))
     |> Repo.insert()
+  end
+
+  ## Statistics
+
+  @doc """
+  Gets lesson statistics for an institution.
+  """
+  def get_institution_stats(institution_id) do
+    total =
+      Lesson
+      |> where([l], l.institution_id == ^institution_id)
+      |> Repo.aggregate(:count)
+
+    by_status =
+      Lesson
+      |> where([l], l.institution_id == ^institution_id)
+      |> group_by([l], l.status)
+      |> select([l], {l.status, count(l.id)})
+      |> Repo.all()
+      |> Map.new()
+
+    by_subject =
+      Lesson
+      |> where([l], l.institution_id == ^institution_id and not is_nil(l.subject))
+      |> group_by([l], l.subject)
+      |> select([l], {l.subject, count(l.id)})
+      |> Repo.all()
+      |> Map.new()
+
+    %{
+      total: total,
+      by_status: by_status,
+      by_subject: by_subject,
+      pending: Map.get(by_status, "pending", 0),
+      completed: Map.get(by_status, "completed", 0),
+      analyzing: Map.get(by_status, "analyzing", 0) + Map.get(by_status, "transcribing", 0)
+    }
+  end
+
+  @doc """
+  Gets distinct subjects used by an institution.
+  """
+  def list_subjects(institution_id) do
+    Lesson
+    |> where([l], l.institution_id == ^institution_id and not is_nil(l.subject))
+    |> distinct([l], l.subject)
+    |> select([l], l.subject)
+    |> order_by([l], l.subject)
+    |> Repo.all()
   end
 end

@@ -20,6 +20,7 @@ defmodule Hellen.Lessons.Lesson do
     field :metadata, :map, default: %{}
 
     belongs_to :user, Hellen.Accounts.User
+    belongs_to :institution, Hellen.Accounts.Institution
     has_one :transcription, Hellen.Lessons.Transcription
     has_many :analyses, Hellen.Analysis.Analysis
 
@@ -41,11 +42,13 @@ defmodule Hellen.Lessons.Lesson do
       :subject,
       :status,
       :metadata,
-      :user_id
+      :user_id,
+      :institution_id
     ])
     |> validate_required([:title, :user_id])
     |> validate_inclusion(:status, @statuses)
     |> foreign_key_constraint(:user_id)
+    |> foreign_key_constraint(:institution_id)
   end
 
   def status_changeset(lesson, status) do
