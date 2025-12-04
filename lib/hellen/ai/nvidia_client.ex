@@ -3,7 +3,13 @@ defmodule Hellen.AI.NvidiaClient do
   Client for AI APIs.
   - Transcription: Groq Whisper (fast, OpenAI-compatible REST API)
   - Analysis: NVIDIA NIM Qwen3 (pedagogical feedback)
+
+  Uses optimized audio extraction for video files (10x faster with FFmpeg stream copy).
   """
+
+  require Logger
+
+  alias Hellen.AI.AudioExtractor
 
   # Groq for transcription (OpenAI-compatible REST API)
   @transcription_base_url "https://api.groq.com/openai/v1"
@@ -13,22 +19,29 @@ defmodule Hellen.AI.NvidiaClient do
   @analysis_base_url "https://integrate.api.nvidia.com/v1"
   @analysis_model "qwen/qwen3-next-80b-a3b-instruct"
 
+  # Video extensions that need audio extraction
+  @video_extensions ~w(.mp4 .mkv .avi .mov .webm .flv .wmv .m4v)
+
   @doc """
   Transcribes audio using Groq Whisper.
 
   The audio_url should be a publicly accessible URL to the audio file.
-  This function downloads the file and sends it as multipart/form-data.
+  This function downloads the file, extracts audio if needed (using FFmpeg),
+  and sends it as multipart/form-data.
+
+  For video files, uses optimized FFmpeg extraction:
+  - Stream copy when codec is compatible (10x faster)
+  - Re-encode to MP3 16kHz mono when needed (optimized for ASR)
   """
   def transcribe(audio_url, opts \\ []) do
-    require Logger
     language = Keyword.get(opts, :language, "pt")
 
     Logger.info("Starting transcription for URL: #{audio_url}")
 
     start_time = System.monotonic_time(:millisecond)
 
-    # Download the audio file from R2
-    with {:ok, audio_binary, content_type} <- download_audio(audio_url),
+    # Download and process the file (extract audio if video)
+    with {:ok, audio_binary, content_type} <- download_and_process(audio_url),
          {:ok, response} <- send_transcription_request(audio_binary, content_type, language) do
       processing_time = System.monotonic_time(:millisecond) - start_time
       Logger.info("Transcription completed in #{processing_time}ms")
@@ -48,22 +61,18 @@ defmodule Hellen.AI.NvidiaClient do
     end
   end
 
-  defp download_audio(url) do
-    require Logger
-    Logger.info("Downloading audio from: #{url}")
+  # Downloads file and extracts audio if it's a video
+  defp download_and_process(url) do
+    Logger.info("Downloading media from: #{url}")
 
-    case Req.get(url, receive_timeout: 120_000) do
+    filename = extract_filename(url)
+    ext = Path.extname(filename) |> String.downcase()
+    is_video = ext in @video_extensions
+
+    case Req.get(url, receive_timeout: 300_000) do
       {:ok, %{status: 200, body: body, headers: headers}} ->
-        content_type =
-          headers
-          |> Enum.find(fn {k, _v} -> String.downcase(k) == "content-type" end)
-          |> case do
-            {_, ct} -> ct
-            nil -> guess_content_type(url)
-          end
-
-        Logger.info("Downloaded #{byte_size(body)} bytes, content-type: #{content_type}")
-        {:ok, body, content_type}
+        Logger.info("Downloaded #{format_bytes(byte_size(body))}, file: #{filename}")
+        process_downloaded_media(body, headers, url, filename, is_video)
 
       {:ok, %{status: status}} ->
         {:error, {:download_failed, status}}
@@ -73,9 +82,64 @@ defmodule Hellen.AI.NvidiaClient do
     end
   end
 
-  defp send_transcription_request(audio_binary, content_type, language) do
-    require Logger
+  # Process downloaded media - extract audio if video, return as-is if audio
+  defp process_downloaded_media(body, _headers, _url, filename, true = _is_video) do
+    Logger.info("Video detected - extracting audio with FFmpeg...")
+    original_size = byte_size(body)
+    extraction_start = System.monotonic_time(:millisecond)
 
+    case AudioExtractor.process_for_transcription(body, filename) do
+      {:ok, audio_binary, content_type} ->
+        log_extraction_result(extraction_start, original_size, byte_size(audio_binary))
+        {:ok, audio_binary, content_type}
+
+      {:error, reason} ->
+        Logger.error("Audio extraction failed: #{inspect(reason)}")
+        {:error, {:extraction_failed, reason}}
+    end
+  end
+
+  defp process_downloaded_media(body, headers, url, _filename, false = _is_video) do
+    content_type = get_content_type(headers, url)
+    Logger.info("Audio file - using directly (#{content_type})")
+    {:ok, body, content_type}
+  end
+
+  defp log_extraction_result(start_time, original_size, audio_size) do
+    extraction_time = System.monotonic_time(:millisecond) - start_time
+    reduction = Float.round((1 - audio_size / original_size) * 100, 1)
+
+    Logger.info("""
+    Audio extraction complete:
+      - Time: #{extraction_time}ms
+      - Original: #{format_bytes(original_size)}
+      - Audio: #{format_bytes(audio_size)}
+      - Size reduction: #{reduction}%
+    """)
+  end
+
+  defp get_content_type(headers, url) do
+    headers
+    |> Enum.find(fn {k, _v} -> String.downcase(k) == "content-type" end)
+    |> case do
+      {_, ct} -> ct
+      nil -> guess_content_type(url)
+    end
+  end
+
+  defp extract_filename(url) do
+    url
+    |> URI.parse()
+    |> Map.get(:path, "")
+    |> Path.basename()
+    |> URI.decode()
+  end
+
+  defp format_bytes(bytes) when bytes < 1024, do: "#{bytes} B"
+  defp format_bytes(bytes) when bytes < 1_048_576, do: "#{Float.round(bytes / 1024, 1)} KB"
+  defp format_bytes(bytes), do: "#{Float.round(bytes / 1_048_576, 1)} MB"
+
+  defp send_transcription_request(audio_binary, content_type, language) do
     filename = "audio.#{content_type_to_extension(content_type)}"
 
     Logger.info(
@@ -114,20 +178,17 @@ defmodule Hellen.AI.NvidiaClient do
   end
 
   defp handle_transcription_response({:ok, %{status: 200, body: body}}) do
-    require Logger
     Logger.info("Transcription API returned success")
     {:ok, body}
   end
 
   defp handle_transcription_response({:ok, %{status: status, body: body}}) do
-    require Logger
     error_msg = if is_map(body), do: body["error"] || body, else: body
     Logger.error("Transcription API error #{status}: #{inspect(error_msg)}")
     {:error, %{status: status, message: error_msg}}
   end
 
   defp handle_transcription_response({:error, reason}) do
-    require Logger
     Logger.error("Transcription request failed: #{inspect(reason)}")
     {:error, reason}
   end
