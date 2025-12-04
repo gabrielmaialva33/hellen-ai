@@ -81,12 +81,11 @@ jobs:
           echo "=== Hellen AI Deployment ==="
           cd $APP_DIR
 
-          # Pull latest code
-          git pull origin main 2>/dev/null || true
-
-          # Build new image
-          echo "Building Docker image..."
-          docker build -t hellen-ai:latest .
+          # Login to GHCR and pull pre-built image
+          echo "Pulling pre-built image from GHCR..."
+          echo "$GITHUB_TOKEN" | docker login ghcr.io -u gabrielmaialva33 --password-stdin
+          docker pull $IMAGE
+          docker tag $IMAGE hellen-ai:latest
 
           # Stop existing container
           echo "Stopping existing container..."
