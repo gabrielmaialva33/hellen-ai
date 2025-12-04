@@ -16,6 +16,12 @@ defmodule HellenWeb.Router do
     plug :accepts, ["json"]
   end
 
+  # Health check endpoint (no auth)
+  scope "/health", HellenWeb do
+    pipe_through :api
+    get "/", HealthController, :index
+  end
+
   pipeline :api_auth do
     plug :accepts, ["json"]
     plug :require_auth

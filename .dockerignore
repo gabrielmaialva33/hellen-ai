@@ -1,0 +1,51 @@
+# Git
+.git
+.gitignore
+
+# Elixir/Mix
+_build
+deps
+*.ez
+.elixir_ls
+
+# Node
+node_modules
+
+# Generated on crash by the VM
+erl_crash.dump
+
+# Static artifacts
+/priv/static/assets
+
+# Test coverage
+cover
+
+# Config
+.env*
+*.secret.exs
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.docker
+
+# CI/CD
+.github
+
+# Documentation
+docs
+README.md
+CHANGELOG.md
+
+# Other
+repomix-output.*
+*.md

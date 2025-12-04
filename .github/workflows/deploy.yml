@@ -1,0 +1,200 @@
+# Hellen AI - CI/CD Pipeline
+# Build Docker image and deploy to VPS via SSH
+
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Install Cloudflared
+        run: |
+          curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+          sudo dpkg -i cloudflared.deb
+
+      - name: Setup SSH Config for Cloudflare Tunnel
+        run: |
+          cat >> ~/.ssh/config << EOF
+          Host vps
+            HostName ${{ secrets.VPS_HOST }}
+            User root
+            IdentityFile ~/.ssh/id_rsa
+            ProxyCommand cloudflared access ssh --hostname %h
+          EOF
+
+      - name: Deploy to VPS
+        env:
+          SECRET_KEY_BASE: ${{ secrets.SECRET_KEY_BASE }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
+          GUARDIAN_SECRET_KEY: ${{ secrets.GUARDIAN_SECRET_KEY }}
+        run: |
+          # Create deployment script
+          cat > deploy.sh << 'DEPLOY_SCRIPT'
+          #!/bin/bash
+          set -e
+
+          APP_DIR="/opt/hellen-ai"
+          IMAGE="ghcr.io/gabrielmaialva33/hellen-ai:latest"
+
+          echo "=== Hellen AI Deployment ==="
+
+          # Create app directory
+          mkdir -p $APP_DIR
+          cd $APP_DIR
+
+          # Create .env file
+          cat > .env << ENV
+          SECRET_KEY_BASE=$SECRET_KEY_BASE
+          DATABASE_URL=$DATABASE_URL
+          REDIS_URL=$REDIS_URL
+          NVIDIA_API_KEY=$NVIDIA_API_KEY
+          GROQ_API_KEY=$GROQ_API_KEY
+          R2_ACCOUNT_ID=$R2_ACCOUNT_ID
+          R2_ACCESS_KEY_ID=$R2_ACCESS_KEY_ID
+          R2_SECRET_ACCESS_KEY=$R2_SECRET_ACCESS_KEY
+          R2_BUCKET=$R2_BUCKET
+          R2_PUBLIC_URL=$R2_PUBLIC_URL
+          GUARDIAN_SECRET_KEY=$GUARDIAN_SECRET_KEY
+          PHX_HOST=hellen-ai.mahina.cloud
+          ENV
+
+          # Login to GHCR
+          echo "$GITHUB_TOKEN" | docker login ghcr.io -u gabrielmaialva33 --password-stdin
+
+          # Pull latest image
+          echo "Pulling latest image..."
+          docker pull $IMAGE
+
+          # Stop existing container
+          echo "Stopping existing container..."
+          docker stop hellen-ai 2>/dev/null || true
+          docker rm hellen-ai 2>/dev/null || true
+
+          # Run database migrations
+          echo "Running migrations..."
+          docker run --rm \
+            --env-file .env \
+            --add-host=host.docker.internal:host-gateway \
+            $IMAGE \
+            bin/hellen eval "Hellen.Release.migrate"
+
+          # Start new container
+          echo "Starting new container..."
+          docker run -d \
+            --name hellen-ai \
+            --restart unless-stopped \
+            -p 4001:4000 \
+            --env-file .env \
+            --add-host=host.docker.internal:host-gateway \
+            $IMAGE
+
+          # Wait for health check
+          echo "Waiting for application to start..."
+          sleep 10
+
+          # Check if container is running
+          if docker ps | grep -q hellen-ai; then
+            echo "=== Deployment successful! ==="
+            docker logs --tail 20 hellen-ai
+          else
+            echo "=== Deployment failed! ==="
+            docker logs hellen-ai
+            exit 1
+          fi
+
+          # Cleanup old images
+          echo "Cleaning up old images..."
+          docker image prune -af --filter "until=24h"
+          DEPLOY_SCRIPT
+
+          # Copy and execute deployment script
+          scp deploy.sh vps:/tmp/deploy.sh
+          ssh vps "export SECRET_KEY_BASE='$SECRET_KEY_BASE' \
+            DATABASE_URL='$DATABASE_URL' \
+            REDIS_URL='$REDIS_URL' \
+            NVIDIA_API_KEY='$NVIDIA_API_KEY' \
+            GROQ_API_KEY='$GROQ_API_KEY' \
+            R2_ACCOUNT_ID='$R2_ACCOUNT_ID' \
+            R2_ACCESS_KEY_ID='$R2_ACCESS_KEY_ID' \
+            R2_SECRET_ACCESS_KEY='$R2_SECRET_ACCESS_KEY' \
+            R2_BUCKET='$R2_BUCKET' \
+            R2_PUBLIC_URL='$R2_PUBLIC_URL' \
+            GUARDIAN_SECRET_KEY='$GUARDIAN_SECRET_KEY' \
+            GITHUB_TOKEN='${{ secrets.GITHUB_TOKEN }}' \
+            && bash /tmp/deploy.sh"
+
+      - name: Verify Deployment
+        run: |
+          sleep 5
+          ssh vps "docker ps | grep hellen-ai && docker logs --tail 10 hellen-ai"
