@@ -58,10 +58,13 @@ RUN mix release
 # =============================================================================
 FROM ${RUNNER_IMAGE}
 
-# Install runtime dependencies (FFmpeg for audio extraction, curl for healthcheck)
+# Install runtime dependencies (FFmpeg for audio extraction, curl for healthcheck, chromium for PDF generation)
 RUN apt-get update -y && \
-    apt-get install -y libstdc++6 openssl libncurses5 locales ca-certificates ffmpeg curl \
+    apt-get install -y libstdc++6 openssl libncurses5 locales ca-certificates ffmpeg curl chromium \
     && apt-get clean && rm -f /var/lib/apt/lists/*_*
+
+# Set Chromium path for ChromicPDF
+ENV CHROMIC_PDF_CHROME_EXECUTABLE=/usr/bin/chromium
 
 # Set the locale
 RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
