@@ -60,141 +60,75 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup SSH Key
+      - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
-      - name: Install Cloudflared
-        run: |
-          curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-          sudo dpkg -i cloudflared.deb
-
-      - name: Setup SSH Config for Cloudflare Tunnel
-        run: |
-          cat >> ~/.ssh/config << EOF
-          Host vps
-            HostName ${{ secrets.VPS_HOST }}
-            User root
-            IdentityFile ~/.ssh/id_rsa
-            ProxyCommand cloudflared access ssh --hostname %h
-          EOF
-
       - name: Deploy to VPS
         env:
-          SECRET_KEY_BASE: ${{ secrets.SECRET_KEY_BASE }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          REDIS_URL: ${{ secrets.REDIS_URL }}
-          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
-          R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
-          GUARDIAN_SECRET_KEY: ${{ secrets.GUARDIAN_SECRET_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Create deployment script
-          cat > deploy.sh << 'DEPLOY_SCRIPT'
-          #!/bin/bash
+          ssh -o StrictHostKeyChecking=no root@$VPS_HOST << 'ENDSSH'
           set -e
 
-          APP_DIR="/opt/hellen-ai"
+          APP_DIR="/opt/hellen"
           IMAGE="ghcr.io/gabrielmaialva33/hellen-ai:latest"
 
           echo "=== Hellen AI Deployment ==="
-
-          # Create app directory
-          mkdir -p $APP_DIR
           cd $APP_DIR
 
-          # Create .env file
-          cat > .env << ENV
-          SECRET_KEY_BASE=$SECRET_KEY_BASE
-          DATABASE_URL=$DATABASE_URL
-          REDIS_URL=$REDIS_URL
-          NVIDIA_API_KEY=$NVIDIA_API_KEY
-          GROQ_API_KEY=$GROQ_API_KEY
-          R2_ACCOUNT_ID=$R2_ACCOUNT_ID
-          R2_ACCESS_KEY_ID=$R2_ACCESS_KEY_ID
-          R2_SECRET_ACCESS_KEY=$R2_SECRET_ACCESS_KEY
-          R2_BUCKET=$R2_BUCKET
-          R2_PUBLIC_URL=$R2_PUBLIC_URL
-          GUARDIAN_SECRET_KEY=$GUARDIAN_SECRET_KEY
-          PHX_HOST=hellen-ai.mahina.cloud
-          ENV
+          # Pull latest code
+          git pull origin main 2>/dev/null || true
 
-          # Login to GHCR
-          echo "$GITHUB_TOKEN" | docker login ghcr.io -u gabrielmaialva33 --password-stdin
-
-          # Pull latest image
-          echo "Pulling latest image..."
-          docker pull $IMAGE
+          # Build new image
+          echo "Building Docker image..."
+          docker build -t hellen-ai:latest .
 
           # Stop existing container
           echo "Stopping existing container..."
-          docker stop hellen-ai 2>/dev/null || true
-          docker rm hellen-ai 2>/dev/null || true
+          docker stop hellen 2>/dev/null || true
+          docker rm hellen 2>/dev/null || true
 
-          # Run database migrations
+          # Run migrations
           echo "Running migrations..."
           docker run --rm \
             --env-file .env \
-            --add-host=host.docker.internal:host-gateway \
-            $IMAGE \
-            bin/hellen eval "Hellen.Release.migrate"
+            --add-host=host.docker.internal:172.17.0.1 \
+            hellen-ai:latest \
+            bin/hellen eval "Hellen.Release.migrate()" || true
 
           # Start new container
           echo "Starting new container..."
           docker run -d \
-            --name hellen-ai \
+            --name hellen \
             --restart unless-stopped \
             -p 4001:4000 \
             --env-file .env \
-            --add-host=host.docker.internal:host-gateway \
-            $IMAGE
+            --add-host=host.docker.internal:172.17.0.1 \
+            hellen-ai:latest
 
-          # Wait for health check
-          echo "Waiting for application to start..."
+          # Wait and verify
           sleep 10
-
-          # Check if container is running
-          if docker ps | grep -q hellen-ai; then
+          if docker ps | grep -q hellen; then
             echo "=== Deployment successful! ==="
-            docker logs --tail 20 hellen-ai
+            curl -s http://localhost:4001/health || true
           else
             echo "=== Deployment failed! ==="
-            docker logs hellen-ai
+            docker logs hellen
             exit 1
           fi
 
           # Cleanup old images
-          echo "Cleaning up old images..."
-          docker image prune -af --filter "until=24h"
-          DEPLOY_SCRIPT
-
-          # Copy and execute deployment script
-          scp deploy.sh vps:/tmp/deploy.sh
-          ssh vps "export SECRET_KEY_BASE='$SECRET_KEY_BASE' \
-            DATABASE_URL='$DATABASE_URL' \
-            REDIS_URL='$REDIS_URL' \
-            NVIDIA_API_KEY='$NVIDIA_API_KEY' \
-            GROQ_API_KEY='$GROQ_API_KEY' \
-            R2_ACCOUNT_ID='$R2_ACCOUNT_ID' \
-            R2_ACCESS_KEY_ID='$R2_ACCESS_KEY_ID' \
-            R2_SECRET_ACCESS_KEY='$R2_SECRET_ACCESS_KEY' \
-            R2_BUCKET='$R2_BUCKET' \
-            R2_PUBLIC_URL='$R2_PUBLIC_URL' \
-            GUARDIAN_SECRET_KEY='$GUARDIAN_SECRET_KEY' \
-            GITHUB_TOKEN='${{ secrets.GITHUB_TOKEN }}' \
-            && bash /tmp/deploy.sh"
+          docker image prune -f --filter "until=24h" 2>/dev/null || true
+          ENDSSH
 
       - name: Verify Deployment
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
           sleep 5
-          ssh vps "docker ps | grep hellen-ai && docker logs --tail 10 hellen-ai"
+          ssh -o StrictHostKeyChecking=no root@$VPS_HOST "docker ps | grep hellen && curl -s http://localhost:4001/health"
