@@ -136,4 +136,169 @@ defmodule Hellen.Accounts do
   def list_institutions do
     Repo.all(Institution)
   end
+
+  ## Coordinator Functions
+
+  @doc """
+  Get comprehensive statistics for an institution.
+  Used by the coordinator dashboard.
+  """
+  @spec get_institution_stats(binary()) :: map()
+  def get_institution_stats(institution_id) do
+    teachers_count =
+      User
+      |> where([u], u.institution_id == ^institution_id)
+      |> Repo.aggregate(:count)
+
+    lessons_count =
+      Hellen.Lessons.Lesson
+      |> where([l], l.institution_id == ^institution_id)
+      |> Repo.aggregate(:count)
+
+    analyses_count =
+      Hellen.Analysis.Analysis
+      |> where([a], a.institution_id == ^institution_id)
+      |> Repo.aggregate(:count)
+
+    alerts_count =
+      Hellen.Analysis.BullyingAlert
+      |> join(:inner, [b], a in assoc(b, :analysis))
+      |> where([b, a], a.institution_id == ^institution_id and b.reviewed == false)
+      |> Repo.aggregate(:count)
+
+    avg_score =
+      Hellen.Analysis.Analysis
+      |> where([a], a.institution_id == ^institution_id and not is_nil(a.overall_score))
+      |> Repo.aggregate(:avg, :overall_score)
+
+    %{
+      teachers: teachers_count,
+      lessons: lessons_count,
+      analyses: analyses_count,
+      alerts: alerts_count,
+      avg_score: avg_score && Float.round(avg_score, 1)
+    }
+  end
+
+  @doc """
+  List all teachers in an institution with their statistics.
+  Includes lessons count, analyses count, and average score.
+  """
+  @spec list_teachers_with_stats(binary()) :: [map()]
+  def list_teachers_with_stats(institution_id) do
+    users =
+      User
+      |> where([u], u.institution_id == ^institution_id)
+      |> order_by([u], desc: u.inserted_at)
+      |> Repo.all()
+
+    Enum.map(users, fn user ->
+      lessons_query =
+        Hellen.Lessons.Lesson
+        |> where([l], l.user_id == ^user.id)
+
+      lessons_count = Repo.aggregate(lessons_query, :count)
+
+      last_lesson =
+        lessons_query
+        |> order_by([l], desc: l.inserted_at)
+        |> limit(1)
+        |> Repo.one()
+
+      analyses_count =
+        Hellen.Analysis.Analysis
+        |> join(:inner, [a], l in assoc(a, :lesson))
+        |> where([a, l], l.user_id == ^user.id)
+        |> Repo.aggregate(:count)
+
+      avg_score =
+        Hellen.Analysis.Analysis
+        |> join(:inner, [a], l in assoc(a, :lesson))
+        |> where([a, l], l.user_id == ^user.id and not is_nil(a.overall_score))
+        |> Repo.aggregate(:avg, :overall_score)
+
+      %{
+        user: user,
+        lessons_count: lessons_count,
+        analyses_count: analyses_count,
+        avg_score: avg_score && Float.round(avg_score, 1),
+        last_activity: last_lesson && last_lesson.inserted_at
+      }
+    end)
+  end
+
+  @doc """
+  Get lessons per teacher for chart visualization.
+  Returns list of %{name: string, lessons: integer}
+  """
+  @spec get_lessons_per_teacher(binary()) :: [map()]
+  def get_lessons_per_teacher(institution_id) do
+    User
+    |> where([u], u.institution_id == ^institution_id)
+    |> join(:left, [u], l in Hellen.Lessons.Lesson, on: l.user_id == u.id)
+    |> group_by([u, l], [u.id, u.name])
+    |> select([u, l], %{name: u.name, lessons: count(l.id)})
+    |> order_by([u, l], desc: count(l.id))
+    |> limit(10)
+    |> Repo.all()
+  end
+
+  @doc """
+  Get recent lessons for an institution.
+  Used by coordinator dashboard activity feed.
+  """
+  @spec list_recent_institution_lessons(binary(), keyword()) :: [Hellen.Lessons.Lesson.t()]
+  def list_recent_institution_lessons(institution_id, opts \\ []) do
+    limit = Keyword.get(opts, :limit, 10)
+
+    Hellen.Lessons.Lesson
+    |> where([l], l.institution_id == ^institution_id)
+    |> order_by([l], desc: l.inserted_at)
+    |> limit(^limit)
+    |> preload(:user)
+    |> Repo.all()
+  end
+
+  @doc """
+  Invite a teacher to an institution.
+  Creates a new user with a temporary password.
+  """
+  @spec invite_teacher_to_institution(binary(), map()) :: {:ok, User.t()} | {:error, term()}
+  def invite_teacher_to_institution(institution_id, attrs) do
+    # Generate a secure temporary password
+    temp_password = :crypto.strong_rand_bytes(16) |> Base.url_encode64()
+
+    user_attrs =
+      attrs
+      |> Map.put(:institution_id, institution_id)
+      |> Map.put(:role, "teacher")
+      |> Map.put(:password, temp_password)
+      |> Map.put(:plan, "free")
+
+    register_user(user_attrs)
+  end
+
+  @doc """
+  Remove a teacher from an institution.
+  Sets their institution_id to nil.
+  """
+  @spec remove_teacher_from_institution(User.t()) :: {:ok, User.t()} | {:error, term()}
+  def remove_teacher_from_institution(%User{} = user) do
+    user
+    |> User.changeset(%{institution_id: nil})
+    |> Repo.update()
+  end
+
+  @doc """
+  Update a user's role.
+  Only allows teacher <-> coordinator transitions.
+  """
+  @spec update_user_role(User.t(), String.t()) :: {:ok, User.t()} | {:error, term()}
+  def update_user_role(%User{} = user, new_role) when new_role in ["teacher", "coordinator"] do
+    user
+    |> User.changeset(%{role: new_role})
+    |> Repo.update()
+  end
+
+  def update_user_role(_user, _role), do: {:error, :invalid_role}
 end

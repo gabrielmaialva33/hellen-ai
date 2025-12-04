@@ -209,6 +209,95 @@ export const BnccHeatmap = {
   }
 }
 
+export const CoordinatorBarChart = {
+  mounted() {
+    this.chart = null
+    this.renderChart()
+  },
+
+  updated() {
+    this.renderChart()
+  },
+
+  destroyed() {
+    if (this.chart) {
+      this.chart.destroy()
+    }
+  },
+
+  renderChart() {
+    const data = JSON.parse(this.el.dataset.chartData || '[]')
+
+    if (data.length === 0) {
+      this.el.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-8">Sem dados suficientes para exibir o grafico</p>'
+      return
+    }
+
+    const isDark = document.documentElement.classList.contains('dark')
+
+    const options = {
+      series: [{
+        name: 'Aulas',
+        data: data.map(d => d.lessons)
+      }],
+      chart: {
+        type: 'bar',
+        height: 280,
+        fontFamily: 'inherit',
+        toolbar: { show: false },
+        background: 'transparent'
+      },
+      colors: ['#6366f1'],
+      plotOptions: {
+        bar: {
+          horizontal: true,
+          borderRadius: 4,
+          barHeight: '60%'
+        }
+      },
+      dataLabels: {
+        enabled: true,
+        style: {
+          colors: ['#fff']
+        }
+      },
+      xaxis: {
+        categories: data.map(d => d.name),
+        labels: {
+          style: {
+            colors: isDark ? '#94a3b8' : '#64748b',
+            fontSize: '12px'
+          }
+        },
+        axisBorder: { show: false },
+        axisTicks: { show: false }
+      },
+      yaxis: {
+        labels: {
+          style: {
+            colors: isDark ? '#94a3b8' : '#64748b',
+            fontSize: '12px'
+          }
+        }
+      },
+      grid: {
+        borderColor: isDark ? '#334155' : '#e2e8f0',
+        strokeDashArray: 4
+      },
+      tooltip: {
+        theme: isDark ? 'dark' : 'light'
+      }
+    }
+
+    if (this.chart) {
+      this.chart.updateOptions(options)
+    } else {
+      this.chart = new ApexCharts(this.el, options)
+      this.chart.render()
+    }
+  }
+}
+
 export const AlertsChart = {
   mounted() {
     this.chart = null

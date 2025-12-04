@@ -100,6 +100,7 @@ defmodule HellenWeb.Router do
     live_session :coordinator, on_mount: [{HellenWeb.LiveAuth, :require_coordinator}] do
       live "/institution", InstitutionLive.Index, :index
       live "/institution/teachers", InstitutionLive.Teachers, :index
+      live "/institution/reports", InstitutionLive.Reports, :index
       live "/alerts", AlertsLive.Index, :index
     end
   end
