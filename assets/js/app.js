@@ -38,6 +38,12 @@ registerServiceWorker()
 import { GoogleSignIn } from "./hooks/firebase"
 Hooks.GoogleSignIn = GoogleSignIn
 
+// UI Enhancement hooks
+import { AnimatedCounter, DropZone, Ripple } from "./hooks/ui_enhancements"
+Hooks.AnimatedCounter = AnimatedCounter
+Hooks.DropZone = DropZone
+Hooks.Ripple = Ripple
+
 let csrfToken = document.querySelector("meta[name='csrf-token']")?.getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
   hooks: Hooks,

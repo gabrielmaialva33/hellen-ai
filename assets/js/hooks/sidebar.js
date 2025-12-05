@@ -2,16 +2,27 @@
  * Sidebar Hook
  * Handles sidebar functionality:
  * - Collapse/expand state persistence
- * - Mobile drawer behavior
+ * - Mobile drawer behavior with swipe gestures
  * - Keyboard shortcuts
+ * - Smooth animations
  */
 export const SidebarHook = {
   mounted() {
     this.sidebar = this.el
+    this.overlay = document.getElementById('sidebar-overlay')
     this.collapsed = localStorage.getItem('sidebar-collapsed') === 'true'
+    this.isMobile = window.innerWidth < 1024
+    this.isOpen = false
+
+    // Touch tracking for swipe gestures
+    this.touchStartX = 0
+    this.touchStartY = 0
+    this.touchCurrentX = 0
+    this.isDragging = false
+    this.swipeThreshold = 100 // Minimum distance to trigger swipe
 
     // Apply saved state
-    if (this.collapsed) {
+    if (this.collapsed && !this.isMobile) {
       this.collapse()
     }
 
@@ -22,11 +33,162 @@ export const SidebarHook = {
     // Handle escape key to close mobile sidebar
     this.handleKeydown = this.handleKeydown.bind(this)
     document.addEventListener('keydown', this.handleKeydown)
+
+    // Setup swipe gestures for mobile
+    this.setupSwipeGestures()
   },
 
   destroyed() {
     window.removeEventListener('resize', this.handleResize)
     document.removeEventListener('keydown', this.handleKeydown)
+    this.removeSwipeGestures()
+  },
+
+  setupSwipeGestures() {
+    // Swipe from left edge to open sidebar
+    this.handleTouchStart = this.handleTouchStart.bind(this)
+    this.handleTouchMove = this.handleTouchMove.bind(this)
+    this.handleTouchEnd = this.handleTouchEnd.bind(this)
+
+    document.addEventListener('touchstart', this.handleTouchStart, { passive: true })
+    document.addEventListener('touchmove', this.handleTouchMove, { passive: false })
+    document.addEventListener('touchend', this.handleTouchEnd, { passive: true })
+
+    // Also handle swipe on sidebar itself to close
+    this.sidebar.addEventListener('touchstart', this.handleSidebarTouchStart.bind(this), { passive: true })
+    this.sidebar.addEventListener('touchmove', this.handleSidebarTouchMove.bind(this), { passive: false })
+    this.sidebar.addEventListener('touchend', this.handleSidebarTouchEnd.bind(this), { passive: true })
+  },
+
+  removeSwipeGestures() {
+    document.removeEventListener('touchstart', this.handleTouchStart)
+    document.removeEventListener('touchmove', this.handleTouchMove)
+    document.removeEventListener('touchend', this.handleTouchEnd)
+  },
+
+  handleTouchStart(e) {
+    if (!this.isMobile) return
+
+    const touch = e.touches[0]
+    this.touchStartX = touch.clientX
+    this.touchStartY = touch.clientY
+
+    // Only trigger if starting from left edge (within 30px)
+    if (touch.clientX <= 30 && !this.isOpen) {
+      this.isDragging = true
+      this.sidebar.style.transition = 'none'
+    }
+  },
+
+  handleTouchMove(e) {
+    if (!this.isDragging || !this.isMobile) return
+
+    const touch = e.touches[0]
+    this.touchCurrentX = touch.clientX
+    const deltaX = this.touchCurrentX - this.touchStartX
+    const deltaY = Math.abs(touch.clientY - this.touchStartY)
+
+    // Only handle horizontal swipes
+    if (deltaY > Math.abs(deltaX)) {
+      this.isDragging = false
+      return
+    }
+
+    e.preventDefault()
+
+    // Calculate sidebar position (clamped between -256px and 0)
+    const sidebarWidth = 256
+    const translateX = Math.min(0, Math.max(-sidebarWidth, deltaX - sidebarWidth))
+
+    this.sidebar.style.transform = `translateX(${translateX}px)`
+
+    // Show overlay proportionally
+    const progress = (translateX + sidebarWidth) / sidebarWidth
+    if (this.overlay) {
+      this.overlay.classList.remove('hidden')
+      this.overlay.style.opacity = progress * 0.6
+    }
+  },
+
+  handleTouchEnd(e) {
+    if (!this.isDragging || !this.isMobile) return
+
+    this.sidebar.style.transition = ''
+    const deltaX = this.touchCurrentX - this.touchStartX
+
+    if (deltaX >= this.swipeThreshold) {
+      this.openMobile()
+    } else {
+      this.closeMobile()
+    }
+
+    this.isDragging = false
+    this.sidebar.style.transform = ''
+  },
+
+  handleSidebarTouchStart(e) {
+    if (!this.isMobile || !this.isOpen) return
+
+    const touch = e.touches[0]
+    this.sidebarTouchStartX = touch.clientX
+  },
+
+  handleSidebarTouchMove(e) {
+    if (!this.isMobile || !this.isOpen) return
+
+    const touch = e.touches[0]
+    const deltaX = this.sidebarTouchStartX - touch.clientX
+
+    if (deltaX > 0) {
+      e.preventDefault()
+      const sidebarWidth = 256
+      const translateX = Math.max(-sidebarWidth, -deltaX)
+      this.sidebar.style.transition = 'none'
+      this.sidebar.style.transform = `translateX(${translateX}px)`
+
+      // Fade overlay
+      const progress = 1 - Math.abs(translateX) / sidebarWidth
+      if (this.overlay) {
+        this.overlay.style.opacity = progress * 0.6
+      }
+    }
+  },
+
+  handleSidebarTouchEnd(e) {
+    if (!this.isMobile || !this.isOpen) return
+
+    this.sidebar.style.transition = ''
+    const rect = this.sidebar.getBoundingClientRect()
+
+    if (rect.left < -100) {
+      this.closeMobile()
+    } else {
+      this.sidebar.style.transform = ''
+      if (this.overlay) {
+        this.overlay.style.opacity = ''
+      }
+    }
+  },
+
+  openMobile() {
+    this.sidebar.classList.remove('-translate-x-full')
+    if (this.overlay) {
+      this.overlay.classList.remove('hidden')
+      this.overlay.style.opacity = ''
+    }
+    this.isOpen = true
+    document.body.style.overflow = 'hidden'
+  },
+
+  closeMobile() {
+    this.sidebar.classList.add('-translate-x-full')
+    if (this.overlay) {
+      this.overlay.classList.add('hidden')
+      this.overlay.style.opacity = ''
+    }
+    this.isOpen = false
+    document.body.style.overflow = ''
+    this.sidebar.style.transform = ''
   },
 
   collapse() {
@@ -52,6 +214,14 @@ export const SidebarHook = {
   },
 
   handleResize() {
+    const wasMobile = this.isMobile
+    this.isMobile = window.innerWidth < 1024
+
+    // Transitioning from mobile to desktop
+    if (wasMobile && !this.isMobile && this.isOpen) {
+      this.closeMobile()
+    }
+
     // Auto-collapse on tablet sizes
     if (window.innerWidth < 1024 && window.innerWidth >= 768) {
       if (!this.collapsed) {
@@ -62,11 +232,8 @@ export const SidebarHook = {
 
   handleKeydown(e) {
     // Escape key closes mobile sidebar
-    if (e.key === 'Escape') {
-      const overlay = document.getElementById('sidebar-overlay')
-      if (overlay && !overlay.classList.contains('hidden')) {
-        overlay.click()
-      }
+    if (e.key === 'Escape' && this.isOpen) {
+      this.closeMobile()
     }
   }
 }

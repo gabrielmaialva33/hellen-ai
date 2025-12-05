@@ -1413,4 +1413,360 @@ defmodule HellenWeb.CoreComponents do
     |> JS.remove_class("overflow-hidden", to: "body")
     |> JS.pop_focus()
   end
+
+  # ============================================================================
+  # LOADING SKELETONS
+  # ============================================================================
+
+  @doc """
+  Renders a skeleton loading placeholder.
+
+  ## Examples
+
+      <.skeleton class="h-4 w-3/4" />
+      <.skeleton variant="circle" class="h-10 w-10" />
+      <.skeleton variant="text" lines={3} />
+  """
+  attr :variant, :string, default: "rectangle", values: ~w(rectangle circle text avatar card stat)
+  attr :class, :string, default: nil
+  attr :lines, :integer, default: 3
+  attr :animated, :boolean, default: true
+
+  def skeleton(assigns) do
+    ~H"""
+    <div
+      :if={@variant == "rectangle"}
+      class={[
+        "rounded-lg bg-slate-200 dark:bg-slate-700",
+        @animated && "animate-pulse",
+        @class
+      ]}
+    />
+
+    <div
+      :if={@variant == "circle"}
+      class={[
+        "rounded-full bg-slate-200 dark:bg-slate-700",
+        @animated && "animate-pulse",
+        @class
+      ]}
+    />
+
+    <div :if={@variant == "text"} class={["space-y-2", @class]}>
+      <div
+        :for={i <- 1..@lines}
+        class={[
+          "h-4 rounded bg-slate-200 dark:bg-slate-700",
+          @animated && "animate-pulse",
+          i == @lines && "w-3/4"
+        ]}
+      />
+    </div>
+
+    <div
+      :if={@variant == "avatar"}
+      class={[
+        "flex items-center gap-3",
+        @class
+      ]}
+    >
+      <div class={["w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
+      <div class="space-y-2 flex-1">
+        <div class={["h-4 w-1/3 rounded bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
+        <div class={["h-3 w-1/2 rounded bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
+      </div>
+    </div>
+
+    <div
+      :if={@variant == "card"}
+      class={[
+        "bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-4",
+        @class
+      ]}
+    >
+      <div class="flex items-center gap-3">
+        <div class={["w-12 h-12 rounded-xl bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
+        <div class="flex-1 space-y-2">
+          <div class={["h-4 w-1/2 rounded bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
+          <div class={["h-3 w-3/4 rounded bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
+        </div>
+      </div>
+      <div class="space-y-2">
+        <div class={["h-3 rounded bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
+        <div class={["h-3 w-5/6 rounded bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
+      </div>
+    </div>
+
+    <div
+      :if={@variant == "stat"}
+      class={[
+        "bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5",
+        @class
+      ]}
+    >
+      <div class="flex items-start justify-between">
+        <div class="space-y-3 flex-1">
+          <div class={["h-4 w-1/3 rounded bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
+          <div class={["h-8 w-1/2 rounded bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
+          <div class={["h-3 w-2/3 rounded bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
+        </div>
+        <div class={["w-12 h-12 rounded-xl bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders a loading spinner.
+
+  ## Examples
+
+      <.spinner />
+      <.spinner size="lg" />
+      <.spinner variant="dots" />
+  """
+  attr :size, :string, default: "md", values: ~w(sm md lg)
+  attr :variant, :string, default: "spinner", values: ~w(spinner dots bars)
+  attr :class, :string, default: nil
+
+  def spinner(assigns) do
+    ~H"""
+    <div
+      :if={@variant == "spinner"}
+      class={[
+        "inline-block border-2 border-current border-t-transparent rounded-full animate-spin",
+        spinner_size(@size),
+        "text-teal-600 dark:text-teal-400",
+        @class
+      ]}
+      role="status"
+      aria-label="Loading"
+    />
+
+    <div
+      :if={@variant == "dots"}
+      class={["inline-flex items-center gap-1", @class]}
+      role="status"
+      aria-label="Loading"
+    >
+      <span class={["rounded-full bg-teal-600 dark:bg-teal-400 animate-bounce", dots_size(@size)]} style="animation-delay: 0ms" />
+      <span class={["rounded-full bg-teal-600 dark:bg-teal-400 animate-bounce", dots_size(@size)]} style="animation-delay: 150ms" />
+      <span class={["rounded-full bg-teal-600 dark:bg-teal-400 animate-bounce", dots_size(@size)]} style="animation-delay: 300ms" />
+    </div>
+
+    <div
+      :if={@variant == "bars"}
+      class={["inline-flex items-end gap-0.5", @class]}
+      role="status"
+      aria-label="Loading"
+    >
+      <span class={["bg-teal-600 dark:bg-teal-400 animate-pulse rounded-sm", bars_size(@size)]} style="animation-delay: 0ms" />
+      <span class={["bg-teal-600 dark:bg-teal-400 animate-pulse rounded-sm", bars_size(@size)]} style="animation-delay: 100ms" />
+      <span class={["bg-teal-600 dark:bg-teal-400 animate-pulse rounded-sm", bars_size(@size)]} style="animation-delay: 200ms" />
+      <span class={["bg-teal-600 dark:bg-teal-400 animate-pulse rounded-sm", bars_size(@size)]} style="animation-delay: 300ms" />
+    </div>
+    """
+  end
+
+  defp spinner_size("sm"), do: "w-4 h-4"
+  defp spinner_size("md"), do: "w-6 h-6"
+  defp spinner_size("lg"), do: "w-8 h-8"
+
+  defp dots_size("sm"), do: "w-1.5 h-1.5"
+  defp dots_size("md"), do: "w-2 h-2"
+  defp dots_size("lg"), do: "w-3 h-3"
+
+  defp bars_size("sm"), do: "w-1 h-3"
+  defp bars_size("md"), do: "w-1.5 h-4"
+  defp bars_size("lg"), do: "w-2 h-5"
+
+  @doc """
+  Renders a loading overlay.
+
+  ## Examples
+
+      <.loading_overlay />
+      <.loading_overlay message="Carregando dados..." />
+  """
+  attr :message, :string, default: nil
+  attr :class, :string, default: nil
+
+  def loading_overlay(assigns) do
+    ~H"""
+    <div class={[
+      "absolute inset-0 z-10 flex flex-col items-center justify-center",
+      "bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-xl",
+      @class
+    ]}>
+      <.spinner size="lg" />
+      <p :if={@message} class="mt-3 text-sm text-slate-600 dark:text-slate-400"><%= @message %></p>
+    </div>
+    """
+  end
+
+  # ============================================================================
+  # TOOLTIP
+  # ============================================================================
+
+  @doc """
+  Renders a tooltip.
+
+  ## Examples
+
+      <.tooltip text="Hello world">
+        <button>Hover me</button>
+      </.tooltip>
+  """
+  attr :text, :string, required: true
+  attr :position, :string, default: "top", values: ~w(top bottom left right)
+  attr :class, :string, default: nil
+
+  slot :inner_block, required: true
+
+  def tooltip(assigns) do
+    ~H"""
+    <div class="relative group inline-block">
+      <%= render_slot(@inner_block) %>
+      <div class={[
+        "absolute z-50 px-2 py-1 text-xs font-medium whitespace-nowrap rounded shadow-lg",
+        "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900",
+        "opacity-0 invisible group-hover:opacity-100 group-hover:visible",
+        "transition-all duration-200",
+        tooltip_position(@position),
+        @class
+      ]}>
+        <%= @text %>
+        <div class={["absolute w-2 h-2 rotate-45 bg-slate-900 dark:bg-slate-100", tooltip_arrow(@position)]} />
+      </div>
+    </div>
+    """
+  end
+
+  defp tooltip_position("top"), do: "bottom-full left-1/2 -translate-x-1/2 mb-2"
+  defp tooltip_position("bottom"), do: "top-full left-1/2 -translate-x-1/2 mt-2"
+  defp tooltip_position("left"), do: "right-full top-1/2 -translate-y-1/2 mr-2"
+  defp tooltip_position("right"), do: "left-full top-1/2 -translate-y-1/2 ml-2"
+
+  defp tooltip_arrow("top"), do: "top-full left-1/2 -translate-x-1/2 -translate-y-1/2"
+  defp tooltip_arrow("bottom"), do: "bottom-full left-1/2 -translate-x-1/2 translate-y-1/2"
+  defp tooltip_arrow("left"), do: "left-full top-1/2 -translate-y-1/2 -translate-x-1/2"
+  defp tooltip_arrow("right"), do: "right-full top-1/2 -translate-y-1/2 translate-x-1/2"
+
+  # ============================================================================
+  # ANIMATED COUNTER
+  # ============================================================================
+
+  @doc """
+  Renders an animated counter that counts up to a target value.
+  Requires the AnimatedCounter hook to be enabled in app.js.
+
+  ## Examples
+
+      <.animated_counter value={1234} />
+      <.animated_counter value={99.5} prefix="R$" suffix="%" />
+  """
+  attr :value, :any, required: true
+  attr :prefix, :string, default: nil
+  attr :suffix, :string, default: nil
+  attr :duration, :integer, default: 1500
+  attr :class, :string, default: nil
+
+  def animated_counter(assigns) do
+    ~H"""
+    <span
+      id={"counter-#{:erlang.unique_integer([:positive])}"}
+      phx-hook="AnimatedCounter"
+      data-target={@value}
+      data-duration={@duration}
+      data-prefix={@prefix || ""}
+      data-suffix={@suffix || ""}
+      class={["tabular-nums", @class]}
+    >
+      <%= @prefix %><span class="counter-value">0</span><%= @suffix %>
+    </span>
+    """
+  end
+
+  # ============================================================================
+  # DROPDOWN MENU
+  # ============================================================================
+
+  @doc """
+  Renders a dropdown menu.
+
+  ## Examples
+
+      <.dropdown id="user-menu">
+        <:trigger>
+          <button>Menu</button>
+        </:trigger>
+        <:item>Profile</:item>
+        <:item>Settings</:item>
+        <:divider />
+        <:item variant="danger">Logout</:item>
+      </.dropdown>
+  """
+  attr :id, :string, required: true
+  attr :position, :string, default: "bottom-right", values: ~w(bottom-left bottom-right top-left top-right)
+  attr :class, :string, default: nil
+
+  slot :trigger, required: true
+  slot :item do
+    attr :href, :string
+    attr :variant, :string
+  end
+  slot :divider
+
+  def dropdown(assigns) do
+    ~H"""
+    <div class={["relative inline-block", @class]}>
+      <div phx-click={JS.toggle(to: "##{@id}-menu", in: "animate-fade-in-scale", out: "animate-fade-out-scale")}>
+        <%= render_slot(@trigger) %>
+      </div>
+      <div
+        id={"#{@id}-menu"}
+        class={[
+          "absolute z-50 min-w-[180px] rounded-xl hidden",
+          "bg-white dark:bg-slate-800 shadow-elevated",
+          "border border-slate-200 dark:border-slate-700",
+          "py-1 origin-top-right",
+          dropdown_position(@position)
+        ]}
+        phx-click-away={JS.hide(to: "##{@id}-menu")}
+      >
+        <%= for {item, _idx} <- Enum.with_index(@item) do %>
+          <.link
+            :if={item[:href]}
+            navigate={item[:href]}
+            class={[
+              "flex items-center gap-2 px-4 py-2 text-sm transition-colors",
+              dropdown_item_variant(item[:variant])
+            ]}
+          >
+            <%= render_slot(item) %>
+          </.link>
+          <button
+            :if={!item[:href]}
+            type="button"
+            class={[
+              "flex items-center gap-2 px-4 py-2 text-sm w-full text-left transition-colors",
+              dropdown_item_variant(item[:variant])
+            ]}
+          >
+            <%= render_slot(item) %>
+          </button>
+        <% end %>
+        <div :for={_ <- @divider} class="my-1 border-t border-slate-200 dark:border-slate-700" />
+      </div>
+    </div>
+    """
+  end
+
+  defp dropdown_position("bottom-right"), do: "right-0 mt-2"
+  defp dropdown_position("bottom-left"), do: "left-0 mt-2"
+  defp dropdown_position("top-right"), do: "right-0 bottom-full mb-2"
+  defp dropdown_position("top-left"), do: "left-0 bottom-full mb-2"
+
+  defp dropdown_item_variant("danger"), do: "text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+  defp dropdown_item_variant(_), do: "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
 end
