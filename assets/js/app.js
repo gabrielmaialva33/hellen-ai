@@ -13,13 +13,19 @@ Hooks.ScrollAnimation = ScrollAnimation
 Hooks.ThemeHook = ThemeHook
 Hooks.ThemeToggle = ThemeToggle
 
+// Sidebar and Search hooks
+import { SidebarHook, SearchModal } from "./hooks/sidebar"
+Hooks.SidebarHook = SidebarHook
+Hooks.SearchModal = SearchModal
+
 // Chart hooks
-import { ScoreChart, BnccHeatmap, AlertsChart, CoordinatorBarChart, AnalyticsChart } from "./hooks/charts"
+import { ScoreChart, BnccHeatmap, AlertsChart, CoordinatorBarChart, AnalyticsChart, ScoreGauge } from "./hooks/charts"
 Hooks.ScoreChart = ScoreChart
 Hooks.BnccHeatmap = BnccHeatmap
 Hooks.AlertsChart = AlertsChart
 Hooks.CoordinatorBarChart = CoordinatorBarChart
 Hooks.AnalyticsChart = AnalyticsChart
+Hooks.ScoreGauge = ScoreGauge
 
 // PWA hooks
 import { registerServiceWorker, InstallPrompt, OfflineIndicator, UpdateAvailable } from "./hooks/pwa"
@@ -38,8 +44,8 @@ let liveSocket = new LiveSocket("/live", Socket, {
   params: {_csrf_token: csrfToken}
 })
 
-// Show progress bar on live navigation and form submits
-topbar.config({barColors: {0: "#4f46e5"}, shadowColor: "rgba(0, 0, 0, .3)"})
+// Configure topbar with 2025 teal color
+topbar.config({barColors: {0: "#0d9488"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 

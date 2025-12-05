@@ -1,13 +1,13 @@
 defmodule HellenWeb.Sidebar do
   @moduledoc """
   Sidebar navigation component for the app layout.
-  Includes:
-  - Logo and branding
-  - Main navigation menu
-  - Coordinator-only menu (when applicable)
+  Modern 2025 design with:
+  - Teal/Sage color palette
+  - Collapsible sidebar (desktop)
+  - Drawer sidebar (mobile)
+  - Global search shortcut (Cmd+K)
   - User profile section
   - Theme toggle
-  - Mobile hamburger menu
   """
   use Phoenix.Component
 
@@ -22,6 +22,7 @@ defmodule HellenWeb.Sidebar do
 
   attr :current_user, :map, required: true
   attr :current_path, :string, default: "/"
+  attr :collapsed, :boolean, default: false
 
   slot :notification_bell
 
@@ -32,51 +33,73 @@ defmodule HellenWeb.Sidebar do
       <button
         type="button"
         phx-click={show_mobile_menu()}
-        class="p-2 rounded-lg bg-white dark:bg-slate-800 shadow-lg border border-gray-200 dark:border-slate-700"
+        class="p-2.5 rounded-xl bg-white dark:bg-slate-800 shadow-card border border-slate-200/50 dark:border-slate-700/50 hover:shadow-elevated transition-all duration-200"
       >
-        <.icon name="hero-bars-3" class="h-6 w-6 text-gray-600 dark:text-gray-300" />
+        <.icon name="hero-bars-3" class="h-5 w-5 text-slate-600 dark:text-slate-300" />
       </button>
     </div>
     <!-- Mobile Overlay -->
     <div
       id="sidebar-overlay"
-      class="hidden lg:hidden fixed inset-0 bg-black/50 z-40"
+      class="hidden lg:hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40"
       phx-click={hide_mobile_menu()}
     >
     </div>
     <!-- Sidebar -->
     <aside
       id="sidebar"
-      class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col"
+      phx-hook="SidebarHook"
+      class="fixed inset-y-0 left-0 z-50 w-64 bg-sidebar dark:bg-slate-900 border-r border-sidebar-border dark:border-slate-800 transform -translate-x-full lg:translate-x-0 transition-all duration-300 ease-out flex flex-col shadow-xl lg:shadow-none"
     >
-      <!-- Logo -->
-      <div class="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-slate-700">
-        <a href="/dashboard" class="flex items-center">
-          <span class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+      <!-- Logo Section -->
+      <div class="h-16 flex items-center justify-between px-5 border-b border-sidebar-border dark:border-slate-800">
+        <a href="/dashboard" class="flex items-center group">
+          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-sm group-hover:shadow-glow-teal transition-shadow duration-300">
+            <span class="text-white font-bold text-sm">H</span>
+          </div>
+          <span class="ml-2.5 text-lg font-bold text-sidebar-foreground">
             Hellen
           </span>
-          <span class="ml-1 text-xs font-medium text-gray-500 dark:text-gray-400">AI</span>
+          <span class="ml-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-600 dark:text-teal-400">
+            AI
+          </span>
         </a>
         <!-- Mobile close button -->
         <button
           type="button"
           phx-click={hide_mobile_menu()}
-          class="lg:hidden p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800"
+          class="lg:hidden p-1.5 rounded-lg hover:bg-sidebar-muted dark:hover:bg-slate-800 transition-colors"
         >
-          <.icon name="hero-x-mark" class="h-5 w-5 text-gray-500 dark:text-gray-400" />
+          <.icon name="hero-x-mark" class="h-5 w-5 text-sidebar-muted dark:text-slate-400" />
         </button>
       </div>
+
+      <!-- Search Button (Cmd+K) -->
+      <div class="px-4 py-3">
+        <button
+          type="button"
+          phx-click={JS.dispatch("open-search")}
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-sidebar-muted/50 dark:bg-slate-800/50 border border-sidebar-border dark:border-slate-700/50 text-sm text-sidebar-muted dark:text-slate-400 hover:bg-sidebar-muted dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 group"
+        >
+          <.icon name="hero-magnifying-glass" class="h-4 w-4" />
+          <span class="flex-1 text-left">Buscar...</span>
+          <kbd class="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium bg-sidebar-muted dark:bg-slate-700 rounded border border-sidebar-border dark:border-slate-600 text-sidebar-muted dark:text-slate-400 group-hover:border-slate-400 dark:group-hover:border-slate-500 transition-colors">
+            <span class="text-[10px]">⌘</span>K
+          </kbd>
+        </button>
+      </div>
+
       <!-- Navigation -->
-      <nav class="flex-1 overflow-y-auto py-4 px-3">
+      <nav class="flex-1 overflow-y-auto py-2 px-3 scrollbar-thin">
         <!-- Main Menu -->
-        <div class="space-y-1">
-          <p class="px-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
+        <div class="space-y-0.5">
+          <p class="px-3 py-2 text-[11px] font-semibold text-sidebar-muted dark:text-slate-500 uppercase tracking-wider">
             Principal
           </p>
           <.nav_item
             path={~p"/dashboard"}
-            icon="hero-home"
-            label="Inicio"
+            icon="hero-squares-2x2"
+            label="Dashboard"
             current_path={@current_path}
           />
           <.nav_item
@@ -84,6 +107,7 @@ defmodule HellenWeb.Sidebar do
             icon="hero-plus-circle"
             label="Nova Aula"
             current_path={@current_path}
+            highlight={true}
           />
           <.nav_item
             path={~p"/aulas"}
@@ -104,18 +128,20 @@ defmodule HellenWeb.Sidebar do
             current_path={@current_path}
           />
         </div>
+
         <!-- Future Features (Disabled) -->
-        <div class="mt-6 space-y-1">
-          <p class="px-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
+        <div class="mt-6 space-y-0.5">
+          <p class="px-3 py-2 text-[11px] font-semibold text-sidebar-muted dark:text-slate-500 uppercase tracking-wider">
             Em Breve
           </p>
           <.nav_item_disabled icon="hero-document-text" label="Planejamentos" />
           <.nav_item_disabled icon="hero-clipboard-document-list" label="Provas" />
           <.nav_item_disabled icon="hero-chart-bar" label="Relatorios" />
         </div>
+
         <!-- Coordinator Menu (conditional) -->
-        <div :if={coordinator?(@current_user)} class="mt-6 space-y-1">
-          <p class="px-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
+        <div :if={coordinator?(@current_user)} class="mt-6 space-y-0.5">
+          <p class="px-3 py-2 text-[11px] font-semibold text-sidebar-muted dark:text-slate-500 uppercase tracking-wider">
             Coordenacao
           </p>
           <.nav_item
@@ -137,9 +163,10 @@ defmodule HellenWeb.Sidebar do
             current_path={@current_path}
           />
         </div>
+
         <!-- Admin Menu (conditional) -->
-        <div :if={admin?(@current_user)} class="mt-6 space-y-1">
-          <p class="px-3 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
+        <div :if={admin?(@current_user)} class="mt-6 space-y-0.5">
+          <p class="px-3 py-2 text-[11px] font-semibold text-sidebar-muted dark:text-slate-500 uppercase tracking-wider">
             Administracao
           </p>
           <.nav_item
@@ -168,17 +195,47 @@ defmodule HellenWeb.Sidebar do
           />
         </div>
       </nav>
+
+      <!-- Credits Display -->
+      <div :if={@current_user.credits} class="mx-4 mb-3">
+        <div class="p-3 rounded-xl bg-gradient-to-br from-teal-500/10 to-sage-500/10 dark:from-teal-900/20 dark:to-sage-900/20 border border-teal-200/50 dark:border-teal-800/50">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-teal-500/20 dark:bg-teal-500/10 flex items-center justify-center">
+                <.icon name="hero-bolt" class="h-4 w-4 text-teal-600 dark:text-teal-400" />
+              </div>
+              <div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Creditos</p>
+                <p class="text-sm font-bold text-slate-900 dark:text-white">
+                  <%= @current_user.credits %>
+                </p>
+              </div>
+            </div>
+            <a
+              href="/billing"
+              class="px-2.5 py-1 text-xs font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 hover:bg-teal-500/10 rounded-lg transition-colors"
+            >
+              + Comprar
+            </a>
+          </div>
+        </div>
+      </div>
+
       <!-- User Section -->
-      <div class="border-t border-gray-200 dark:border-slate-700 p-4">
+      <div class="border-t border-sidebar-border dark:border-slate-800 p-4">
         <div class="flex items-center gap-3 mb-3">
-          <div class="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-medium text-sm">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-sage-500 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
             <%= String.first(@current_user.name || @current_user.email) |> String.upcase() %>
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+            <p class="text-sm font-semibold text-sidebar-foreground dark:text-white truncate">
               <%= @current_user.name || "Usuario" %>
             </p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+            <p class="text-xs text-sidebar-muted dark:text-slate-400 truncate flex items-center gap-1">
+              <span class={[
+                "w-1.5 h-1.5 rounded-full",
+                role_color(@current_user.role)
+              ]}></span>
               <%= role_label(@current_user.role) %>
             </p>
           </div>
@@ -190,7 +247,7 @@ defmodule HellenWeb.Sidebar do
           <!-- Settings -->
           <a
             href="/settings"
-            class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors text-gray-500 dark:text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400"
+            class="p-2 rounded-lg hover:bg-sidebar-muted dark:hover:bg-slate-800 transition-colors text-sidebar-muted dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400"
             title="Configuracoes"
           >
             <.icon name="hero-cog-6-tooth" class="h-5 w-5" />
@@ -200,16 +257,16 @@ defmodule HellenWeb.Sidebar do
             type="button"
             id="sidebar-theme-toggle"
             phx-hook="ThemeToggle"
-            class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+            class="p-2 rounded-lg hover:bg-sidebar-muted dark:hover:bg-slate-800 transition-colors text-sidebar-muted dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400"
             title="Alternar tema"
           >
-            <.icon name="hero-moon" class="h-5 w-5 text-gray-500 dark:text-gray-400 dark:hidden" />
-            <.icon name="hero-sun" class="h-5 w-5 text-gray-500 dark:text-gray-400 hidden dark:block" />
+            <.icon name="hero-moon" class="h-5 w-5 dark:hidden" />
+            <.icon name="hero-sun" class="h-5 w-5 hidden dark:block" />
           </button>
           <!-- Logout -->
           <a
             href="/logout"
-            class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+            class="p-2 rounded-lg hover:bg-sidebar-muted dark:hover:bg-slate-800 transition-colors text-sidebar-muted dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400"
             title="Sair"
           >
             <.icon name="hero-arrow-right-on-rectangle" class="h-5 w-5" />
@@ -225,6 +282,7 @@ defmodule HellenWeb.Sidebar do
   attr :label, :string, required: true
   attr :current_path, :string, required: true
   attr :badge, :integer, default: nil
+  attr :highlight, :boolean, default: false
 
   defp nav_item(assigns) do
     is_active = String.starts_with?(assigns.current_path, assigns.path)
@@ -234,21 +292,29 @@ defmodule HellenWeb.Sidebar do
     <a
       href={@path}
       class={[
-        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-        @is_active &&
-          "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300",
-        !@is_active &&
-          "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800"
+        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group",
+        @is_active && "bg-teal-500/10 dark:bg-teal-500/15 text-teal-700 dark:text-teal-300 shadow-sm",
+        !@is_active && !@highlight && "text-sidebar-foreground dark:text-slate-300 hover:bg-sidebar-muted dark:hover:bg-slate-800/70 hover:text-teal-600 dark:hover:text-teal-400",
+        !@is_active && @highlight && "text-teal-600 dark:text-teal-400 hover:bg-teal-500/10 dark:hover:bg-teal-500/15"
       ]}
     >
-      <.icon name={@icon} class="h-5 w-5" />
+      <span class={[
+        "flex-shrink-0 transition-transform duration-200",
+        @is_active && "scale-110"
+      ]}>
+        <.icon name={@icon} class="h-5 w-5" />
+      </span>
       <span class="flex-1"><%= @label %></span>
       <span
         :if={@badge}
-        class="px-2 py-0.5 text-xs font-medium bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full"
+        class="px-2 py-0.5 text-xs font-semibold bg-teal-500/20 dark:bg-teal-500/30 text-teal-700 dark:text-teal-300 rounded-full"
       >
         <%= @badge %>
       </span>
+      <span
+        :if={@is_active}
+        class="w-1 h-6 rounded-full bg-teal-500"
+      ></span>
     </a>
     """
   end
@@ -258,10 +324,10 @@ defmodule HellenWeb.Sidebar do
 
   defp nav_item_disabled(assigns) do
     ~H"""
-    <div class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-400 dark:text-gray-600 cursor-not-allowed">
+    <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 dark:text-slate-600 cursor-not-allowed">
       <.icon name={@icon} class="h-5 w-5" />
       <span class="flex-1"><%= @label %></span>
-      <span class="px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-gray-600 rounded">
+      <span class="px-1.5 py-0.5 text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 rounded uppercase tracking-wide">
         soon
       </span>
     </div>
@@ -280,6 +346,11 @@ defmodule HellenWeb.Sidebar do
   defp role_label("coordinator"), do: "Coordenador"
   defp role_label("teacher"), do: "Professor"
   defp role_label(_), do: "Usuario"
+
+  defp role_color("admin"), do: "bg-violet-500"
+  defp role_color("coordinator"), do: "bg-teal-500"
+  defp role_color("teacher"), do: "bg-sage-500"
+  defp role_color(_), do: "bg-slate-400"
 
   defp show_mobile_menu do
     %JS{}

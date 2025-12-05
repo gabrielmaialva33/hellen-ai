@@ -121,17 +121,25 @@ defmodule HellenWeb.SettingsLive.Index do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="max-w-4xl mx-auto space-y-6">
+    <div class="max-w-4xl mx-auto space-y-6 animate-fade-in">
       <!-- Header -->
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Configuracoes</h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Gerencie seu perfil, preferencias e seguranca
-        </p>
+      <div class="flex items-start gap-4">
+        <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-teal-500/10 dark:bg-teal-500/20 flex items-center justify-center">
+          <.icon name="hero-cog-6-tooth" class="h-6 w-6 text-teal-600 dark:text-teal-400" />
+        </div>
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+            Configuracoes
+          </h1>
+          <p class="mt-1 text-slate-500 dark:text-slate-400">
+            Gerencie seu perfil, preferencias e seguranca
+          </p>
+        </div>
       </div>
+
       <!-- Tabs -->
-      <div class="border-b border-gray-200 dark:border-slate-700">
-        <nav class="flex space-x-8">
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200/50 dark:border-slate-700/50 p-1.5">
+        <nav class="flex gap-1">
           <.tab_button active={@active_tab == "profile"} tab="profile" icon="hero-user">
             Perfil
           </.tab_button>
@@ -143,19 +151,28 @@ defmodule HellenWeb.SettingsLive.Index do
           </.tab_button>
         </nav>
       </div>
+
       <!-- Tab Content -->
-      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200/50 dark:border-slate-700/50 p-6 animate-fade-in-up">
         <!-- Profile Tab -->
         <div :if={@active_tab == "profile"} class="space-y-6">
-          <div class="flex items-center gap-4 mb-6">
-            <div class="h-20 w-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
-              <%= String.first(@current_user.name || "U") |> String.upcase() %>
+          <div class="flex items-center gap-5 pb-6 border-b border-slate-200 dark:border-slate-700">
+            <div class="relative group">
+              <div class="h-20 w-20 rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg group-hover:shadow-teal-500/25 transition-all duration-300">
+                <%= String.first(@current_user.name || "U") |> String.upcase() %>
+              </div>
+              <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg bg-emerald-500 flex items-center justify-center">
+                <.icon name="hero-check-mini" class="h-4 w-4 text-white" />
+              </div>
             </div>
             <div>
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+              <h3 class="text-xl font-bold text-slate-900 dark:text-white">
                 <%= @current_user.name %>
               </h3>
-              <div class="flex items-center gap-2 mt-1">
+              <p class="text-sm text-slate-500 dark:text-slate-400 mb-2">
+                <%= @current_user.email %>
+              </p>
+              <div class="flex items-center gap-2">
                 <.badge variant={role_variant(@current_user.role)}>
                   <%= role_label(@current_user.role) %>
                 </.badge>
@@ -168,126 +185,182 @@ defmodule HellenWeb.SettingsLive.Index do
             for={@profile_form}
             phx-change="validate_profile"
             phx-submit="save_profile"
-            class="space-y-4"
+            class="space-y-5"
           >
-            <.input field={@profile_form[:name]} type="text" label="Nome" required />
-            <.input field={@profile_form[:email]} type="email" label="Email" required />
+            <div class="grid sm:grid-cols-2 gap-4">
+              <.input field={@profile_form[:name]} type="text" label="Nome" required />
+              <.input field={@profile_form[:email]} type="email" label="Email" required />
+            </div>
 
-            <div class="pt-4">
-              <.button type="submit" phx-disable-with="Salvando...">
+            <div class="pt-4 flex justify-end">
+              <.button type="submit" icon="hero-check" phx-disable-with="Salvando...">
                 Salvar Alteracoes
               </.button>
             </div>
           </.form>
         </div>
+
         <!-- Notifications Tab -->
         <div :if={@active_tab == "notifications"} class="space-y-6">
-          <div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Preferencias de Email</h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-              Escolha quais notificacoes deseja receber por email
-            </p>
+          <div class="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-700">
+            <div class="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+              <.icon name="hero-envelope" class="h-5 w-5 text-violet-600 dark:text-violet-400" />
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Preferencias de Email</h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400">
+                Escolha quais notificacoes deseja receber por email
+              </p>
+            </div>
           </div>
 
-          <.form for={@preferences_form} phx-submit="save_preferences" class="space-y-4">
+          <.form for={@preferences_form} phx-submit="save_preferences" class="space-y-2">
             <.preference_toggle
               field={@preferences_form[:email_critical_alerts]}
               label="Alertas Criticos"
               description="Receba emails imediatos para alertas de alta severidade"
+              color="red"
             />
             <.preference_toggle
               field={@preferences_form[:email_high_alerts]}
               label="Alertas de Alta Severidade"
               description="Notificacoes de alertas importantes"
+              color="amber"
             />
             <.preference_toggle
               field={@preferences_form[:email_analysis_complete]}
               label="Analise Concluida"
               description="Receba um email quando sua aula for analisada"
+              color="emerald"
             />
             <.preference_toggle
               field={@preferences_form[:email_weekly_summary]}
               label="Resumo Semanal"
               description="Receba um resumo semanal das suas aulas"
+              color="teal"
             />
 
-            <div class="border-t border-gray-200 dark:border-slate-700 pt-6 mt-6">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Notificacoes In-App
-              </h3>
+            <div class="!mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-xl bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
+                  <.icon name="hero-bell-alert" class="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                </div>
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
+                  Notificacoes In-App
+                </h3>
+              </div>
               <.preference_toggle
                 field={@preferences_form[:inapp_all_alerts]}
                 label="Todos os Alertas"
                 description="Mostrar notificacoes de alertas na interface"
+                color="violet"
               />
               <.preference_toggle
                 field={@preferences_form[:inapp_analysis_complete]}
                 label="Analise Concluida"
                 description="Notificar quando uma analise terminar"
+                color="teal"
               />
             </div>
 
-            <div class="pt-4">
-              <.button type="submit" phx-disable-with="Salvando...">
+            <div class="!mt-6 pt-4 flex justify-end">
+              <.button type="submit" icon="hero-check" phx-disable-with="Salvando...">
                 Salvar Preferencias
               </.button>
             </div>
           </.form>
         </div>
+
         <!-- Security Tab -->
         <div :if={@active_tab == "security"} class="space-y-6">
-          <div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Alterar Senha</h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-              Atualize sua senha regularmente para manter sua conta segura
-            </p>
+          <div class="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-700">
+            <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+              <.icon name="hero-key" class="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Alterar Senha</h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400">
+                Atualize sua senha regularmente para manter sua conta segura
+              </p>
+            </div>
           </div>
 
-          <form phx-submit="save_password" class="space-y-4">
+          <form phx-submit="save_password" class="space-y-5">
             <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Senha Atual
               </label>
               <input
                 type="password"
                 name="current_password"
                 required
-                class="w-full rounded-lg border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white px-4 py-3 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all duration-200"
               />
             </div>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Nova Senha
-              </label>
-              <input
-                type="password"
-                name="new_password"
-                required
-                minlength="8"
-                class="w-full rounded-lg border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
-              />
-              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Minimo de 8 caracteres</p>
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Nova Senha
+                </label>
+                <input
+                  type="password"
+                  name="new_password"
+                  required
+                  minlength="8"
+                  class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white px-4 py-3 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all duration-200"
+                />
+                <p class="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                  <.icon name="hero-information-circle-mini" class="h-4 w-4" />
+                  Minimo de 8 caracteres
+                </p>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Confirmar Nova Senha
+                </label>
+                <input
+                  type="password"
+                  name="confirm_password"
+                  required
+                  class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white px-4 py-3 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all duration-200"
+                />
+              </div>
             </div>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Confirmar Nova Senha
-              </label>
-              <input
-                type="password"
-                name="confirm_password"
-                required
-                class="w-full rounded-lg border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-
-            <div class="pt-4">
-              <.button type="submit" phx-disable-with="Alterando...">
+            <div class="pt-4 flex justify-end">
+              <.button type="submit" icon="hero-lock-closed" phx-disable-with="Alterando...">
                 Alterar Senha
               </.button>
             </div>
           </form>
+
+          <!-- Security Info -->
+          <div class="mt-8 p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
+            <div class="flex items-start gap-3">
+              <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
+                <.icon name="hero-shield-check" class="h-4 w-4 text-teal-600 dark:text-teal-400" />
+              </div>
+              <div>
+                <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Dicas de Seguranca</h4>
+                <ul class="mt-2 text-xs text-slate-500 dark:text-slate-400 space-y-1">
+                  <li class="flex items-center gap-1.5">
+                    <.icon name="hero-check-mini" class="h-3 w-3 text-emerald-500" />
+                    Use uma combinacao de letras, numeros e simbolos
+                  </li>
+                  <li class="flex items-center gap-1.5">
+                    <.icon name="hero-check-mini" class="h-3 w-3 text-emerald-500" />
+                    Evite informacoes pessoais faceis de adivinhar
+                  </li>
+                  <li class="flex items-center gap-1.5">
+                    <.icon name="hero-check-mini" class="h-3 w-3 text-emerald-500" />
+                    Nao reutilize senhas de outros sites
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -296,6 +369,11 @@ defmodule HellenWeb.SettingsLive.Index do
 
   # Component helpers
 
+  attr :active, :boolean, required: true
+  attr :tab, :string, required: true
+  attr :icon, :string, required: true
+  slot :inner_block, required: true
+
   defp tab_button(assigns) do
     ~H"""
     <button
@@ -303,28 +381,35 @@ defmodule HellenWeb.SettingsLive.Index do
       phx-click="change_tab"
       phx-value-tab={@tab}
       class={[
-        "flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors",
+        "flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium text-sm transition-all duration-200",
         if(@active,
-          do: "border-indigo-500 text-indigo-600 dark:text-indigo-400",
-          else:
-            "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600"
+          do: "bg-teal-500 text-white shadow-sm",
+          else: "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
         )
       ]}
     >
       <.icon name={@icon} class="h-5 w-5" />
-      <%= render_slot(@inner_block) %>
+      <span class="hidden sm:inline"><%= render_slot(@inner_block) %></span>
     </button>
     """
   end
 
+  attr :field, Phoenix.HTML.FormField, required: true
+  attr :label, :string, required: true
+  attr :description, :string, required: true
+  attr :color, :string, default: "teal"
+
   defp preference_toggle(assigns) do
     ~H"""
-    <div class="flex items-center justify-between py-3">
-      <div>
-        <label class="font-medium text-gray-900 dark:text-white"><%= @label %></label>
-        <p class="text-sm text-gray-500 dark:text-gray-400"><%= @description %></p>
+    <div class="flex items-center justify-between py-4 px-4 -mx-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group">
+      <div class="flex items-center gap-3">
+        <div class={["w-2 h-2 rounded-full", toggle_dot_color(@color)]}></div>
+        <div>
+          <label class="font-medium text-slate-900 dark:text-white cursor-pointer"><%= @label %></label>
+          <p class="text-sm text-slate-500 dark:text-slate-400"><%= @description %></p>
+        </div>
       </div>
-      <label class="relative inline-flex items-center cursor-pointer">
+      <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
         <input
           type="checkbox"
           name={@field.name}
@@ -333,12 +418,35 @@ defmodule HellenWeb.SettingsLive.Index do
           class="sr-only peer"
         />
         <input type="hidden" name={@field.name} value="false" />
-        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-indigo-600">
+        <div class={[
+          "w-12 h-7 rounded-full peer transition-colors duration-200",
+          "bg-slate-200 dark:bg-slate-600",
+          "peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-teal-500/20",
+          "peer-checked:after:translate-x-5 peer-checked:after:border-white",
+          "after:content-[''] after:absolute after:top-[2px] after:left-[2px]",
+          "after:bg-white after:rounded-full after:h-6 after:w-6 after:shadow-sm",
+          "after:transition-all after:duration-200",
+          toggle_checked_color(@color)
+        ]}>
         </div>
       </label>
     </div>
     """
   end
+
+  defp toggle_dot_color("red"), do: "bg-red-500"
+  defp toggle_dot_color("amber"), do: "bg-amber-500"
+  defp toggle_dot_color("emerald"), do: "bg-emerald-500"
+  defp toggle_dot_color("violet"), do: "bg-violet-500"
+  defp toggle_dot_color("cyan"), do: "bg-cyan-500"
+  defp toggle_dot_color(_), do: "bg-teal-500"
+
+  defp toggle_checked_color("red"), do: "peer-checked:bg-red-500"
+  defp toggle_checked_color("amber"), do: "peer-checked:bg-amber-500"
+  defp toggle_checked_color("emerald"), do: "peer-checked:bg-emerald-500"
+  defp toggle_checked_color("violet"), do: "peer-checked:bg-violet-500"
+  defp toggle_checked_color("cyan"), do: "peer-checked:bg-cyan-500"
+  defp toggle_checked_color(_), do: "peer-checked:bg-teal-500"
 
   defp role_label("teacher"), do: "Professor"
   defp role_label("coordinator"), do: "Coordenador"

@@ -1,18 +1,21 @@
 defmodule HellenWeb.CoreComponents do
   @moduledoc """
-  Provides core UI components.
+  Provides core UI components with 2025 Educational Design System.
 
   Components included:
   - Flash messages
-  - Buttons
+  - Buttons (primary, secondary, outline, ghost, danger)
   - Form inputs
-  - Cards
+  - Cards (default, elevated, glass)
   - Progress bars
   - Badges
   - Alerts
   - Modals
   - Navigation (navbar, sidebar)
   - Icons (Heroicons)
+  - Stats cards
+  - Avatar
+  - Tabs
   """
   use Phoenix.Component
 
@@ -45,17 +48,20 @@ defmodule HellenWeb.CoreComponents do
   # ============================================================================
 
   @doc """
-  Renders a button.
+  Renders a button with modern 2025 styling.
 
   ## Examples
 
       <.button>Send!</.button>
       <.button phx-click="go" variant="secondary">Send!</.button>
+      <.button variant="primary" size="lg" icon="hero-plus">New Item</.button>
   """
   attr :type, :string, default: "button"
-  attr :variant, :string, default: "primary", values: ~w(primary secondary danger ghost)
+  attr :variant, :string, default: "primary", values: ~w(primary secondary outline ghost danger)
   attr :size, :string, default: "md", values: ~w(sm md lg)
   attr :disabled, :boolean, default: false
+  attr :icon, :string, default: nil
+  attr :icon_position, :string, default: "left", values: ~w(left right)
   attr :class, :string, default: nil
   attr :rest, :global, include: ~w(form name value phx-click phx-disable-with)
 
@@ -67,17 +73,19 @@ defmodule HellenWeb.CoreComponents do
       type={@type}
       disabled={@disabled}
       class={[
-        "inline-flex items-center justify-center font-medium rounded-lg",
-        "focus:outline-none focus:ring-2 focus:ring-offset-2",
-        "transition-colors duration-200",
-        "disabled:opacity-50 disabled:cursor-not-allowed",
+        "inline-flex items-center justify-center gap-2 font-medium rounded-lg",
+        "transition-all duration-200 ease-out",
+        "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background",
+        "disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none",
         button_size(@size),
         button_variant(@variant),
         @class
       ]}
       {@rest}
     >
+      <.icon :if={@icon && @icon_position == "left"} name={@icon} class={icon_size(@size)} />
       <%= render_slot(@inner_block) %>
+      <.icon :if={@icon && @icon_position == "right"} name={@icon} class={icon_size(@size)} />
     </button>
     """
   end
@@ -86,14 +94,29 @@ defmodule HellenWeb.CoreComponents do
   defp button_size("md"), do: "px-4 py-2 text-sm"
   defp button_size("lg"), do: "px-6 py-3 text-base"
 
-  defp button_variant("primary"),
-    do: "bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500"
+  defp icon_size("sm"), do: "h-4 w-4"
+  defp icon_size("md"), do: "h-4 w-4"
+  defp icon_size("lg"), do: "h-5 w-5"
 
-  defp button_variant("secondary"),
-    do: "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-indigo-500"
+  defp button_variant("primary") do
+    "bg-teal-600 text-white hover:bg-teal-700 focus:ring-teal-500 shadow-sm hover:shadow-md"
+  end
 
-  defp button_variant("danger"), do: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
-  defp button_variant("ghost"), do: "text-gray-600 hover:bg-gray-100 focus:ring-gray-500"
+  defp button_variant("secondary") do
+    "bg-sage-500 text-white hover:bg-sage-600 focus:ring-sage-500 shadow-sm hover:shadow-md"
+  end
+
+  defp button_variant("outline") do
+    "border-2 border-teal-600 text-teal-600 bg-transparent hover:bg-teal-600 hover:text-white focus:ring-teal-500 dark:border-teal-500 dark:text-teal-500 dark:hover:bg-teal-500"
+  end
+
+  defp button_variant("ghost") do
+    "text-slate-600 dark:text-slate-300 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 focus:ring-teal-500"
+  end
+
+  defp button_variant("danger") do
+    "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-sm hover:shadow-md"
+  end
 
   # ============================================================================
   # FORM INPUTS
@@ -149,7 +172,7 @@ defmodule HellenWeb.CoreComponents do
 
     ~H"""
     <div phx-feedback-for={@name}>
-      <label class="flex items-center gap-2 text-sm font-medium text-gray-700">
+      <label class="flex items-center gap-3 text-sm font-medium text-slate-700 dark:text-slate-200 cursor-pointer">
         <input type="hidden" name={@name} value="false" />
         <input
           type="checkbox"
@@ -157,7 +180,7 @@ defmodule HellenWeb.CoreComponents do
           name={@name}
           value="true"
           checked={@checked}
-          class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+          class="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-teal-600 focus:ring-teal-500 dark:bg-slate-800 transition-colors"
           {@rest}
         />
         <%= @label %>
@@ -174,7 +197,12 @@ defmodule HellenWeb.CoreComponents do
       <select
         id={@id}
         name={@name}
-        class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+        class={[
+          "mt-1.5 block w-full rounded-lg border-slate-300 dark:border-slate-600",
+          "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100",
+          "shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm",
+          "transition-colors duration-200"
+        ]}
         multiple={@multiple}
         {@rest}
       >
@@ -194,10 +222,12 @@ defmodule HellenWeb.CoreComponents do
         id={@id}
         name={@name}
         class={[
-          "mt-1 block w-full rounded-lg border-gray-300 shadow-sm",
-          "focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm",
+          "mt-1.5 block w-full rounded-lg border-slate-300 dark:border-slate-600",
+          "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100",
+          "shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm",
+          "transition-colors duration-200 placeholder:text-slate-400 dark:placeholder:text-slate-500",
           @errors != [] &&
-            "border-red-300 text-red-900 placeholder-red-300 focus:border-red-500 focus:ring-red-500"
+            "border-red-500 text-red-900 dark:text-red-400 focus:border-red-500 focus:ring-red-500"
         ]}
         {@rest}
       ><%= Phoenix.HTML.Form.normalize_value("textarea", @value) %></textarea>
@@ -216,10 +246,12 @@ defmodule HellenWeb.CoreComponents do
         id={@id}
         value={Phoenix.HTML.Form.normalize_value(@type, @value)}
         class={[
-          "mt-1 block w-full rounded-lg border-gray-300 shadow-sm",
-          "focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm",
+          "mt-1.5 block w-full rounded-lg border-slate-300 dark:border-slate-600",
+          "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100",
+          "shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm",
+          "transition-colors duration-200 placeholder:text-slate-400 dark:placeholder:text-slate-500",
           @errors != [] &&
-            "border-red-300 text-red-900 placeholder-red-300 focus:border-red-500 focus:ring-red-500"
+            "border-red-500 text-red-900 dark:text-red-400 focus:border-red-500 focus:ring-red-500"
         ]}
         {@rest}
       />
@@ -236,7 +268,7 @@ defmodule HellenWeb.CoreComponents do
 
   def label(assigns) do
     ~H"""
-    <label for={@for} class="block text-sm font-medium text-gray-700">
+    <label for={@for} class="block text-sm font-medium text-slate-700 dark:text-slate-200">
       <%= render_slot(@inner_block) %>
     </label>
     """
@@ -249,8 +281,8 @@ defmodule HellenWeb.CoreComponents do
 
   def error(assigns) do
     ~H"""
-    <p class="mt-1 flex gap-1 text-sm leading-6 text-red-600 phx-no-feedback:hidden">
-      <.icon name="hero-exclamation-circle-mini" class="h-5 w-5 flex-none" />
+    <p class="mt-1.5 flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400 phx-no-feedback:hidden">
+      <.icon name="hero-exclamation-circle-mini" class="h-4 w-4 flex-none" />
       <%= render_slot(@inner_block) %>
     </p>
     """
@@ -261,15 +293,24 @@ defmodule HellenWeb.CoreComponents do
   # ============================================================================
 
   @doc """
-  Renders a card component.
+  Renders a card component with multiple variants.
+
+  ## Variants
+  - `:default` - Simple bordered card
+  - `:elevated` - Card with shadow and hover effect
+  - `:glass` - Glassmorphism effect
 
   ## Examples
 
-      <.card>
+      <.card>Simple card</.card>
+      <.card variant="elevated">
         <:header>Card Title</:header>
         Card content here
+        <:footer>Footer actions</:footer>
       </.card>
   """
+  attr :variant, :string, default: "default", values: ~w(default elevated glass)
+  attr :padding, :string, default: "md", values: ~w(none sm md lg)
   attr :class, :string, default: nil
   attr :rest, :global
 
@@ -280,21 +321,145 @@ defmodule HellenWeb.CoreComponents do
   def card(assigns) do
     ~H"""
     <div
-      class={["bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden", @class]}
+      class={[
+        "rounded-xl overflow-hidden",
+        card_variant(@variant),
+        @class
+      ]}
       {@rest}
     >
-      <div :if={@header != []} class="px-6 py-4 border-b border-gray-200">
+      <div :if={@header != []} class={["border-b border-slate-200 dark:border-slate-700", card_padding(@padding)]}>
         <%= render_slot(@header) %>
       </div>
-      <div class="px-6 py-4">
+      <div class={card_padding(@padding)}>
         <%= render_slot(@inner_block) %>
       </div>
-      <div :if={@footer != []} class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+      <div :if={@footer != []} class={["border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50", card_padding(@padding)]}>
         <%= render_slot(@footer) %>
       </div>
     </div>
     """
   end
+
+  defp card_variant("default") do
+    "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+  end
+
+  defp card_variant("elevated") do
+    "bg-white dark:bg-slate-800 shadow-card hover:shadow-card-hover transition-shadow duration-200"
+  end
+
+  defp card_variant("glass") do
+    "bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-white/20 dark:border-slate-700/50"
+  end
+
+  defp card_padding("none"), do: ""
+  defp card_padding("sm"), do: "px-4 py-3"
+  defp card_padding("md"), do: "px-6 py-4"
+  defp card_padding("lg"), do: "px-8 py-6"
+
+  # ============================================================================
+  # STATS CARD
+  # ============================================================================
+
+  @doc """
+  Renders a statistics card for dashboard KPIs.
+
+  ## Examples
+
+      <.stat_card
+        title="Total Aulas"
+        value="127"
+        icon="hero-academic-cap"
+        color="teal"
+        trend={%{value: 12, direction: :up}}
+      />
+  """
+  attr :title, :string, required: true
+  attr :value, :any, required: true
+  attr :icon, :string, default: nil
+  attr :variant, :string, default: "default", values: ~w(default success processing pending warning error)
+  attr :color, :string, default: nil, doc: "Deprecated: use variant instead"
+  attr :subtitle, :string, default: nil
+  attr :trend, :map, default: nil, doc: "Map with :value and :direction (:up, :down, :stable)"
+  attr :class, :string, default: nil
+
+  def stat_card(assigns) do
+    # Support both color (legacy) and variant (new) attributes
+    assigns = assign_new(assigns, :effective_variant, fn ->
+      assigns[:color] || assigns[:variant] || "default"
+    end)
+
+    ~H"""
+    <div class={["bg-white dark:bg-slate-800 rounded-xl shadow-card hover:shadow-elevated border border-slate-200/50 dark:border-slate-700/50 transition-all duration-300 p-5 group", @class]}>
+      <div class="flex items-start justify-between">
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-slate-500 dark:text-slate-400 truncate">
+            <%= @title %>
+          </p>
+          <p class="mt-2 text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+            <%= @value %>
+          </p>
+          <div :if={@subtitle || @trend} class="mt-2 flex items-center gap-2">
+            <p :if={@subtitle} class="text-xs text-slate-500 dark:text-slate-400">
+              <%= @subtitle %>
+            </p>
+            <span
+              :if={@trend}
+              class={[
+                "inline-flex items-center gap-0.5 text-xs font-medium",
+                trend_color(@trend.direction)
+              ]}
+            >
+              <.icon name={trend_icon(@trend.direction)} class="h-3.5 w-3.5" />
+              <%= @trend.value %>%
+            </span>
+          </div>
+        </div>
+        <div :if={@icon} class={[
+          "flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110",
+          stat_icon_bg(@effective_variant)
+        ]}>
+          <.icon name={@icon} class={"h-6 w-6 #{stat_icon_color(@effective_variant)}"} />
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  defp stat_icon_bg("success"), do: "bg-emerald-100 dark:bg-emerald-900/30"
+  defp stat_icon_bg("processing"), do: "bg-cyan-100 dark:bg-cyan-900/30"
+  defp stat_icon_bg("pending"), do: "bg-amber-100 dark:bg-amber-900/30"
+  defp stat_icon_bg("warning"), do: "bg-ochre-100 dark:bg-ochre-900/30"
+  defp stat_icon_bg("error"), do: "bg-red-100 dark:bg-red-900/30"
+  defp stat_icon_bg("teal"), do: "bg-teal-100 dark:bg-teal-900/30"
+  defp stat_icon_bg("sage"), do: "bg-sage-100 dark:bg-sage-900/30"
+  defp stat_icon_bg("mint"), do: "bg-mint-100 dark:bg-mint-900/30"
+  defp stat_icon_bg("ochre"), do: "bg-ochre-100 dark:bg-ochre-900/30"
+  defp stat_icon_bg("violet"), do: "bg-violet-100 dark:bg-violet-900/30"
+  defp stat_icon_bg("cyan"), do: "bg-cyan-100 dark:bg-cyan-900/30"
+  defp stat_icon_bg(_), do: "bg-teal-100 dark:bg-teal-900/30"
+
+  defp stat_icon_color("success"), do: "text-emerald-600 dark:text-emerald-400"
+  defp stat_icon_color("processing"), do: "text-cyan-600 dark:text-cyan-400"
+  defp stat_icon_color("pending"), do: "text-amber-600 dark:text-amber-400"
+  defp stat_icon_color("warning"), do: "text-ochre-600 dark:text-ochre-400"
+  defp stat_icon_color("error"), do: "text-red-600 dark:text-red-400"
+  defp stat_icon_color("teal"), do: "text-teal-600 dark:text-teal-400"
+  defp stat_icon_color("sage"), do: "text-sage-600 dark:text-sage-400"
+  defp stat_icon_color("mint"), do: "text-mint-600 dark:text-mint-400"
+  defp stat_icon_color("ochre"), do: "text-ochre-600 dark:text-ochre-400"
+  defp stat_icon_color("violet"), do: "text-violet-600 dark:text-violet-400"
+  defp stat_icon_color("cyan"), do: "text-cyan-600 dark:text-cyan-400"
+  defp stat_icon_color(_), do: "text-teal-600 dark:text-teal-400"
+
+  defp trend_color(:up), do: "text-emerald-600 dark:text-emerald-400"
+  defp trend_color(:down), do: "text-red-600 dark:text-red-400"
+  defp trend_color(:stable), do: "text-slate-500 dark:text-slate-400"
+
+  defp trend_icon(:up), do: "hero-arrow-trending-up-mini"
+  defp trend_icon(:down), do: "hero-arrow-trending-down-mini"
+  defp trend_icon(:stable), do: "hero-minus-mini"
 
   # ============================================================================
   # PROGRESS
@@ -306,20 +471,21 @@ defmodule HellenWeb.CoreComponents do
   ## Examples
 
       <.progress value={50} />
-      <.progress value={75} color="green" />
+      <.progress value={75} color="teal" size="lg" />
   """
   attr :value, :integer, default: 0
   attr :max, :integer, default: 100
-  attr :color, :string, default: "indigo", values: ~w(indigo green red yellow)
+  attr :color, :string, default: "teal", values: ~w(teal sage emerald amber red violet)
+  attr :size, :string, default: "md", values: ~w(sm md lg)
   attr :class, :string, default: nil
 
   def progress(assigns) do
     assigns = assign(assigns, :percentage, min(100, max(0, assigns.value / assigns.max * 100)))
 
     ~H"""
-    <div class={["w-full bg-gray-200 rounded-full h-2.5", @class]}>
+    <div class={["w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden", progress_height(@size), @class]}>
       <div
-        class={["h-2.5 rounded-full transition-all duration-300", progress_color(@color)]}
+        class={["rounded-full transition-all duration-500 ease-out", progress_height(@size), progress_color(@color)]}
         style={"width: #{@percentage}%"}
       >
       </div>
@@ -327,10 +493,16 @@ defmodule HellenWeb.CoreComponents do
     """
   end
 
-  defp progress_color("indigo"), do: "bg-indigo-600"
-  defp progress_color("green"), do: "bg-green-600"
-  defp progress_color("red"), do: "bg-red-600"
-  defp progress_color("yellow"), do: "bg-yellow-500"
+  defp progress_height("sm"), do: "h-1.5"
+  defp progress_height("md"), do: "h-2"
+  defp progress_height("lg"), do: "h-3"
+
+  defp progress_color("teal"), do: "bg-teal-500"
+  defp progress_color("sage"), do: "bg-sage-500"
+  defp progress_color("emerald"), do: "bg-emerald-500"
+  defp progress_color("amber"), do: "bg-amber-500"
+  defp progress_color("red"), do: "bg-red-500"
+  defp progress_color("violet"), do: "bg-violet-500"
 
   # ============================================================================
   # BADGES
@@ -343,12 +515,13 @@ defmodule HellenWeb.CoreComponents do
 
       <.badge>Default</.badge>
       <.badge variant="success">Completed</.badge>
-      <.badge variant="warning">Processing</.badge>
+      <.badge variant="processing" dot>Em andamento</.badge>
   """
   attr :variant, :string,
     default: "default",
-    values: ~w(default pending processing completed failed success warning error)
+    values: ~w(default pending processing completed failed success warning error info alert)
 
+  attr :dot, :boolean, default: false
   attr :class, :string, default: nil
   attr :rest, :global
 
@@ -358,25 +531,141 @@ defmodule HellenWeb.CoreComponents do
     ~H"""
     <span
       class={[
-        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+        "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium",
         badge_variant(@variant),
         @class
       ]}
       {@rest}
     >
+      <span :if={@dot} class={["w-1.5 h-1.5 rounded-full", badge_dot(@variant)]}></span>
       <%= render_slot(@inner_block) %>
     </span>
     """
   end
 
-  defp badge_variant("default"), do: "bg-gray-100 text-gray-800"
-  defp badge_variant("pending"), do: "bg-gray-100 text-gray-800"
-  defp badge_variant("processing"), do: "bg-yellow-100 text-yellow-800"
-  defp badge_variant("completed"), do: "bg-green-100 text-green-800"
-  defp badge_variant("failed"), do: "bg-red-100 text-red-800"
-  defp badge_variant("success"), do: "bg-green-100 text-green-800"
-  defp badge_variant("warning"), do: "bg-yellow-100 text-yellow-800"
-  defp badge_variant("error"), do: "bg-red-100 text-red-800"
+  defp badge_variant("default"), do: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+  defp badge_variant("pending"), do: "bg-ochre-100 text-ochre-700 dark:bg-ochre-900/30 dark:text-ochre-400"
+  defp badge_variant("processing"), do: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400"
+  defp badge_variant("completed"), do: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+  defp badge_variant("failed"), do: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+  defp badge_variant("success"), do: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+  defp badge_variant("warning"), do: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+  defp badge_variant("error"), do: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+  defp badge_variant("info"), do: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400"
+  defp badge_variant("alert"), do: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
+
+  defp badge_dot("default"), do: "bg-slate-500"
+  defp badge_dot("pending"), do: "bg-ochre-500"
+  defp badge_dot("processing"), do: "bg-cyan-500 animate-pulse"
+  defp badge_dot("completed"), do: "bg-emerald-500"
+  defp badge_dot("failed"), do: "bg-red-500"
+  defp badge_dot("success"), do: "bg-emerald-500"
+  defp badge_dot("warning"), do: "bg-amber-500"
+  defp badge_dot("error"), do: "bg-red-500"
+  defp badge_dot("info"), do: "bg-cyan-500"
+  defp badge_dot("alert"), do: "bg-violet-500"
+
+  # ============================================================================
+  # AVATAR
+  # ============================================================================
+
+  @doc """
+  Renders an avatar component.
+
+  ## Examples
+
+      <.avatar name="John Doe" />
+      <.avatar name="Jane" size="lg" src="/images/avatar.jpg" />
+  """
+  attr :name, :string, required: true
+  attr :src, :string, default: nil
+  attr :size, :string, default: "md", values: ~w(xs sm md lg xl)
+  attr :class, :string, default: nil
+
+  def avatar(assigns) do
+    assigns = assign(assigns, :initials, get_initials(assigns.name))
+
+    ~H"""
+    <div class={["relative inline-flex items-center justify-center rounded-full font-medium overflow-hidden", avatar_size(@size), avatar_bg(), @class]}>
+      <img :if={@src} src={@src} alt={@name} class="w-full h-full object-cover" />
+      <span :if={!@src} class={avatar_text_size(@size)}>
+        <%= @initials %>
+      </span>
+    </div>
+    """
+  end
+
+  defp get_initials(name) when is_binary(name) do
+    name
+    |> String.split(" ")
+    |> Enum.take(2)
+    |> Enum.map(&String.first/1)
+    |> Enum.join("")
+    |> String.upcase()
+  end
+
+  defp get_initials(_), do: "?"
+
+  defp avatar_size("xs"), do: "w-6 h-6"
+  defp avatar_size("sm"), do: "w-8 h-8"
+  defp avatar_size("md"), do: "w-10 h-10"
+  defp avatar_size("lg"), do: "w-12 h-12"
+  defp avatar_size("xl"), do: "w-16 h-16"
+
+  defp avatar_text_size("xs"), do: "text-2xs"
+  defp avatar_text_size("sm"), do: "text-xs"
+  defp avatar_text_size("md"), do: "text-sm"
+  defp avatar_text_size("lg"), do: "text-base"
+  defp avatar_text_size("xl"), do: "text-lg"
+
+  defp avatar_bg do
+    "bg-gradient-to-br from-teal-500 to-teal-600 text-white"
+  end
+
+  # ============================================================================
+  # TABS
+  # ============================================================================
+
+  @doc """
+  Renders a tab navigation.
+
+  ## Examples
+
+      <.tabs active="overview">
+        <:tab id="overview" icon="hero-home">Overview</:tab>
+        <:tab id="details">Details</:tab>
+        <:tab id="settings" icon="hero-cog-6-tooth">Settings</:tab>
+      </.tabs>
+  """
+  attr :active, :string, required: true
+  attr :class, :string, default: nil
+
+  slot :tab, required: true do
+    attr :id, :string, required: true
+    attr :icon, :string
+    attr :href, :string
+  end
+
+  def tabs(assigns) do
+    ~H"""
+    <div class={["flex gap-1 border-b border-slate-200 dark:border-slate-700", @class]}>
+      <a
+        :for={tab <- @tab}
+        href={tab[:href] || "#"}
+        phx-click={!tab[:href] && "tab_change"}
+        phx-value-tab={tab.id}
+        class={[
+          "inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium -mb-px border-b-2 transition-colors",
+          tab.id == @active && "text-teal-600 dark:text-teal-400 border-teal-600 dark:border-teal-400",
+          tab.id != @active && "text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300"
+        ]}
+      >
+        <.icon :if={tab[:icon]} name={tab.icon} class="h-4 w-4" />
+        <%= render_slot(tab) %>
+      </a>
+    </div>
+    """
+  end
 
   # ============================================================================
   # ALERTS
@@ -402,7 +691,7 @@ defmodule HellenWeb.CoreComponents do
     ~H"""
     <div
       class={[
-        "p-4 rounded-lg mb-4",
+        "p-4 rounded-xl mb-4",
         alert_variant(@variant),
         @class
       ]}
@@ -413,16 +702,16 @@ defmodule HellenWeb.CoreComponents do
         <div class="flex-shrink-0">
           <.icon name={alert_icon(@variant)} class="h-5 w-5" />
         </div>
-        <div class="ml-3">
-          <h3 :if={@title} class="text-sm font-medium"><%= @title %></h3>
-          <div class={["text-sm", @title && "mt-2"]}>
+        <div class="ml-3 flex-1">
+          <h3 :if={@title} class="text-sm font-semibold"><%= @title %></h3>
+          <div class={["text-sm", @title && "mt-1"]}>
             <%= render_slot(@inner_block) %>
           </div>
         </div>
         <button
           :if={@dismissible}
           type="button"
-          class="ml-auto -mx-1.5 -my-1.5 p-1.5 rounded-lg hover:bg-black/10"
+          class="ml-auto -mx-1.5 -my-1.5 p-1.5 rounded-lg hover:bg-black/10 transition-colors"
         >
           <.icon name="hero-x-mark-mini" class="h-5 w-5" />
         </button>
@@ -431,15 +720,56 @@ defmodule HellenWeb.CoreComponents do
     """
   end
 
-  defp alert_variant("info"), do: "bg-blue-50 text-blue-800 border border-blue-200"
-  defp alert_variant("success"), do: "bg-green-50 text-green-800 border border-green-200"
-  defp alert_variant("warning"), do: "bg-yellow-50 text-yellow-800 border border-yellow-200"
-  defp alert_variant("error"), do: "bg-red-50 text-red-800 border border-red-200"
+  defp alert_variant("info"), do: "bg-cyan-50 text-cyan-800 dark:bg-cyan-900/20 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800"
+  defp alert_variant("success"), do: "bg-emerald-50 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+  defp alert_variant("warning"), do: "bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+  defp alert_variant("error"), do: "bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-300 border border-red-200 dark:border-red-800"
 
   defp alert_icon("info"), do: "hero-information-circle-mini"
   defp alert_icon("success"), do: "hero-check-circle-mini"
   defp alert_icon("warning"), do: "hero-exclamation-triangle-mini"
   defp alert_icon("error"), do: "hero-x-circle-mini"
+
+  # ============================================================================
+  # EMPTY STATE
+  # ============================================================================
+
+  @doc """
+  Renders an empty state placeholder.
+
+  ## Examples
+
+      <.empty_state
+        icon="hero-document-text"
+        title="Nenhuma aula encontrada"
+        description="Comece criando sua primeira aula"
+      >
+        <.button icon="hero-plus">Nova Aula</.button>
+      </.empty_state>
+  """
+  attr :icon, :string, default: nil
+  attr :title, :string, required: true
+  attr :description, :string, default: nil
+  attr :class, :string, default: nil
+
+  slot :inner_block
+
+  def empty_state(assigns) do
+    ~H"""
+    <div class={["flex flex-col items-center justify-center py-12 px-4 text-center", @class]}>
+      <div :if={@icon} class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+        <.icon name={@icon} class="h-8 w-8 text-slate-400 dark:text-slate-500" />
+      </div>
+      <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+        <%= @title %>
+      </h3>
+      <p :if={@description} class="text-sm text-slate-500 dark:text-slate-400 max-w-sm mb-6">
+        <%= @description %>
+      </p>
+      <%= render_slot(@inner_block) %>
+    </div>
+    """
+  end
 
   # ============================================================================
   # MODALS
@@ -477,7 +807,7 @@ defmodule HellenWeb.CoreComponents do
     >
       <div
         id={"#{@id}-bg"}
-        class="bg-gray-900/50 fixed inset-0 transition-opacity"
+        class="bg-slate-900/60 dark:bg-slate-900/80 backdrop-blur-sm fixed inset-0 transition-opacity"
         aria-hidden="true"
       />
       <div
@@ -488,20 +818,20 @@ defmodule HellenWeb.CoreComponents do
         aria-modal="true"
         tabindex="0"
       >
-        <div class="flex min-h-full items-center justify-center">
-          <div class="w-full max-w-lg p-4 sm:p-6 lg:py-8">
+        <div class="flex min-h-full items-center justify-center p-4">
+          <div class="w-full max-w-lg">
             <.focus_wrap
               id={"#{@id}-container"}
               phx-window-keydown={JS.exec("data-cancel", to: "##{@id}")}
               phx-key="escape"
               phx-click-away={JS.exec("data-cancel", to: "##{@id}")}
-              class="shadow-lg rounded-xl bg-white p-6 transition"
+              class="shadow-elevated rounded-2xl bg-white dark:bg-slate-800 p-6 transition"
             >
               <div class="absolute top-4 right-4">
                 <button
                   phx-click={JS.exec("data-cancel", to: "##{@id}")}
                   type="button"
-                  class="flex-none p-2 text-gray-400 hover:text-gray-500"
+                  class="flex-none p-2 text-slate-400 hover:text-slate-500 dark:hover:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                   aria-label="close"
                 >
                   <.icon name="hero-x-mark-solid" class="h-5 w-5" />
@@ -533,38 +863,37 @@ defmodule HellenWeb.CoreComponents do
 
   def navbar(assigns) do
     ~H"""
-    <nav class="bg-white dark:bg-slate-900 shadow-sm border-b border-gray-200 dark:border-slate-700 transition-colors duration-200">
+    <nav class="bg-white dark:bg-slate-900 shadow-sm border-b border-slate-200 dark:border-slate-700 transition-colors duration-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <div class="flex items-center">
-            <a href={if @current_user, do: "/dashboard", else: "/"} class="flex items-center">
-              <span class="text-xl font-bold text-indigo-600 dark:text-indigo-400">Hellen</span>
-              <span class="ml-1 text-xs text-gray-500 dark:text-gray-400">AI</span>
+            <a href={if @current_user, do: "/dashboard", else: "/"} class="flex items-center gap-1">
+              <span class="text-xl font-bold text-teal-600 dark:text-teal-400">Hellen</span>
+              <span class="text-xs font-medium text-slate-500 dark:text-slate-400">AI</span>
             </a>
           </div>
 
           <div :if={@current_user} class="flex items-center gap-4">
             <a
               href="/lessons/new"
-              class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-sm font-medium"
+              class="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-sm font-medium transition-colors"
             >
               Nova Aula
             </a>
             <button
-              phx-click={JS.dispatch("click", to: "#theme-wrapper")}
-              class="p-2 text-gray-400 dark:text-gray-300 hover:text-gray-500 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              phx-hook="ThemeToggle"
+              id="navbar-theme-toggle"
+              class="p-2 text-slate-400 dark:text-slate-300 hover:text-slate-500 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               title="Alternar tema"
             >
               <.icon name="hero-sun" class="h-5 w-5 dark:hidden" />
               <.icon name="hero-moon" class="h-5 w-5 hidden dark:block" />
             </button>
             <div class="flex items-center gap-2">
-              <span class="text-sm text-gray-600 dark:text-gray-300">
-                <%= @current_user.name || @current_user.email %>
-              </span>
+              <.avatar name={@current_user.name || @current_user.email} size="sm" />
               <a
                 href="/logout"
-                class="text-gray-400 dark:text-gray-300 hover:text-gray-500 dark:hover:text-white"
+                class="text-slate-400 dark:text-slate-300 hover:text-slate-500 dark:hover:text-white transition-colors"
               >
                 <.icon name="hero-arrow-right-on-rectangle" class="h-5 w-5" />
               </a>
@@ -573,8 +902,9 @@ defmodule HellenWeb.CoreComponents do
 
           <div :if={!@current_user} class="flex items-center gap-4">
             <button
-              phx-click={JS.dispatch("click", to: "#theme-wrapper")}
-              class="p-2 text-gray-400 dark:text-gray-300 hover:text-gray-500 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              phx-hook="ThemeToggle"
+              id="navbar-theme-toggle-guest"
+              class="p-2 text-slate-400 dark:text-slate-300 hover:text-slate-500 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               title="Alternar tema"
             >
               <.icon name="hero-sun" class="h-5 w-5 dark:hidden" />
@@ -582,11 +912,11 @@ defmodule HellenWeb.CoreComponents do
             </button>
             <a
               href="/login"
-              class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-sm font-medium"
+              class="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-sm font-medium transition-colors"
             >
               Entrar
             </a>
-            <a href="/register" class="btn btn-primary text-sm">
+            <a href="/register" class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 shadow-sm transition-colors">
               Criar Conta
             </a>
           </div>
@@ -607,51 +937,47 @@ defmodule HellenWeb.CoreComponents do
 
   def app_navbar(assigns) do
     ~H"""
-    <nav class="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200/50 dark:border-slate-700/50 transition-all duration-300">
+    <nav class="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-700/50 transition-all duration-300">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
           <!-- Logo -->
           <div class="flex items-center">
-            <a href={if @current_user, do: "/dashboard", else: "/"} class="flex items-center group">
-              <span class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
-                Hellen
-              </span>
-              <span class="ml-1 text-xs font-medium text-gray-500 dark:text-gray-400">AI</span>
+            <a href={if @current_user, do: "/dashboard", else: "/"} class="flex items-center gap-1">
+              <span class="text-xl font-bold text-teal-600 dark:text-teal-400">Hellen</span>
+              <span class="text-xs font-medium text-slate-500 dark:text-slate-400">AI</span>
             </a>
           </div>
           <!-- Desktop Navigation (logged in) -->
           <div :if={@current_user} class="hidden md:flex items-center gap-6">
             <a
               href="/dashboard"
-              class="text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-sm font-medium transition-colors"
+              class="text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 text-sm font-medium transition-colors"
             >
               Dashboard
             </a>
             <a
               href="/lessons/new"
-              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all duration-200"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 shadow-sm hover:shadow-md transition-all duration-200"
             >
               <.icon name="hero-plus" class="h-4 w-4" /> Nova Aula
             </a>
             <button
               phx-hook="ThemeToggle"
               id="app-theme-toggle"
-              class="p-2 text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              class="p-2 text-slate-400 dark:text-slate-300 hover:text-slate-600 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               title="Alternar tema"
             >
               <.icon name="hero-sun" class="h-5 w-5 dark:hidden" />
               <.icon name="hero-moon" class="h-5 w-5 hidden dark:block" />
             </button>
-            <div class="flex items-center gap-3 pl-4 border-l border-gray-200 dark:border-slate-700">
-              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-sm font-semibold">
-                <%= String.first(@current_user.name || @current_user.email) |> String.upcase() %>
-              </div>
-              <span class="text-sm font-medium text-gray-700 dark:text-gray-200 hidden lg:block">
+            <div class="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-700">
+              <.avatar name={@current_user.name || @current_user.email} />
+              <span class="text-sm font-medium text-slate-700 dark:text-slate-200 hidden lg:block">
                 <%= @current_user.name || @current_user.email %>
               </span>
               <a
                 href="/logout"
-                class="p-2 text-gray-400 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                class="p-2 text-slate-400 dark:text-slate-300 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                 title="Sair"
               >
                 <.icon name="hero-arrow-right-on-rectangle" class="h-5 w-5" />
@@ -663,7 +989,7 @@ defmodule HellenWeb.CoreComponents do
             <button
               phx-hook="ThemeToggle"
               id="app-theme-toggle-mobile"
-              class="p-2 text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              class="p-2 text-slate-400 dark:text-slate-300 hover:text-slate-600 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               title="Alternar tema"
             >
               <.icon name="hero-sun" class="h-5 w-5 dark:hidden" />
@@ -671,10 +997,8 @@ defmodule HellenWeb.CoreComponents do
             </button>
             <button
               type="button"
-              class="p-2 text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
-              phx-click={
-                JS.toggle(to: "#app-mobile-menu", in: "fade-in-scale", out: "fade-out-scale")
-              }
+              class="p-2 text-slate-400 dark:text-slate-300 hover:text-slate-600 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              phx-click={JS.toggle(to: "#app-mobile-menu", in: "fade-in-scale", out: "fade-out-scale")}
               aria-expanded="false"
               aria-controls="app-mobile-menu"
             >
@@ -687,7 +1011,7 @@ defmodule HellenWeb.CoreComponents do
             <button
               phx-hook="ThemeToggle"
               id="app-theme-toggle-guest"
-              class="p-2 text-gray-400 dark:text-gray-300 hover:text-gray-500 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              class="p-2 text-slate-400 dark:text-slate-300 hover:text-slate-500 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               title="Alternar tema"
             >
               <.icon name="hero-sun" class="h-5 w-5 dark:hidden" />
@@ -695,13 +1019,13 @@ defmodule HellenWeb.CoreComponents do
             </button>
             <a
               href="/login"
-              class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-sm font-medium transition-colors"
+              class="text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-sm font-medium transition-colors"
             >
               Entrar
             </a>
             <a
               href="/register"
-              class="inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-md shadow-indigo-500/20 transition-all duration-200"
+              class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 shadow-sm transition-all duration-200"
             >
               Criar Conta
             </a>
@@ -712,39 +1036,37 @@ defmodule HellenWeb.CoreComponents do
       <div
         :if={@current_user}
         id="app-mobile-menu"
-        class="hidden md:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-gray-200/50 dark:border-slate-700/50"
+        class="hidden md:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/50 dark:border-slate-700/50"
       >
         <div class="px-4 py-4 space-y-3">
-          <div class="flex items-center gap-3 pb-3 border-b border-gray-200 dark:border-slate-700">
-            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-semibold">
-              <%= String.first(@current_user.name || @current_user.email) |> String.upcase() %>
-            </div>
+          <div class="flex items-center gap-3 pb-3 border-b border-slate-200 dark:border-slate-700">
+            <.avatar name={@current_user.name || @current_user.email} size="lg" />
             <div>
-              <p class="text-sm font-medium text-gray-900 dark:text-white">
-                <%= @current_user.name || "Usuário" %>
+              <p class="text-sm font-medium text-slate-900 dark:text-white">
+                <%= @current_user.name || "Usuario" %>
               </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400"><%= @current_user.email %></p>
+              <p class="text-xs text-slate-500 dark:text-slate-400"><%= @current_user.email %></p>
             </div>
           </div>
           <a
             href="/dashboard"
-            class="block px-3 py-2 rounded-lg text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+            class="flex items-center gap-3 px-3 py-2 rounded-lg text-base font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             phx-click={JS.hide(to: "#app-mobile-menu")}
           >
-            <.icon name="hero-home" class="h-5 w-5 inline mr-2" /> Dashboard
+            <.icon name="hero-home" class="h-5 w-5" /> Dashboard
           </a>
           <a
             href="/lessons/new"
-            class="block px-3 py-2 rounded-lg text-base font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition-colors"
+            class="flex items-center gap-3 px-3 py-2 rounded-lg text-base font-medium text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-500/10 transition-colors"
             phx-click={JS.hide(to: "#app-mobile-menu")}
           >
-            <.icon name="hero-plus-circle" class="h-5 w-5 inline mr-2" /> Nova Aula
+            <.icon name="hero-plus-circle" class="h-5 w-5" /> Nova Aula
           </a>
           <a
             href="/logout"
-            class="block px-3 py-2 rounded-lg text-base font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+            class="flex items-center gap-3 px-3 py-2 rounded-lg text-base font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
           >
-            <.icon name="hero-arrow-right-on-rectangle" class="h-5 w-5 inline mr-2" /> Sair
+            <.icon name="hero-arrow-right-on-rectangle" class="h-5 w-5" /> Sair
           </a>
         </div>
       </div>
@@ -771,22 +1093,22 @@ defmodule HellenWeb.CoreComponents do
 
   def sidebar(assigns) do
     ~H"""
-    <aside class="w-64 bg-gray-900 min-h-screen">
-      <div class="p-4">
-        <span class="text-xl font-bold text-white">Hellen</span>
-        <span class="ml-1 text-xs text-gray-400">Coordenador</span>
+    <aside class="w-64 bg-slate-900 min-h-screen flex flex-col">
+      <div class="p-5 border-b border-slate-800">
+        <span class="text-xl font-bold text-teal-400">Hellen</span>
+        <span class="ml-1 text-xs text-slate-500">Coordenador</span>
       </div>
-      <nav class="mt-4">
+      <nav class="flex-1 py-4 px-3 space-y-1">
         <a
           :for={item <- @item}
           href={item.path}
           class={[
-            "flex items-center px-4 py-3 text-sm font-medium",
-            item.path == @current_path && "bg-gray-800 text-white",
-            item.path != @current_path && "text-gray-300 hover:bg-gray-800 hover:text-white"
+            "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
+            item.path == @current_path && "bg-teal-600/20 text-teal-400",
+            item.path != @current_path && "text-slate-400 hover:bg-slate-800 hover:text-white"
           ]}
         >
-          <.icon :if={item[:icon]} name={item.icon} class="h-5 w-5 mr-3" />
+          <.icon :if={item[:icon]} name={item.icon} class="h-5 w-5" />
           <%= render_slot(item) %>
         </a>
       </nav>
@@ -816,29 +1138,31 @@ defmodule HellenWeb.CoreComponents do
       phx-hook="DropZone"
       phx-drop-target={@upload.ref}
       class={[
-        "border-2 border-dashed border-gray-300 rounded-lg p-8",
-        "text-center cursor-pointer transition-colors duration-200",
-        "hover:border-indigo-400 hover:bg-indigo-50",
+        "border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-8",
+        "text-center cursor-pointer transition-all duration-200",
+        "hover:border-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/10",
         @class
       ]}
     >
       <.live_file_input upload={@upload} class="hidden" />
-      <div class="space-y-2">
-        <.icon name="hero-cloud-arrow-up" class="mx-auto h-12 w-12 text-gray-400" />
-        <div class="text-sm text-gray-600">
-          <span class="font-semibold text-indigo-600">Clique para enviar</span> ou arraste e solte
+      <div class="space-y-3">
+        <div class="w-14 h-14 mx-auto rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+          <.icon name="hero-cloud-arrow-up" class="h-7 w-7 text-slate-400" />
         </div>
-        <p class="text-xs text-gray-500">
+        <div class="text-sm text-slate-600 dark:text-slate-400">
+          <span class="font-semibold text-teal-600 dark:text-teal-400">Clique para enviar</span> ou arraste e solte
+        </div>
+        <p class="text-xs text-slate-500 dark:text-slate-500">
           <%= @accept %>
         </p>
       </div>
 
-      <div :for={entry <- @upload.entries} class="mt-4">
-        <div class="flex items-center justify-between text-sm">
-          <span class="truncate"><%= entry.client_name %></span>
-          <span><%= entry.progress %>%</span>
+      <div :for={entry <- @upload.entries} class="mt-6 text-left">
+        <div class="flex items-center justify-between text-sm mb-2">
+          <span class="truncate text-slate-700 dark:text-slate-300"><%= entry.client_name %></span>
+          <span class="text-teal-600 dark:text-teal-400 font-medium"><%= entry.progress %>%</span>
         </div>
-        <.progress value={entry.progress} class="mt-1" />
+        <.progress value={entry.progress} />
       </div>
     </div>
     """
@@ -880,17 +1204,17 @@ defmodule HellenWeb.CoreComponents do
       end
 
     ~H"""
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
+    <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+      <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+        <thead class="bg-slate-50 dark:bg-slate-800/50">
           <tr>
             <th
               :for={col <- @col}
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              class="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider"
             >
               <%= col[:label] %>
             </th>
-            <th :if={@action != []} class="relative px-6 py-3">
+            <th :if={@action != []} class="relative px-4 py-3">
               <span class="sr-only">Actions</span>
             </th>
           </tr>
@@ -898,20 +1222,20 @@ defmodule HellenWeb.CoreComponents do
         <tbody
           id={@id}
           phx-update={match?(%Phoenix.LiveView.LiveStream{}, @rows) && "stream"}
-          class="bg-white divide-y divide-gray-200"
+          class="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700"
         >
-          <tr :for={row <- @rows} id={@row_id && @row_id.(row)} class="hover:bg-gray-50">
+          <tr :for={row <- @rows} id={@row_id && @row_id.(row)} class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
             <td
               :for={{col, _i} <- Enum.with_index(@col)}
               phx-click={@row_click && @row_click.(row)}
               class={[
-                "px-6 py-4 whitespace-nowrap text-sm text-gray-900",
+                "px-4 py-3 text-sm text-slate-900 dark:text-slate-100",
                 @row_click && "cursor-pointer"
               ]}
             >
               <%= render_slot(col, @row_item.(row)) %>
             </td>
-            <td :if={@action != []} class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+            <td :if={@action != []} class="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
               <%= for action <- @action do %>
                 <%= render_slot(action, @row_item.(row)) %>
               <% end %>
@@ -955,7 +1279,7 @@ defmodule HellenWeb.CoreComponents do
     <.form :let={f} for={@for} as={@as} {@rest}>
       <div class="space-y-6">
         <%= render_slot(@inner_block, f) %>
-        <div :for={action <- @actions} class="flex items-center justify-end gap-4">
+        <div :for={action <- @actions} class="flex items-center justify-end gap-4 pt-4">
           <%= render_slot(action, f) %>
         </div>
       </div>
@@ -984,18 +1308,19 @@ defmodule HellenWeb.CoreComponents do
       phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
       role="alert"
       class={[
-        "fixed top-2 right-2 mr-2 w-80 sm:w-96 z-50 rounded-lg p-3 ring-1",
-        @kind == :info && "bg-emerald-50 text-emerald-800 ring-emerald-500 fill-cyan-900",
-        @kind == :error && "bg-rose-50 text-rose-900 ring-rose-500 fill-rose-900"
+        "fixed top-4 right-4 w-80 sm:w-96 z-50 rounded-xl p-4 shadow-elevated",
+        @kind == :info && "bg-emerald-50 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200 ring-1 ring-emerald-500/20",
+        @kind == :error && "bg-red-50 dark:bg-red-900/50 text-red-800 dark:text-red-200 ring-1 ring-red-500/20"
       ]}
       {@rest}
     >
       <p :if={@title} class="flex items-center gap-1.5 text-sm font-semibold leading-6">
+        <.icon name={if @kind == :info, do: "hero-check-circle-mini", else: "hero-x-circle-mini"} class="h-5 w-5" />
         <%= @title %>
       </p>
-      <p class="mt-2 text-sm leading-5"><%= msg %></p>
-      <button type="button" class="group absolute top-1 right-1 p-2" aria-label="close">
-        <span class="sr-only">Close</span> &times;
+      <p class={["text-sm leading-5", @title && "mt-1"]}><%= msg %></p>
+      <button type="button" class="absolute top-3 right-3 p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors" aria-label="close">
+        <.icon name="hero-x-mark-mini" class="h-4 w-4" />
       </button>
     </div>
     """
@@ -1010,8 +1335,8 @@ defmodule HellenWeb.CoreComponents do
   def flash_group(assigns) do
     ~H"""
     <div id={@id}>
-      <.flash kind={:info} title="Success!" flash={@flash} />
-      <.flash kind={:error} title="Error!" flash={@flash} />
+      <.flash kind={:info} title="Sucesso!" flash={@flash} />
+      <.flash kind={:error} title="Erro!" flash={@flash} />
     </div>
     """
   end
@@ -1035,16 +1360,6 @@ defmodule HellenWeb.CoreComponents do
   Translates an error message using gettext.
   """
   def translate_error({msg, opts}) do
-    # When using gettext, we typically pass the strings we want
-    # to translate as a static argument:
-    #
-    #     # Translate the number of files with plural rules
-    #     dngettext("errors", "1 file", "%{count} files", count)
-    #
-    # However the error messages in our forms and APIs are generated
-    # dynamically, so we need to translate them by calling Gettext
-    # with our gettext backend as first argument. Translations are
-    # available in the errors.po file (as we use the "errors" domain).
     if count = opts[:count] do
       Gettext.dngettext(HellenWeb.Gettext, "errors", msg, msg, count, opts)
     else
@@ -1098,6 +1413,4 @@ defmodule HellenWeb.CoreComponents do
     |> JS.remove_class("overflow-hidden", to: "body")
     |> JS.pop_focus()
   end
-
-  # Note: focus_wrap is provided by Phoenix.Component, no need to define it here
 end

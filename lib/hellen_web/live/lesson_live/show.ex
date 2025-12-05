@@ -167,23 +167,28 @@ defmodule HellenWeb.LessonLive.Show do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="space-y-8">
+    <div class="space-y-8 animate-fade-in">
       <!-- Header -->
-      <div class="flex justify-between items-start">
+      <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
           <.link
             navigate={~p"/aulas"}
-            class="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex items-center mb-2"
+            class="text-sm text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 flex items-center mb-3 transition-colors"
           >
             <.icon name="hero-arrow-left-mini" class="h-4 w-4 mr-1" /> Voltar para Minhas Aulas
           </.link>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-            <%= @lesson.title || "Aula sem título" %>
+          <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+            <%= @lesson.title || "Aula sem titulo" %>
           </h1>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            <%= @lesson.subject || "Disciplina não informada" %> • <%= format_datetime(
-              @lesson.inserted_at
-            ) %>
+          <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 flex items-center gap-3">
+            <span class="flex items-center gap-1.5">
+              <.icon name="hero-academic-cap" class="h-4 w-4" />
+              <%= @lesson.subject || "Disciplina nao informada" %>
+            </span>
+            <span class="flex items-center gap-1.5">
+              <.icon name="hero-calendar" class="h-4 w-4" />
+              <%= format_datetime(@lesson.inserted_at) %>
+            </span>
           </p>
         </div>
         <div class="flex items-center gap-3">
@@ -193,70 +198,76 @@ defmodule HellenWeb.LessonLive.Show do
             trend={@trend}
             change={@trend_change}
           />
-          <.badge variant={status_variant(@lesson.status)} class="text-sm px-3 py-1">
+          <.badge variant={status_variant(@lesson.status)} class="text-sm px-3 py-1.5">
             <%= status_label(@lesson.status) %>
           </.badge>
         </div>
       </div>
+
       <!-- Pending State -->
-      <div :if={@lesson.status == "pending"} class="text-center py-8">
+      <div :if={@lesson.status == "pending"} class="animate-fade-in-up">
         <.card>
-          <div class="py-6">
-            <.icon name="hero-play-circle" class="mx-auto h-16 w-16 text-indigo-400" />
-            <h3 class="mt-4 text-lg font-semibold text-gray-900 dark:text-white">
+          <div class="py-8 text-center">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-teal-100 dark:bg-teal-900/30 mb-4">
+              <.icon name="hero-play-circle" class="h-10 w-10 text-teal-600 dark:text-teal-400" />
+            </div>
+            <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
               Pronto para processar
             </h3>
-            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-              Clique no botão abaixo para iniciar a transcrição e análise da aula.
+            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+              Clique no botao abaixo para iniciar a transcricao e analise pedagogica da aula.
             </p>
             <div class="mt-6">
-              <.button phx-click="start_processing">
-                <.icon name="hero-play" class="h-4 w-4 mr-2" /> Iniciar Processamento
+              <.button phx-click="start_processing" icon="hero-play">
+                Iniciar Processamento
               </.button>
             </div>
           </div>
         </.card>
       </div>
+
       <!-- Processing State -->
-      <div :if={@lesson.status in ["transcribing", "analyzing"]} class="text-center py-8">
+      <div :if={@lesson.status in ["transcribing", "analyzing"]} class="animate-fade-in-up">
         <.card>
-          <div class="py-6">
-            <div class="mx-auto h-16 w-16 text-indigo-400 animate-spin">
-              <.icon name="hero-arrow-path" class="h-16 w-16" />
+          <div class="py-8 text-center">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-cyan-100 dark:bg-cyan-900/30 mb-4">
+              <.icon name="hero-arrow-path" class="h-10 w-10 text-cyan-600 dark:text-cyan-400 animate-spin" />
             </div>
-            <h3 class="mt-4 text-lg font-semibold text-gray-900 dark:text-white">
+            <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
               <%= if @lesson.status == "transcribing", do: "Transcrevendo...", else: "Analisando..." %>
             </h3>
-            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
               <%= if @lesson.status == "transcribing",
-                do: "Convertendo áudio em texto usando IA",
-                else: "Gerando feedback pedagógico baseado na BNCC" %>
+                do: "Convertendo audio em texto usando IA",
+                else: "Gerando feedback pedagogico baseado na BNCC" %>
             </p>
             <div class="mt-6 max-w-md mx-auto">
-              <.progress value={assigns[:transcription_progress] || assigns[:analysis_progress] || 0} />
+              <.progress value={assigns[:transcription_progress] || assigns[:analysis_progress] || 0} color="teal" />
             </div>
           </div>
         </.card>
       </div>
+
       <!-- Failed State -->
-      <div :if={@lesson.status == "failed"}>
+      <div :if={@lesson.status == "failed"} class="animate-fade-in-up">
         <.alert variant="error" title="Erro no processamento">
-          Ocorreu um erro ao processar esta aula. O crédito foi reembolsado automaticamente.
-          Você pode tentar novamente.
+          Ocorreu um erro ao processar esta aula. O credito foi reembolsado automaticamente.
+          Voce pode tentar novamente.
         </.alert>
       </div>
+
       <!-- Completed State - Main Content -->
       <div :if={@lesson.status in ["transcribed", "completed"]} class="space-y-8">
         <!-- Score Evolution Chart -->
-        <.card :if={assigns[:score_history] && length(@score_history) > 1}>
+        <.card :if={assigns[:score_history] && length(@score_history) > 1} class="animate-fade-in-up">
           <:header>
             <div class="flex items-center justify-between">
               <div>
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                  Evolução do Score
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-white">
+                  Evolucao do Score
                 </h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                  Histórico de pontuações das suas aulas
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                  Historico de pontuacoes das suas aulas
                 </p>
               </div>
               <.trend_badge :if={assigns[:trend]} trend={@trend} change={@trend_change} />
@@ -268,65 +279,75 @@ defmodule HellenWeb.LessonLive.Show do
             phx-update="ignore"
             data-chart-data={Jason.encode!(@score_history)}
             data-average={@discipline_avg || 0}
+            class="min-h-[300px]"
           >
           </div>
           <div
             :if={@discipline_avg}
-            class="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700 flex items-center justify-center gap-6 text-sm"
+            class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 flex items-center justify-center gap-6 text-sm"
           >
             <div class="flex items-center gap-2">
-              <div class="w-3 h-3 rounded-full bg-indigo-500"></div>
-              <span class="text-gray-600 dark:text-gray-400">Suas Aulas</span>
+              <div class="w-3 h-3 rounded-full bg-teal-500"></div>
+              <span class="text-slate-600 dark:text-slate-400">Suas Aulas</span>
             </div>
             <div class="flex items-center gap-2">
-              <div class="w-3 h-0.5 bg-amber-500"></div>
-              <span class="text-gray-600 dark:text-gray-400">
-                Média da Disciplina: <%= round((@discipline_avg || 0) * 100) %>%
+              <div class="w-3 h-0.5 bg-ochre-500"></div>
+              <span class="text-slate-600 dark:text-slate-400">
+                Media da Disciplina: <%= round((@discipline_avg || 0) * 100) %>%
               </span>
             </div>
           </div>
         </.card>
+
         <!-- Transcription & Analysis Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- Transcription -->
-          <.card>
+          <.card class="animate-fade-in-up">
             <:header>
               <div class="flex items-center justify-between">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Transcrição</h2>
-                <.badge variant="success">Concluída</.badge>
+                <div class="flex items-center gap-2">
+                  <.icon name="hero-document-text" class="h-5 w-5 text-teal-600 dark:text-teal-400" />
+                  <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Transcricao</h2>
+                </div>
+                <.badge variant="completed">Concluida</.badge>
               </div>
             </:header>
             <div
               :if={@lesson.transcription}
-              class="prose prose-sm dark:prose-invert max-w-none max-h-96 overflow-y-auto"
+              class="prose prose-sm dark:prose-invert max-w-none max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600"
             >
-              <p class="whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+              <p class="whitespace-pre-wrap text-slate-700 dark:text-slate-300 leading-relaxed">
                 <%= @lesson.transcription.full_text %>
               </p>
             </div>
-            <div :if={!@lesson.transcription} class="text-gray-500 dark:text-gray-400 text-sm">
-              Transcrição não disponível
+            <div :if={!@lesson.transcription} class="text-center py-8">
+              <.icon name="hero-document-text" class="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600" />
+              <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Transcricao nao disponivel</p>
             </div>
           </.card>
+
           <!-- Analysis -->
-          <.card>
+          <.card class="animate-fade-in-up" style="animation-delay: 100ms">
             <:header>
               <div class="flex items-center justify-between">
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                  Análise Pedagógica
-                </h2>
-                <.badge :if={@latest_analysis} variant="success">Concluída</.badge>
+                <div class="flex items-center gap-2">
+                  <.icon name="hero-chart-bar" class="h-5 w-5 text-sage-600 dark:text-sage-400" />
+                  <h2 class="text-lg font-semibold text-slate-900 dark:text-white">
+                    Analise Pedagogica
+                  </h2>
+                </div>
+                <.badge :if={@latest_analysis} variant="completed">Concluida</.badge>
                 <.badge :if={!@latest_analysis && @lesson.status == "completed"} variant="pending">
                   Pendente
                 </.badge>
               </div>
             </:header>
 
-            <div :if={@latest_analysis} class="space-y-4">
-              <div :if={@latest_analysis.overall_score} class="flex items-center justify-center">
+            <div :if={@latest_analysis} class="space-y-5">
+              <div :if={@latest_analysis.overall_score} class="flex items-center justify-center py-2">
                 <.score_display
                   score={round(@latest_analysis.overall_score * 100)}
-                  label="Pontuação Geral"
+                  label="Pontuacao Geral"
                 />
               </div>
 
@@ -335,6 +356,7 @@ defmodule HellenWeb.LessonLive.Show do
                   :if={@latest_analysis.result["feedback"]}
                   title="Feedback"
                   icon="hero-chat-bubble-left-right"
+                  variant="info"
                 >
                   <%= @latest_analysis.result["feedback"] %>
                 </.analysis_section>
@@ -343,11 +365,12 @@ defmodule HellenWeb.LessonLive.Show do
                   :if={@latest_analysis.result["strengths"]}
                   title="Pontos Fortes"
                   icon="hero-check-circle"
+                  variant="success"
                 >
                   <ul class="list-disc list-inside space-y-1">
                     <li
                       :for={strength <- @latest_analysis.result["strengths"]}
-                      class="text-sm text-gray-700 dark:text-gray-300"
+                      class="text-sm text-slate-700 dark:text-slate-300"
                     >
                       <%= strength %>
                     </li>
@@ -356,13 +379,14 @@ defmodule HellenWeb.LessonLive.Show do
 
                 <.analysis_section
                   :if={@latest_analysis.result["improvements"]}
-                  title="Sugestões de Melhoria"
+                  title="Sugestoes de Melhoria"
                   icon="hero-light-bulb"
+                  variant="warning"
                 >
                   <ul class="list-disc list-inside space-y-1">
                     <li
                       :for={improvement <- @latest_analysis.result["improvements"]}
-                      class="text-sm text-gray-700 dark:text-gray-300"
+                      class="text-sm text-slate-700 dark:text-slate-300"
                     >
                       <%= improvement %>
                     </li>
@@ -371,46 +395,50 @@ defmodule HellenWeb.LessonLive.Show do
               </div>
             </div>
 
-            <div :if={!@latest_analysis} class="text-center py-6 text-gray-500 dark:text-gray-400">
+            <div :if={!@latest_analysis} class="text-center py-8">
               <.icon
                 name="hero-document-magnifying-glass"
-                class="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600"
+                class="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600"
               />
-              <p class="mt-2 text-sm">Análise não disponível</p>
+              <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Analise nao disponivel</p>
             </div>
           </.card>
         </div>
+
         <!-- BNCC Coverage -->
-        <.card :if={assigns[:bncc_coverage] && length(@bncc_coverage) > 0}>
+        <.card :if={assigns[:bncc_coverage] && length(@bncc_coverage) > 0} class="animate-fade-in-up" style="animation-delay: 200ms">
           <:header>
-            <div>
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                Competências BNCC Trabalhadas
-              </h2>
-              <p class="text-sm text-gray-500 dark:text-gray-400">
-                Frequência das competências identificadas em suas aulas
-              </p>
+            <div class="flex items-center gap-2">
+              <.icon name="hero-academic-cap" class="h-5 w-5 text-violet-600 dark:text-violet-400" />
+              <div>
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-white">
+                  Competencias BNCC Trabalhadas
+                </h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                  Frequencia das competencias identificadas em suas aulas
+                </p>
+              </div>
             </div>
           </:header>
           <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div
               :for={comp <- @bncc_coverage}
-              class="p-3 rounded-lg bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700"
+              class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50 hover:border-teal-300/50 dark:hover:border-teal-600/50 transition-all duration-200"
             >
-              <div class="flex items-center justify-between mb-1">
-                <span class="text-xs font-mono text-indigo-600 dark:text-indigo-400">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-mono font-medium text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/30 px-2 py-0.5 rounded">
                   <%= comp.code %>
                 </span>
-                <span class="text-xs text-gray-500 dark:text-gray-400">
+                <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">
                   <%= comp.count %>x
                 </span>
               </div>
-              <p class="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
-                <%= comp.name || "Competência BNCC" %>
+              <p class="text-sm text-slate-700 dark:text-slate-300 line-clamp-2">
+                <%= comp.name || "Competencia BNCC" %>
               </p>
-              <div class="mt-2 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div class="mt-3 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div
-                  class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
+                  class="h-full bg-gradient-to-r from-teal-500 to-sage-500 rounded-full transition-all duration-500"
                   style={"width: #{round((comp.avg_score || 0) * 100)}%"}
                 >
                 </div>
@@ -427,15 +455,15 @@ defmodule HellenWeb.LessonLive.Show do
   defp trend_indicator(assigns) do
     ~H"""
     <div class={[
-      "flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium",
-      @trend == :improving && "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
+      "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
+      @trend == :improving && "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400",
       @trend == :declining && "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400",
-      @trend == :stable && "bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400"
+      @trend == :stable && "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
     ]}>
       <.icon
         :if={@trend == :improving}
         name="hero-arrow-trending-up"
-        class="h-4 w-4 text-green-600 dark:text-green-400"
+        class="h-4 w-4 text-emerald-600 dark:text-emerald-400"
       />
       <.icon
         :if={@trend == :declining}
@@ -445,7 +473,7 @@ defmodule HellenWeb.LessonLive.Show do
       <.icon
         :if={@trend == :stable}
         name="hero-minus"
-        class="h-4 w-4 text-gray-500 dark:text-gray-400"
+        class="h-4 w-4 text-slate-500 dark:text-slate-400"
       />
       <span :if={abs(@change) > 0}>
         <%= if @change > 0, do: "+", else: "" %><%= Float.round(@change, 1) %>%
@@ -458,15 +486,15 @@ defmodule HellenWeb.LessonLive.Show do
   defp trend_badge(assigns) do
     ~H"""
     <div class={[
-      "flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium",
-      @trend == :improving && "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
+      "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-colors",
+      @trend == :improving && "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400",
       @trend == :declining && "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400",
-      @trend == :stable && "bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400"
+      @trend == :stable && "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
     ]}>
       <.icon
         :if={@trend == :improving}
         name="hero-arrow-trending-up"
-        class="h-5 w-5 text-green-600 dark:text-green-400"
+        class="h-5 w-5 text-emerald-600 dark:text-emerald-400"
       />
       <.icon
         :if={@trend == :declining}
@@ -476,13 +504,13 @@ defmodule HellenWeb.LessonLive.Show do
       <.icon
         :if={@trend == :stable}
         name="hero-minus"
-        class="h-5 w-5 text-gray-500 dark:text-gray-400"
+        class="h-5 w-5 text-slate-500 dark:text-slate-400"
       />
       <span>
         <%= case @trend do
           :improving -> "Melhorando"
           :declining -> "Em queda"
-          :stable -> "Estável"
+          :stable -> "Estavel"
         end %>
       </span>
     </div>

@@ -150,23 +150,26 @@ defmodule HellenWeb.BillingLive.Index do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="space-y-6">
+    <div class="space-y-6 animate-fade-in">
       <!-- Header -->
-      <div class="flex items-center justify-between">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Creditos</h1>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+            Creditos
+          </h1>
+          <p class="mt-1 text-slate-500 dark:text-slate-400">
             Gerencie seus creditos e acompanhe seu uso
           </p>
         </div>
       </div>
+
       <!-- Stats Cards -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <.billing_stat_card
           label="Saldo Atual"
           value={@current_user.credits}
-          icon="hero-currency-dollar"
-          color="indigo"
+          icon="hero-bolt"
+          color="teal"
         />
         <.billing_stat_card
           label="Usados (30d)"
@@ -184,14 +187,18 @@ defmodule HellenWeb.BillingLive.Index do
           label="Analises Totais"
           value={@analyses_count}
           icon="hero-chart-bar"
-          color="purple"
+          color="violet"
         />
       </div>
+
       <!-- Usage Chart -->
-      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          Uso de Creditos (30 dias)
-        </h3>
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200/50 dark:border-slate-700/50 p-6">
+        <div class="flex items-center gap-2 mb-4">
+          <.icon name="hero-chart-bar-square" class="h-5 w-5 text-teal-600 dark:text-teal-400" />
+          <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
+            Uso de Creditos (30 dias)
+          </h3>
+        </div>
         <div
           id="usage-chart"
           phx-hook="BillingUsageChart"
@@ -200,76 +207,74 @@ defmodule HellenWeb.BillingLive.Index do
         >
           <div
             :if={Enum.all?(@daily_usage, fn d -> d.used == 0 and d.added == 0 end)}
-            class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400"
+            class="flex items-center justify-center h-full text-slate-500 dark:text-slate-400"
           >
-            Sem movimentacao no periodo
+            <div class="text-center">
+              <.icon name="hero-chart-bar" class="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600 mb-2" />
+              <p>Sem movimentacao no periodo</p>
+            </div>
           </div>
         </div>
       </div>
+
       <!-- Credit Packages -->
-      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Comprar Creditos</h3>
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200/50 dark:border-slate-700/50 p-6">
+        <div class="flex items-center gap-2 mb-6">
+          <.icon name="hero-shopping-cart" class="h-5 w-5 text-sage-600 dark:text-sage-400" />
+          <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Comprar Creditos</h3>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div
             :for={package <- @packages}
             class={[
-              "relative rounded-xl border-2 p-6 cursor-pointer transition-all hover:shadow-lg",
+              "relative rounded-xl border-2 p-6 cursor-pointer transition-all duration-300 hover:shadow-lg group",
               if(package[:popular],
-                do: "border-indigo-500 dark:border-indigo-400",
+                do: "border-teal-500 dark:border-teal-400 bg-teal-50/50 dark:bg-teal-900/10",
                 else:
-                  "border-gray-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600"
+                  "border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-600"
               )
             ]}
             phx-click="show_purchase_modal"
             phx-value-package={package.id}
           >
             <div :if={package[:popular]} class="absolute -top-3 left-1/2 -translate-x-1/2">
-              <span class="px-3 py-1 text-xs font-medium text-white bg-indigo-500 rounded-full">
+              <span class="px-3 py-1 text-xs font-medium text-white bg-gradient-to-r from-teal-500 to-sage-500 rounded-full shadow-sm">
                 Popular
               </span>
             </div>
             <div class="text-center">
-              <p class="text-3xl font-bold text-gray-900 dark:text-white"><%= package.credits %></p>
-              <p class="text-sm text-gray-500 dark:text-gray-400">creditos</p>
-              <p class="mt-4 text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+              <div class="w-14 h-14 mx-auto mb-4 rounded-xl bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <.icon name="hero-bolt" class="h-7 w-7 text-teal-600 dark:text-teal-400" />
+              </div>
+              <p class="text-3xl font-bold text-slate-900 dark:text-white"><%= package.credits %></p>
+              <p class="text-sm text-slate-500 dark:text-slate-400">creditos</p>
+              <p class="mt-4 text-2xl font-bold text-teal-600 dark:text-teal-400">
                 <%= package.price_display %>
               </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
+              <p class="text-xs text-slate-500 dark:text-slate-400">
                 R$ <%= Float.round(package.price / 100 / package.credits, 2) %>/credito
               </p>
             </div>
           </div>
         </div>
-        <div class="mt-4 flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-          <svg class="h-5 w-5" viewBox="0 0 60 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M26.1 6.4h-3.3l2.1-12.3h3.3L26.1 6.4zM19.5-5.9l-3.2 12.3 3.1.7.8-2h3.8l.4 2h3l-2.6-13H19.5zm1.5 8l1.3-5.2 1.2 5.2h-2.5zM8.2 6.4l1.9-5.7L6.8-5.9H3.3L.2 6.4h3l.6-2.3h3.2l.3 2.3h2.9zM4.8 1.4l1.3-5.2h.1l1.2 5.2H4.8z"
-              fill="currentColor"
-              transform="translate(0, 12)"
-            />
-            <path
-              d="M35 6.4h-3l.6-3.6h-4l-.6 3.6h-3l2.1-12.3h3l-.6 3.6h4l.6-3.6h3L35 6.4z"
-              fill="currentColor"
-              transform="translate(0, 12)"
-            />
-            <path
-              d="M45.9 6.4h-6.5l2.1-12.3h6.4l-.4 2.7h-3.4l-.3 1.8h3.2l-.4 2.6h-3.2l-.3 2.5h3.5l-.7 2.7zM55.4-5.9h-3l-2 7.1L47.8-5.9h-3.3l3.8 12.3h3.5l3.6-12.3z"
-              fill="currentColor"
-              transform="translate(0, 12)"
-            />
-          </svg>
+        <div class="mt-6 flex items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+          <.icon name="hero-lock-closed" class="h-4 w-4" />
           <span>Pagamento seguro via Stripe</span>
         </div>
       </div>
+
       <!-- Transaction History -->
-      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
-        <div class="p-6 border-b border-gray-200 dark:border-slate-700">
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200/50 dark:border-slate-700/50 overflow-hidden">
+        <div class="p-6 border-b border-slate-200 dark:border-slate-700">
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Historico</h3>
+            <div class="flex items-center gap-2">
+              <.icon name="hero-clock" class="h-5 w-5 text-ochre-600 dark:text-ochre-400" />
+              <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Historico</h3>
+            </div>
             <select
               phx-change="filter_transactions"
               name="reason"
-              class="text-sm rounded-lg border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+              class="text-sm rounded-xl border-slate-200 dark:border-slate-600 dark:bg-slate-700/50 dark:text-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all duration-200"
             >
               <option value="">Todos os tipos</option>
               <option value="lesson_analysis" selected={@filter_reason == "lesson_analysis"}>
@@ -284,14 +289,14 @@ defmodule HellenWeb.BillingLive.Index do
           </div>
         </div>
 
-        <div class="divide-y divide-gray-200 dark:divide-slate-700">
+        <div class="divide-y divide-slate-200 dark:divide-slate-700">
           <div
             :for={transaction <- @transactions}
-            class="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-slate-700/50"
+            class="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
           >
             <div class="flex items-center gap-3">
               <div class={[
-                "w-10 h-10 rounded-full flex items-center justify-center",
+                "w-10 h-10 rounded-xl flex items-center justify-center",
                 if(transaction.amount > 0,
                   do: "bg-emerald-100 dark:bg-emerald-900/30",
                   else: "bg-red-100 dark:bg-red-900/30"
@@ -303,10 +308,10 @@ defmodule HellenWeb.BillingLive.Index do
                 />
               </div>
               <div>
-                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                <p class="text-sm font-medium text-slate-900 dark:text-white">
                   <%= reason_label(transaction.reason) %>
                 </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
+                <p class="text-xs text-slate-500 dark:text-slate-400">
                   <%= Calendar.strftime(transaction.inserted_at, "%d/%m/%Y %H:%M") %>
                   <%= if transaction.lesson, do: "- #{transaction.lesson.title}" %>
                 </p>
@@ -322,29 +327,31 @@ defmodule HellenWeb.BillingLive.Index do
               ]}>
                 <%= if transaction.amount > 0, do: "+", else: "" %><%= transaction.amount %>
               </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
+              <p class="text-xs text-slate-500 dark:text-slate-400">
                 Saldo: <%= transaction.balance_after %>
               </p>
             </div>
           </div>
         </div>
 
-        <div :if={Enum.empty?(@transactions)} class="p-8 text-center text-gray-500 dark:text-gray-400">
-          Nenhuma transacao encontrada
+        <div :if={Enum.empty?(@transactions)} class="p-8 text-center">
+          <.icon name="hero-inbox" class="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600 mb-2" />
+          <p class="text-slate-500 dark:text-slate-400">Nenhuma transacao encontrada</p>
         </div>
 
         <div
           :if={length(@transactions) < @transactions_total}
-          class="p-4 border-t border-gray-200 dark:border-slate-700"
+          class="p-4 border-t border-slate-200 dark:border-slate-700"
         >
           <button
             phx-click="load_more_transactions"
-            class="w-full py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
+            class="w-full py-2.5 text-sm font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors"
           >
             Carregar mais (<%= @transactions_total - length(@transactions) %> restantes)
           </button>
         </div>
       </div>
+
       <!-- Purchase Modal -->
       <div
         :if={@show_purchase_modal && @selected_package}
@@ -352,36 +359,36 @@ defmodule HellenWeb.BillingLive.Index do
         aria-modal="true"
       >
         <div class="flex min-h-screen items-center justify-center p-4">
-          <div class="fixed inset-0 bg-black/50" phx-click="close_modal"></div>
-          <div class="relative bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full p-6">
+          <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" phx-click="close_modal"></div>
+          <div class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-md w-full p-6 animate-fade-in-up">
             <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Comprar Creditos</h3>
+              <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Comprar Creditos</h3>
               <button
                 phx-click="close_modal"
-                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
               >
                 <.icon name="hero-x-mark" class="h-5 w-5" />
               </button>
             </div>
 
             <div class="text-center py-6">
-              <div class="w-16 h-16 mx-auto rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mb-4">
+              <div class="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-teal-100 to-sage-100 dark:from-teal-900/30 dark:to-sage-900/30 flex items-center justify-center mb-4">
                 <.icon
-                  name="hero-currency-dollar"
-                  class="h-8 w-8 text-indigo-600 dark:text-indigo-400"
+                  name="hero-bolt"
+                  class="h-10 w-10 text-teal-600 dark:text-teal-400"
                 />
               </div>
-              <p class="text-4xl font-bold text-gray-900 dark:text-white">
+              <p class="text-4xl font-bold text-slate-900 dark:text-white">
                 <%= @selected_package.credits %>
               </p>
-              <p class="text-gray-500 dark:text-gray-400">creditos</p>
-              <p class="mt-4 text-3xl font-bold text-indigo-600 dark:text-indigo-400">
+              <p class="text-slate-500 dark:text-slate-400">creditos</p>
+              <p class="mt-4 text-3xl font-bold text-teal-600 dark:text-teal-400">
                 <%= @selected_package.price_display %>
               </p>
             </div>
 
-            <div class="bg-gray-50 dark:bg-slate-900/50 rounded-lg p-4 mb-6">
-              <div class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+            <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 mb-6">
+              <div class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
                 <.icon name="hero-shield-check" class="h-5 w-5 text-emerald-500" />
                 <span>Pagamento seguro processado pelo Stripe</span>
               </div>
@@ -391,7 +398,7 @@ defmodule HellenWeb.BillingLive.Index do
               <button
                 type="button"
                 phx-click="close_modal"
-                class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-slate-700 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600"
+                class="px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
               >
                 Cancelar
               </button>
@@ -401,10 +408,10 @@ defmodule HellenWeb.BillingLive.Index do
                 phx-value-package={@selected_package.id}
                 disabled={@purchasing}
                 class={[
-                  "px-6 py-2 text-sm font-medium text-white rounded-lg",
+                  "px-6 py-2.5 text-sm font-medium text-white rounded-xl transition-all duration-200",
                   if(@purchasing,
-                    do: "bg-indigo-400 cursor-not-allowed",
-                    else: "bg-indigo-600 hover:bg-indigo-700"
+                    do: "bg-teal-400 cursor-not-allowed",
+                    else: "bg-teal-600 hover:bg-teal-700 hover:shadow-lg hover:shadow-teal-500/25"
                   )
                 ]}
               >
@@ -442,34 +449,34 @@ defmodule HellenWeb.BillingLive.Index do
 
   defp billing_stat_card(assigns) do
     ~H"""
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200/50 dark:border-slate-700/50 p-4 group hover:shadow-elevated transition-all duration-300">
       <div class="flex items-center gap-3">
         <div class={[
-          "w-10 h-10 rounded-lg flex items-center justify-center",
+          "w-11 h-11 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110",
           billing_stat_bg(@color)
         ]}>
           <.icon name={@icon} class={"h-5 w-5 " <> billing_stat_icon_color(@color)} />
         </div>
         <div>
-          <p class="text-2xl font-bold text-gray-900 dark:text-white"><%= @value %></p>
-          <p class="text-xs text-gray-500 dark:text-gray-400"><%= @label %></p>
+          <p class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight"><%= @value %></p>
+          <p class="text-xs text-slate-500 dark:text-slate-400"><%= @label %></p>
         </div>
       </div>
     </div>
     """
   end
 
-  defp billing_stat_bg("indigo"), do: "bg-indigo-100 dark:bg-indigo-900/30"
+  defp billing_stat_bg("teal"), do: "bg-teal-100 dark:bg-teal-900/30"
   defp billing_stat_bg("red"), do: "bg-red-100 dark:bg-red-900/30"
   defp billing_stat_bg("emerald"), do: "bg-emerald-100 dark:bg-emerald-900/30"
-  defp billing_stat_bg("purple"), do: "bg-purple-100 dark:bg-purple-900/30"
-  defp billing_stat_bg(_), do: "bg-gray-100 dark:bg-gray-900/30"
+  defp billing_stat_bg("violet"), do: "bg-violet-100 dark:bg-violet-900/30"
+  defp billing_stat_bg(_), do: "bg-slate-100 dark:bg-slate-900/30"
 
-  defp billing_stat_icon_color("indigo"), do: "text-indigo-600 dark:text-indigo-400"
+  defp billing_stat_icon_color("teal"), do: "text-teal-600 dark:text-teal-400"
   defp billing_stat_icon_color("red"), do: "text-red-600 dark:text-red-400"
   defp billing_stat_icon_color("emerald"), do: "text-emerald-600 dark:text-emerald-400"
-  defp billing_stat_icon_color("purple"), do: "text-purple-600 dark:text-purple-400"
-  defp billing_stat_icon_color(_), do: "text-gray-600 dark:text-gray-400"
+  defp billing_stat_icon_color("violet"), do: "text-violet-600 dark:text-violet-400"
+  defp billing_stat_icon_color(_), do: "text-slate-600 dark:text-slate-400"
 
   defp reason_label("lesson_analysis"), do: "Analise de Aula"
   defp reason_label("signup_bonus"), do: "Bonus de Cadastro"

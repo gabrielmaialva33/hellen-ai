@@ -144,18 +144,32 @@ defmodule HellenWeb.LessonsLive.Index do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="space-y-6">
-      <.page_header title="Minhas Aulas" description="Todas as suas aulas e analises">
-        <:actions>
-          <.link navigate={~p"/lessons/new"}>
-            <.button>
-              <.icon name="hero-plus" class="h-4 w-4 mr-2" /> Nova Aula
-            </.button>
-          </.link>
-        </:actions>
-      </.page_header>
-      <!-- Filters -->
-      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+    <div class="space-y-6 animate-fade-in">
+      <!-- Page Header -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+            Minhas Aulas
+          </h1>
+          <p class="mt-1 text-slate-500 dark:text-slate-400">
+            Todas as suas aulas e analises pedagogicas
+          </p>
+        </div>
+        <.link navigate={~p"/lessons/new"}>
+          <.button icon="hero-plus">
+            Nova Aula
+          </.button>
+        </.link>
+      </div>
+
+      <!-- Stats Summary -->
+      <div :if={@lessons_count} class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+        <.icon name="hero-document-text" class="h-4 w-4" />
+        <span><%= @lessons_count %> aula<%= if @lessons_count != 1, do: "s" %> encontrada<%= if @lessons_count != 1, do: "s" %></span>
+      </div>
+
+      <!-- Filters Card -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200/50 dark:border-slate-700/50 p-5">
         <div class="flex flex-wrap gap-4 items-center">
           <!-- Search -->
           <div class="flex-1 min-w-[200px]">
@@ -163,47 +177,49 @@ defmodule HellenWeb.LessonsLive.Index do
               <div class="relative">
                 <.icon
                   name="hero-magnifying-glass"
-                  class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
+                  class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"
                 />
                 <input
                   type="text"
                   name="search"
                   value={@filters[:search]}
-                  placeholder="Buscar aulas..."
+                  placeholder="Buscar por titulo ou disciplina..."
                   phx-debounce="300"
-                  class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all duration-200"
                 />
               </div>
             </form>
           </div>
+
           <!-- Status Filter -->
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-gray-500 dark:text-gray-400">Status:</span>
-            <div class="flex gap-1 flex-wrap">
+          <div class="flex items-center gap-3">
+            <span class="text-sm font-medium text-slate-500 dark:text-slate-400">Status:</span>
+            <div class="flex gap-1.5 flex-wrap">
               <button
                 :for={{value, label} <- @statuses}
                 type="button"
                 phx-click="filter"
                 phx-value-status={value}
                 class={[
-                  "px-3 py-1.5 text-sm rounded-lg transition-colors",
+                  "px-3 py-1.5 text-sm rounded-lg transition-all duration-200",
                   @filters[:status] == value &&
-                    "bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-medium",
+                    "bg-teal-500 text-white shadow-sm",
                   @filters[:status] != value &&
-                    "bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-slate-600"
+                    "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600"
                 ]}
               >
                 <%= label %>
               </button>
             </div>
           </div>
+
           <!-- Subject Filter (if subjects exist) -->
-          <div :if={@subjects != []} class="flex items-center gap-2">
-            <span class="text-sm text-gray-500 dark:text-gray-400">Disciplina:</span>
+          <div :if={@subjects != []} class="flex items-center gap-3">
+            <span class="text-sm font-medium text-slate-500 dark:text-slate-400">Disciplina:</span>
             <select
               phx-change="filter_subject"
               name="subject"
-              class="rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white text-sm py-1.5 px-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              class="rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white text-sm py-2 px-3 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all duration-200"
             >
               <option value="all" selected={@filters[:subject] == "all"}>Todas</option>
               <option
@@ -217,34 +233,40 @@ defmodule HellenWeb.LessonsLive.Index do
           </div>
         </div>
       </div>
+
       <!-- Lessons Grid -->
       <div id="lessons-container" phx-update="stream" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div :for={{dom_id, lesson} <- @streams.lessons} id={dom_id}>
+        <div
+          :for={{dom_id, lesson} <- @streams.lessons}
+          id={dom_id}
+          class="animate-fade-in-up"
+        >
           <.lesson_card lesson={lesson} />
         </div>
       </div>
+
       <!-- Empty State -->
-      <div :if={@lessons_count == 0} id="empty-state" class="text-center py-12">
-        <.icon name="hero-document-text" class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
-        <h3 class="mt-2 text-sm font-semibold text-gray-900 dark:text-white">
-          Nenhuma aula encontrada
-        </h3>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          <%= if @filters[:search] != "" or @filters[:status] != "all" do %>
-            Tente ajustar os filtros ou buscar por outro termo.
-          <% else %>
-            Comece enviando sua primeira aula para analise.
-          <% end %>
-        </p>
-        <div class="mt-6">
-          <.link navigate={~p"/lessons/new"}>
-            <.button>
-              <.icon name="hero-plus" class="h-4 w-4 mr-2" /> Nova Aula
-            </.button>
-          </.link>
-        </div>
-      </div>
+      <.empty_state
+        :if={@lessons_count == 0}
+        icon="hero-document-text"
+        title="Nenhuma aula encontrada"
+        description={empty_state_description(@filters)}
+      >
+        <.link navigate={~p"/lessons/new"}>
+          <.button icon="hero-plus">
+            Nova Aula
+          </.button>
+        </.link>
+      </.empty_state>
     </div>
     """
+  end
+
+  defp empty_state_description(filters) do
+    if filters[:search] != "" or filters[:status] != "all" do
+      "Tente ajustar os filtros ou buscar por outro termo."
+    else
+      "Comece enviando sua primeira aula para analise pedagogica com IA."
+    end
   end
 end

@@ -1,5 +1,24 @@
 // ApexCharts Hooks for LiveView
-// Provides reactive chart rendering with data from the server
+// 2025 Color Palette: teal, sage, mint, ochre, violet, cyan
+
+// Color palette constants
+const COLORS = {
+  teal: '#0d9488',      // teal-600
+  tealLight: '#14b8a6', // teal-500
+  sage: '#87a878',      // sage-500
+  sageLight: '#a8c99b', // sage-light
+  mint: '#98d4bb',      // mint-300
+  ochre: '#d4a574',     // ochre-400
+  violet: '#7c3aed',    // violet-600
+  cyan: '#06b6d4',      // cyan-500
+  emerald: '#10b981',   // emerald-500
+  amber: '#f59e0b',     // amber-500
+  red: '#ef4444',       // red-500
+  slate: '#64748b'      // slate-500
+}
+
+// Chart palette for multiple series
+const CHART_PALETTE = [COLORS.teal, COLORS.sage, COLORS.violet, COLORS.ochre, COLORS.cyan, COLORS.mint]
 
 export const ScoreChart = {
   mounted() {
@@ -22,7 +41,7 @@ export const ScoreChart = {
     const average = parseFloat(this.el.dataset.average || '0')
 
     if (data.length === 0) {
-      this.el.innerHTML = '<p class="text-gray-500 text-center py-8">Sem dados suficientes para exibir o gráfico</p>'
+      this.el.innerHTML = '<p class="text-slate-500 dark:text-slate-400 text-center py-8">Sem dados suficientes para exibir o grafico</p>'
       return
     }
 
@@ -30,7 +49,7 @@ export const ScoreChart = {
 
     const options = {
       series: [{
-        name: 'Pontuação',
+        name: 'Pontuacao',
         data: data.map(d => ({
           x: new Date(d.date).getTime(),
           y: Math.round(d.score * 100)
@@ -39,7 +58,7 @@ export const ScoreChart = {
       chart: {
         type: 'area',
         height: 280,
-        fontFamily: 'inherit',
+        fontFamily: 'Inter var, Inter, system-ui, sans-serif',
         toolbar: { show: false },
         zoom: { enabled: false },
         background: 'transparent',
@@ -49,14 +68,26 @@ export const ScoreChart = {
           speed: 800
         }
       },
-      colors: ['#6366f1'],
+      colors: [COLORS.teal],
       fill: {
         type: 'gradient',
         gradient: {
           shadeIntensity: 1,
           opacityFrom: 0.5,
-          opacityTo: 0.1,
-          stops: [0, 90, 100]
+          opacityTo: 0.05,
+          stops: [0, 90, 100],
+          colorStops: [
+            {
+              offset: 0,
+              color: COLORS.teal,
+              opacity: 0.4
+            },
+            {
+              offset: 100,
+              color: COLORS.mint,
+              opacity: 0.05
+            }
+          ]
         }
       },
       stroke: {
@@ -69,7 +100,8 @@ export const ScoreChart = {
         labels: {
           style: {
             colors: isDark ? '#94a3b8' : '#64748b',
-            fontSize: '12px'
+            fontSize: '12px',
+            fontFamily: 'Inter var, Inter, system-ui, sans-serif'
           },
           datetimeFormatter: {
             day: 'dd/MM'
@@ -84,35 +116,44 @@ export const ScoreChart = {
         labels: {
           style: {
             colors: isDark ? '#94a3b8' : '#64748b',
-            fontSize: '12px'
+            fontSize: '12px',
+            fontFamily: 'Inter var, Inter, system-ui, sans-serif'
           },
           formatter: (val) => `${val}%`
         }
       },
       grid: {
         borderColor: isDark ? '#334155' : '#e2e8f0',
-        strokeDashArray: 4
+        strokeDashArray: 4,
+        padding: {
+          left: 10,
+          right: 10
+        }
       },
       tooltip: {
         theme: isDark ? 'dark' : 'light',
         x: { format: 'dd/MM/yyyy' },
         y: {
           formatter: (val) => `${val}%`
+        },
+        style: {
+          fontFamily: 'Inter var, Inter, system-ui, sans-serif'
         }
       },
       annotations: average > 0 ? {
         yaxis: [{
           y: Math.round(average * 100),
-          borderColor: '#f59e0b',
+          borderColor: COLORS.ochre,
           borderWidth: 2,
           strokeDashArray: 5,
           label: {
-            borderColor: '#f59e0b',
+            borderColor: COLORS.ochre,
             style: {
               color: '#fff',
-              background: '#f59e0b'
+              background: COLORS.ochre,
+              fontFamily: 'Inter var, Inter, system-ui, sans-serif'
             },
-            text: `Média da disciplina: ${Math.round(average * 100)}%`
+            text: `Media da disciplina: ${Math.round(average * 100)}%`
           }
         }]
       } : {}
@@ -147,7 +188,7 @@ export const BnccHeatmap = {
     const data = JSON.parse(this.el.dataset.chartData || '[]')
 
     if (data.length === 0) {
-      this.el.innerHTML = '<p class="text-gray-500 text-center py-8">Nenhuma competência BNCC registrada ainda</p>'
+      this.el.innerHTML = '<p class="text-slate-500 dark:text-slate-400 text-center py-8">Nenhuma competencia BNCC registrada ainda</p>'
       return
     }
 
@@ -174,21 +215,23 @@ export const BnccHeatmap = {
       chart: {
         type: 'treemap',
         height: 350,
-        fontFamily: 'inherit',
+        fontFamily: 'Inter var, Inter, system-ui, sans-serif',
         toolbar: { show: false },
         background: 'transparent'
       },
-      colors: ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899'],
+      colors: [COLORS.teal, COLORS.sage, COLORS.violet, COLORS.ochre, COLORS.cyan],
       plotOptions: {
         treemap: {
           distributed: true,
-          enableShades: true
+          enableShades: true,
+          shadeIntensity: 0.5
         }
       },
       dataLabels: {
         enabled: true,
         style: {
-          fontSize: '12px'
+          fontSize: '12px',
+          fontFamily: 'Inter var, Inter, system-ui, sans-serif'
         },
         formatter: function(text, op) {
           return [text, op.value]
@@ -196,7 +239,10 @@ export const BnccHeatmap = {
         offsetY: -4
       },
       tooltip: {
-        theme: isDark ? 'dark' : 'light'
+        theme: isDark ? 'dark' : 'light',
+        style: {
+          fontFamily: 'Inter var, Inter, system-ui, sans-serif'
+        }
       }
     }
 
@@ -229,7 +275,7 @@ export const CoordinatorBarChart = {
     const data = JSON.parse(this.el.dataset.chartData || '[]')
 
     if (data.length === 0) {
-      this.el.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-8">Sem dados suficientes para exibir o grafico</p>'
+      this.el.innerHTML = '<p class="text-slate-500 dark:text-slate-400 text-center py-8">Sem dados suficientes para exibir o grafico</p>'
       return
     }
 
@@ -243,22 +289,36 @@ export const CoordinatorBarChart = {
       chart: {
         type: 'bar',
         height: 280,
-        fontFamily: 'inherit',
+        fontFamily: 'Inter var, Inter, system-ui, sans-serif',
         toolbar: { show: false },
         background: 'transparent'
       },
-      colors: ['#6366f1'],
+      colors: [COLORS.teal],
+      fill: {
+        type: 'gradient',
+        gradient: {
+          shade: 'light',
+          type: 'horizontal',
+          shadeIntensity: 0.25,
+          gradientToColors: [COLORS.sage],
+          inverseColors: false,
+          opacityFrom: 1,
+          opacityTo: 1,
+          stops: [0, 100]
+        }
+      },
       plotOptions: {
         bar: {
           horizontal: true,
-          borderRadius: 4,
+          borderRadius: 6,
           barHeight: '60%'
         }
       },
       dataLabels: {
         enabled: true,
         style: {
-          colors: ['#fff']
+          colors: ['#fff'],
+          fontFamily: 'Inter var, Inter, system-ui, sans-serif'
         }
       },
       xaxis: {
@@ -266,7 +326,8 @@ export const CoordinatorBarChart = {
         labels: {
           style: {
             colors: isDark ? '#94a3b8' : '#64748b',
-            fontSize: '12px'
+            fontSize: '12px',
+            fontFamily: 'Inter var, Inter, system-ui, sans-serif'
           }
         },
         axisBorder: { show: false },
@@ -276,7 +337,8 @@ export const CoordinatorBarChart = {
         labels: {
           style: {
             colors: isDark ? '#94a3b8' : '#64748b',
-            fontSize: '12px'
+            fontSize: '12px',
+            fontFamily: 'Inter var, Inter, system-ui, sans-serif'
           }
         }
       },
@@ -285,7 +347,10 @@ export const CoordinatorBarChart = {
         strokeDashArray: 4
       },
       tooltip: {
-        theme: isDark ? 'dark' : 'light'
+        theme: isDark ? 'dark' : 'light',
+        style: {
+          fontFamily: 'Inter var, Inter, system-ui, sans-serif'
+        }
       }
     }
 
@@ -324,35 +389,35 @@ export const AlertsChart = {
 
     if (chartType === 'severity') {
       const severityData = data.by_severity || {}
-      labels = ['Baixo', 'Médio', 'Alto', 'Crítico']
+      labels = ['Baixo', 'Medio', 'Alto', 'Critico']
       series = [
         severityData.low || 0,
         severityData.medium || 0,
         severityData.high || 0,
         severityData.critical || 0
       ]
-      colors = ['#22c55e', '#f59e0b', '#ef4444', '#991b1b']
+      colors = [COLORS.emerald, COLORS.amber, COLORS.red, '#991b1b']
     } else {
       const typeData = data.by_type || {}
       labels = Object.keys(typeData).map(key => {
         const typeLabels = {
-          'verbal_aggression': 'Agressão Verbal',
-          'exclusion': 'Exclusão',
-          'intimidation': 'Intimidação',
+          'verbal_aggression': 'Agressao Verbal',
+          'exclusion': 'Exclusao',
+          'intimidation': 'Intimidacao',
           'mockery': 'Zombaria',
-          'discrimination': 'Discriminação',
-          'threat': 'Ameaça',
-          'inappropriate_language': 'Linguagem Imprópria',
+          'discrimination': 'Discriminacao',
+          'threat': 'Ameaca',
+          'inappropriate_language': 'Linguagem Impropria',
           'other': 'Outros'
         }
         return typeLabels[key] || key
       })
       series = Object.values(typeData)
-      colors = ['#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#f97316', '#84cc16']
+      colors = CHART_PALETTE
     }
 
     if (series.every(v => v === 0)) {
-      this.el.innerHTML = '<p class="text-gray-500 text-center py-8">Nenhum alerta registrado</p>'
+      this.el.innerHTML = '<p class="text-slate-500 dark:text-slate-400 text-center py-8">Nenhum alerta registrado</p>'
       return
     }
 
@@ -363,7 +428,7 @@ export const AlertsChart = {
       chart: {
         type: 'donut',
         height: 300,
-        fontFamily: 'inherit',
+        fontFamily: 'Inter var, Inter, system-ui, sans-serif',
         background: 'transparent'
       },
       plotOptions: {
@@ -372,9 +437,24 @@ export const AlertsChart = {
             size: '65%',
             labels: {
               show: true,
+              name: {
+                show: true,
+                fontSize: '14px',
+                fontFamily: 'Inter var, Inter, system-ui, sans-serif',
+                color: isDark ? '#e2e8f0' : '#1e293b'
+              },
+              value: {
+                show: true,
+                fontSize: '24px',
+                fontFamily: 'Inter var, Inter, system-ui, sans-serif',
+                fontWeight: 600,
+                color: isDark ? '#e2e8f0' : '#1e293b'
+              },
               total: {
                 show: true,
                 label: 'Total',
+                fontSize: '14px',
+                fontFamily: 'Inter var, Inter, system-ui, sans-serif',
                 color: isDark ? '#94a3b8' : '#64748b'
               }
             }
@@ -386,12 +466,20 @@ export const AlertsChart = {
       },
       legend: {
         position: 'bottom',
+        fontFamily: 'Inter var, Inter, system-ui, sans-serif',
         labels: {
           colors: isDark ? '#94a3b8' : '#64748b'
         }
       },
       tooltip: {
-        theme: isDark ? 'dark' : 'light'
+        theme: isDark ? 'dark' : 'light',
+        style: {
+          fontFamily: 'Inter var, Inter, system-ui, sans-serif'
+        }
+      },
+      stroke: {
+        width: 2,
+        colors: [isDark ? '#1e293b' : '#ffffff']
       }
     }
 
@@ -426,7 +514,7 @@ export const AnalyticsChart = {
     const chartType = this.el.dataset.type || 'line'
 
     if (!chartData.labels || chartData.labels.length === 0) {
-      this.el.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-8">Sem dados suficientes para exibir o grafico</p>'
+      this.el.innerHTML = '<p class="text-slate-500 dark:text-slate-400 text-center py-8">Sem dados suficientes para exibir o grafico</p>'
       return
     }
 
@@ -436,7 +524,7 @@ export const AnalyticsChart = {
       chart: {
         type: chartType,
         height: '100%',
-        fontFamily: 'inherit',
+        fontFamily: 'Inter var, Inter, system-ui, sans-serif',
         toolbar: { show: false },
         background: 'transparent',
         stacked: chartType === 'bar' && chartData.datasets.length > 1
@@ -446,7 +534,8 @@ export const AnalyticsChart = {
         labels: {
           style: {
             colors: isDark ? '#94a3b8' : '#64748b',
-            fontSize: '12px'
+            fontSize: '12px',
+            fontFamily: 'Inter var, Inter, system-ui, sans-serif'
           }
         },
         axisBorder: { show: false },
@@ -456,20 +545,29 @@ export const AnalyticsChart = {
         labels: {
           style: {
             colors: isDark ? '#94a3b8' : '#64748b',
-            fontSize: '12px'
+            fontSize: '12px',
+            fontFamily: 'Inter var, Inter, system-ui, sans-serif'
           }
         }
       },
       grid: {
         borderColor: isDark ? '#334155' : '#e2e8f0',
-        strokeDashArray: 4
+        strokeDashArray: 4,
+        padding: {
+          left: 10,
+          right: 10
+        }
       },
       tooltip: {
-        theme: isDark ? 'dark' : 'light'
+        theme: isDark ? 'dark' : 'light',
+        style: {
+          fontFamily: 'Inter var, Inter, system-ui, sans-serif'
+        }
       },
       legend: {
         position: 'top',
         horizontalAlign: 'right',
+        fontFamily: 'Inter var, Inter, system-ui, sans-serif',
         labels: {
           colors: isDark ? '#94a3b8' : '#64748b'
         }
@@ -493,20 +591,100 @@ export const AnalyticsChart = {
         gradient: {
           shadeIntensity: 1,
           opacityFrom: 0.4,
-          opacityTo: 0.1,
+          opacityTo: 0.05,
           stops: [0, 90, 100]
         }
       }
-      options.colors = chartData.datasets.map(ds => ds.borderColor || '#6366f1')
+      options.colors = chartData.datasets.map((ds, i) => ds.borderColor || CHART_PALETTE[i % CHART_PALETTE.length])
     } else if (chartType === 'bar') {
       options.plotOptions = {
         bar: {
-          borderRadius: 4,
+          borderRadius: 6,
           columnWidth: '60%'
         }
       }
-      options.colors = chartData.datasets.map(ds => ds.backgroundColor || '#6366f1')
+      options.colors = chartData.datasets.map((ds, i) => ds.backgroundColor || CHART_PALETTE[i % CHART_PALETTE.length])
       options.dataLabels = { enabled: false }
+    }
+
+    if (this.chart) {
+      this.chart.updateOptions(options)
+    } else {
+      this.chart = new ApexCharts(this.el, options)
+      this.chart.render()
+    }
+  }
+}
+
+// Score Gauge - Circular progress for score display
+export const ScoreGauge = {
+  mounted() {
+    this.chart = null
+    this.renderChart()
+  },
+
+  updated() {
+    this.renderChart()
+  },
+
+  destroyed() {
+    if (this.chart) {
+      this.chart.destroy()
+    }
+  },
+
+  renderChart() {
+    const score = parseFloat(this.el.dataset.score || '0') * 100
+    const isDark = document.documentElement.classList.contains('dark')
+
+    // Color based on score
+    let color = COLORS.red
+    if (score >= 80) color = COLORS.teal
+    else if (score >= 60) color = COLORS.sage
+    else if (score >= 40) color = COLORS.ochre
+
+    const options = {
+      series: [Math.round(score)],
+      chart: {
+        type: 'radialBar',
+        height: 200,
+        fontFamily: 'Inter var, Inter, system-ui, sans-serif',
+        background: 'transparent',
+        sparkline: {
+          enabled: true
+        }
+      },
+      colors: [color],
+      plotOptions: {
+        radialBar: {
+          startAngle: -135,
+          endAngle: 135,
+          hollow: {
+            size: '70%'
+          },
+          track: {
+            background: isDark ? '#334155' : '#e2e8f0',
+            strokeWidth: '100%',
+            margin: 0
+          },
+          dataLabels: {
+            name: {
+              show: false
+            },
+            value: {
+              fontSize: '32px',
+              fontWeight: 700,
+              fontFamily: 'Inter var, Inter, system-ui, sans-serif',
+              color: isDark ? '#e2e8f0' : '#1e293b',
+              offsetY: 10,
+              formatter: (val) => `${val}%`
+            }
+          }
+        }
+      },
+      stroke: {
+        lineCap: 'round'
+      }
     }
 
     if (this.chart) {

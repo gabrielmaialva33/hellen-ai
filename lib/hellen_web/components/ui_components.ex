@@ -1,13 +1,14 @@
 defmodule HellenWeb.UIComponents do
   @moduledoc """
   UI components using LiveView 1.1 patterns.
+  2025 Design System with teal/sage/mint palette.
 
   Includes:
-  - async_result - Loading/error states for assign_async
-  - stat_card - Dashboard statistics
-  - empty_state - Empty content placeholder
   - lesson_card - Lesson display card
   - page_header - Page title with actions
+  - score_display - Circular score indicator
+  - analysis_section - Analysis content section
+  - quick_action_card - Dashboard quick action buttons
   """
   use Phoenix.Component
 
@@ -19,114 +20,11 @@ defmodule HellenWeb.UIComponents do
     statics: HellenWeb.static_paths()
 
   # ============================================================================
-  # STAT CARD - Dashboard statistics
+  # LESSON CARD (2025 Design)
   # ============================================================================
 
   @doc """
-  Renders a statistics card for dashboards.
-
-  ## Examples
-
-      <.stat_card title="Total" value={42} icon="hero-document" />
-      <.stat_card title="Completed" value={10} icon="hero-check" variant="success" />
-  """
-  attr :title, :string, required: true
-  attr :value, :any, required: true
-  attr :icon, :string, required: true
-
-  attr :variant, :string,
-    default: "default",
-    values: ~w(default success processing pending warning error)
-
-  attr :subtitle, :string, default: nil
-
-  def stat_card(assigns) do
-    ~H"""
-    <div class={[
-      "bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6",
-      stat_card_border(@variant)
-    ]}>
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-sm font-medium text-gray-600 dark:text-gray-400"><%= @title %></p>
-          <p class="mt-1 text-3xl font-semibold text-gray-900 dark:text-white"><%= @value %></p>
-          <p :if={@subtitle} class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            <%= @subtitle %>
-          </p>
-        </div>
-        <div class={["p-3 rounded-full", stat_icon_bg(@variant)]}>
-          <.icon name={@icon} class={"h-6 w-6 #{stat_icon_color(@variant)}"} />
-        </div>
-      </div>
-    </div>
-    """
-  end
-
-  defp stat_card_border("success"), do: "border-l-4 border-l-green-500"
-  defp stat_card_border("processing"), do: "border-l-4 border-l-blue-500"
-  defp stat_card_border("pending"), do: "border-l-4 border-l-yellow-500"
-  defp stat_card_border("warning"), do: "border-l-4 border-l-orange-500"
-  defp stat_card_border("error"), do: "border-l-4 border-l-red-500"
-  defp stat_card_border(_), do: "border-l-4 border-l-indigo-500"
-
-  defp stat_icon_bg("success"), do: "bg-green-100 dark:bg-green-900/30"
-  defp stat_icon_bg("processing"), do: "bg-blue-100 dark:bg-blue-900/30"
-  defp stat_icon_bg("pending"), do: "bg-yellow-100 dark:bg-yellow-900/30"
-  defp stat_icon_bg("warning"), do: "bg-orange-100 dark:bg-orange-900/30"
-  defp stat_icon_bg("error"), do: "bg-red-100 dark:bg-red-900/30"
-  defp stat_icon_bg(_), do: "bg-indigo-100 dark:bg-indigo-900/30"
-
-  defp stat_icon_color("success"), do: "text-green-600 dark:text-green-400"
-  defp stat_icon_color("processing"), do: "text-blue-600 dark:text-blue-400"
-  defp stat_icon_color("pending"), do: "text-yellow-600 dark:text-yellow-400"
-  defp stat_icon_color("warning"), do: "text-orange-600 dark:text-orange-400"
-  defp stat_icon_color("error"), do: "text-red-600 dark:text-red-400"
-  defp stat_icon_color(_), do: "text-indigo-600 dark:text-indigo-400"
-
-  # ============================================================================
-  # EMPTY STATE
-  # ============================================================================
-
-  @doc """
-  Renders an empty state placeholder.
-
-  ## Examples
-
-      <.empty_state
-        icon="hero-document-text"
-        title="Nenhuma aula"
-        description="Comece enviando sua primeira aula."
-      >
-        <.button>Nova Aula</.button>
-      </.empty_state>
-  """
-  attr :icon, :string, default: "hero-inbox"
-  attr :title, :string, required: true
-  attr :description, :string, default: nil
-
-  slot :inner_block
-
-  def empty_state(assigns) do
-    ~H"""
-    <div class="text-center py-12">
-      <.icon name={@icon} class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
-      <h3 class="mt-2 text-sm font-semibold text-gray-900 dark:text-white"><%= @title %></h3>
-      <p :if={@description} class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-        <%= @description %>
-      </p>
-      <div :if={@inner_block != []} class="mt-6">
-        <%= render_slot(@inner_block) %>
-      </div>
-    </div>
-    """
-  end
-
-  # ============================================================================
-  # LESSON CARD
-  # ============================================================================
-
-  @doc """
-  Renders a lesson card for lists.
+  Renders a modern lesson card for lists.
 
   ## Examples
 
@@ -137,28 +35,44 @@ defmodule HellenWeb.UIComponents do
   def lesson_card(assigns) do
     ~H"""
     <.link navigate={~p"/lessons/#{@lesson.id}"} class="block group">
-      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-600 transition-all">
-        <div class="flex justify-between items-start">
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200/50 dark:border-slate-700/50 p-5 hover:shadow-elevated hover:border-teal-300/50 dark:hover:border-teal-600/50 transition-all duration-300">
+        <div class="flex justify-between items-start gap-4">
           <div class="flex-1 min-w-0">
-            <h3 class="text-base font-semibold text-gray-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
-              <%= @lesson.title || "Aula sem título" %>
+            <div class="flex items-center gap-2 mb-1">
+              <.badge variant={status_variant(@lesson.status)}>
+                <%= status_label(@lesson.status) %>
+              </.badge>
+            </div>
+            <h3 class="text-base font-semibold text-slate-900 dark:text-white truncate group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
+              <%= @lesson.title || "Aula sem titulo" %>
             </h3>
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 truncate">
-              <%= @lesson.subject || "Disciplina não informada" %>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400 truncate">
+              <%= @lesson.subject || "Disciplina nao informada" %>
+              <%= if @lesson.grade, do: " · #{@lesson.grade}" %>
             </p>
           </div>
-          <.badge variant={status_variant(@lesson.status)}>
-            <%= status_label(@lesson.status) %>
-          </.badge>
+
+          <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div class="w-8 h-8 rounded-lg bg-teal-500/10 dark:bg-teal-500/20 flex items-center justify-center">
+              <.icon name="hero-arrow-right" class="h-4 w-4 text-teal-600 dark:text-teal-400" />
+            </div>
+          </div>
         </div>
 
-        <div class="mt-4 flex items-center text-xs text-gray-500 dark:text-gray-400">
-          <.icon name="hero-calendar-mini" class="h-4 w-4 mr-1" />
-          <%= format_date(@lesson.inserted_at) %>
+        <div class="mt-4 flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
+          <span class="flex items-center gap-1.5">
+            <.icon name="hero-calendar" class="h-3.5 w-3.5" />
+            <%= format_date(@lesson.inserted_at) %>
+          </span>
 
-          <span :if={@lesson.duration_seconds} class="ml-4 flex items-center">
-            <.icon name="hero-clock-mini" class="h-4 w-4 mr-1" />
+          <span :if={@lesson.duration_seconds} class="flex items-center gap-1.5">
+            <.icon name="hero-clock" class="h-3.5 w-3.5" />
             <%= format_duration(@lesson.duration_seconds) %>
+          </span>
+
+          <span :if={@lesson.overall_score} class="flex items-center gap-1.5 text-teal-600 dark:text-teal-400 font-medium">
+            <.icon name="hero-chart-bar" class="h-3.5 w-3.5" />
+            <%= round(@lesson.overall_score * 100) %>%
           </span>
         </div>
       </div>
@@ -181,7 +95,7 @@ defmodule HellenWeb.UIComponents do
   def status_label("transcribing"), do: "Transcrevendo"
   def status_label("transcribed"), do: "Analisando"
   def status_label("analyzing"), do: "Analisando"
-  def status_label("completed"), do: "Concluído"
+  def status_label("completed"), do: "Concluido"
   def status_label("failed"), do: "Falhou"
   def status_label(_), do: "Desconhecido"
 
@@ -192,7 +106,7 @@ defmodule HellenWeb.UIComponents do
 
   @doc false
   def format_datetime(datetime) do
-    Calendar.strftime(datetime, "%d/%m/%Y às %H:%M")
+    Calendar.strftime(datetime, "%d/%m/%Y as %H:%M")
   end
 
   @doc false
@@ -213,7 +127,7 @@ defmodule HellenWeb.UIComponents do
 
   ## Examples
 
-      <.page_header title="Dashboard" description="Suas aulas e análises">
+      <.page_header title="Dashboard" description="Suas aulas e analises">
         <:actions>
           <.button>Nova Aula</.button>
         </:actions>
@@ -221,19 +135,30 @@ defmodule HellenWeb.UIComponents do
   """
   attr :title, :string, required: true
   attr :description, :string, default: nil
+  attr :icon, :string, default: nil
 
   slot :actions
 
   def page_header(assigns) do
     ~H"""
-    <div class="flex justify-between items-start mb-8">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white"><%= @title %></h1>
-        <p :if={@description} class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          <%= @description %>
-        </p>
+    <div class="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8">
+      <div class="flex items-start gap-4">
+        <div
+          :if={@icon}
+          class="flex-shrink-0 w-12 h-12 rounded-xl bg-teal-500/10 dark:bg-teal-500/20 flex items-center justify-center"
+        >
+          <.icon name={@icon} class="h-6 w-6 text-teal-600 dark:text-teal-400" />
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+            <%= @title %>
+          </h1>
+          <p :if={@description} class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            <%= @description %>
+          </p>
+        </div>
       </div>
-      <div :if={@actions != []} class="flex items-center gap-3">
+      <div :if={@actions != []} class="flex items-center gap-3 flex-shrink-0">
         <%= render_slot(@actions) %>
       </div>
     </div>
@@ -241,7 +166,7 @@ defmodule HellenWeb.UIComponents do
   end
 
   # ============================================================================
-  # SCORE DISPLAY
+  # SCORE DISPLAY (2025 Design)
   # ============================================================================
 
   @doc """
@@ -249,7 +174,7 @@ defmodule HellenWeb.UIComponents do
 
   ## Examples
 
-      <.score_display score={85} label="Pontuação Geral" />
+      <.score_display score={85} label="Pontuacao Geral" />
   """
   attr :score, :integer, required: true
   attr :label, :string, default: nil
@@ -261,7 +186,7 @@ defmodule HellenWeb.UIComponents do
       <div class={["relative inline-flex items-center justify-center", score_size(@size)]}>
         <svg class="transform -rotate-90" viewBox="0 0 36 36">
           <path
-            class="text-gray-200 dark:text-slate-700"
+            class="text-slate-200 dark:text-slate-700"
             stroke="currentColor"
             stroke-width="3"
             fill="none"
@@ -281,7 +206,7 @@ defmodule HellenWeb.UIComponents do
           <%= @score %>%
         </span>
       </div>
-      <p :if={@label} class="mt-2 text-sm text-gray-500 dark:text-gray-400"><%= @label %></p>
+      <p :if={@label} class="mt-2 text-sm text-slate-500 dark:text-slate-400"><%= @label %></p>
     </div>
     """
   end
@@ -294,8 +219,9 @@ defmodule HellenWeb.UIComponents do
   defp score_text_size("md"), do: "text-xl"
   defp score_text_size("lg"), do: "text-2xl"
 
-  defp score_color(score) when score >= 80, do: "text-green-500"
-  defp score_color(score) when score >= 60, do: "text-yellow-500"
+  defp score_color(score) when score >= 80, do: "text-teal-500"
+  defp score_color(score) when score >= 60, do: "text-sage-500"
+  defp score_color(score) when score >= 40, do: "text-ochre-500"
   defp score_color(_), do: "text-red-500"
 
   # ============================================================================
@@ -314,20 +240,110 @@ defmodule HellenWeb.UIComponents do
   attr :title, :string, required: true
   attr :icon, :string, required: true
   attr :class, :string, default: nil
+  attr :variant, :string, default: "default", values: ~w(default success warning error info)
 
   slot :inner_block, required: true
 
   def analysis_section(assigns) do
     ~H"""
-    <div class={["bg-gray-50 dark:bg-slate-800/50 rounded-lg p-4", @class]}>
+    <div class={[
+      "rounded-xl p-5 border",
+      analysis_section_bg(@variant),
+      @class
+    ]}>
       <div class="flex items-center gap-2 mb-3">
-        <.icon name={@icon} class="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-        <h4 class="font-semibold text-gray-900 dark:text-white"><%= @title %></h4>
+        <.icon name={@icon} class={"h-5 w-5 #{analysis_section_icon(@variant)}"} />
+        <h4 class="font-semibold text-slate-900 dark:text-white"><%= @title %></h4>
       </div>
-      <div class="text-sm text-gray-700 dark:text-gray-300">
+      <div class="text-sm text-slate-700 dark:text-slate-300">
         <%= render_slot(@inner_block) %>
       </div>
     </div>
     """
   end
+
+  defp analysis_section_bg("success"), do: "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/50"
+  defp analysis_section_bg("warning"), do: "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/50"
+  defp analysis_section_bg("error"), do: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/50"
+  defp analysis_section_bg("info"), do: "bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800/50"
+  defp analysis_section_bg(_), do: "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50"
+
+  defp analysis_section_icon("success"), do: "text-emerald-600 dark:text-emerald-400"
+  defp analysis_section_icon("warning"), do: "text-amber-600 dark:text-amber-400"
+  defp analysis_section_icon("error"), do: "text-red-600 dark:text-red-400"
+  defp analysis_section_icon("info"), do: "text-cyan-600 dark:text-cyan-400"
+  defp analysis_section_icon(_), do: "text-teal-600 dark:text-teal-400"
+
+  # ============================================================================
+  # QUICK ACTION CARD
+  # ============================================================================
+
+  @doc """
+  Renders a quick action card for dashboards.
+
+  ## Examples
+
+      <.quick_action_card
+        title="Nova Aula"
+        description="Enviar gravacao para analise"
+        icon="hero-plus-circle"
+        href={~p"/lessons/new"}
+        variant="primary"
+      />
+  """
+  attr :title, :string, required: true
+  attr :description, :string, default: nil
+  attr :icon, :string, required: true
+  attr :href, :string, required: true
+  attr :variant, :string, default: "default", values: ~w(primary default highlight)
+
+  def quick_action_card(assigns) do
+    ~H"""
+    <.link navigate={@href} class="block group">
+      <div class={[
+        "rounded-xl p-6 transition-all duration-300",
+        quick_action_variant(@variant)
+      ]}>
+        <div class="flex items-center gap-4">
+          <div class={[
+            "flex-shrink-0 p-3 rounded-xl transition-transform duration-300 group-hover:scale-110",
+            quick_action_icon_bg(@variant)
+          ]}>
+            <.icon name={@icon} class={"h-7 w-7 #{quick_action_icon_color(@variant)}"} />
+          </div>
+          <div class="flex-1 min-w-0">
+            <h3 class={["font-semibold text-lg", quick_action_title(@variant)]}>
+              <%= @title %>
+            </h3>
+            <p :if={@description} class={["text-sm", quick_action_desc(@variant)]}>
+              <%= @description %>
+            </p>
+          </div>
+          <.icon
+            name="hero-chevron-right"
+            class={"h-5 w-5 #{quick_action_icon_color(@variant)} opacity-0 group-hover:opacity-100 transition-opacity"}
+          />
+        </div>
+      </div>
+    </.link>
+    """
+  end
+
+  defp quick_action_variant("primary"), do: "bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg hover:shadow-xl hover:shadow-teal-500/25"
+  defp quick_action_variant("highlight"), do: "bg-white dark:bg-slate-800 border-2 border-amber-300 dark:border-amber-600 hover:shadow-lg"
+  defp quick_action_variant(_), do: "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-600 hover:shadow-lg"
+
+  defp quick_action_icon_bg("primary"), do: "bg-white/20"
+  defp quick_action_icon_bg("highlight"), do: "bg-amber-100 dark:bg-amber-900/30"
+  defp quick_action_icon_bg(_), do: "bg-teal-100 dark:bg-teal-900/30"
+
+  defp quick_action_icon_color("primary"), do: "text-white"
+  defp quick_action_icon_color("highlight"), do: "text-amber-600 dark:text-amber-400"
+  defp quick_action_icon_color(_), do: "text-teal-600 dark:text-teal-400"
+
+  defp quick_action_title("primary"), do: "text-white"
+  defp quick_action_title(_), do: "text-slate-900 dark:text-white"
+
+  defp quick_action_desc("primary"), do: "text-white/80"
+  defp quick_action_desc(_), do: "text-slate-500 dark:text-slate-400"
 end

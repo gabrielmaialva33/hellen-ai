@@ -1,6 +1,8 @@
 defmodule HellenWeb.DashboardLive.Index do
   @moduledoc """
   Dashboard LiveView - Quick actions and overview.
+  2025 Design with teal/sage color palette.
+
   Uses LiveView 1.1 patterns:
   - assign_async for stats (non-blocking)
   - streams for lesson list (memory efficient)
@@ -15,7 +17,8 @@ defmodule HellenWeb.DashboardLive.Index do
 
     {:ok,
      socket
-     |> assign(page_title: "Inicio")
+     |> assign(page_title: "Dashboard")
+     |> assign(greeting: get_greeting())
      |> stream(:recent_lessons, [])
      |> assign_async(:stats, fn -> load_stats(user.id) end)
      |> load_lessons_async(user.id)}
@@ -60,99 +63,93 @@ defmodule HellenWeb.DashboardLive.Index do
      }}
   end
 
+  defp get_greeting do
+    hour = DateTime.utc_now() |> DateTime.to_time() |> Map.get(:hour)
+
+    cond do
+      hour >= 5 and hour < 12 -> "Bom dia"
+      hour >= 12 and hour < 18 -> "Boa tarde"
+      true -> "Boa noite"
+    end
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="space-y-8">
+    <div class="space-y-8 animate-fade-in">
       <!-- Welcome Header -->
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-          Ola, <%= @current_user.name || "Professor" %>!
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Bem-vindo ao Hellen AI. O que deseja fazer hoje?
-        </p>
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+            <%= @greeting %>, <%= @current_user.name || "Professor" %>!
+          </h1>
+          <p class="mt-1 text-slate-500 dark:text-slate-400">
+            Bem-vindo ao Hellen AI. O que deseja fazer hoje?
+          </p>
+        </div>
+        <div class="flex items-center gap-3">
+          <.link navigate={~p"/lessons/new"}>
+            <.button icon="hero-plus">
+              Nova Aula
+            </.button>
+          </.link>
+        </div>
       </div>
+
       <!-- Quick Actions -->
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <.link navigate={~p"/lessons/new"} class="block group">
-          <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition-shadow">
-            <div class="flex items-center gap-4">
-              <div class="p-3 bg-white/20 rounded-lg">
-                <.icon name="hero-plus-circle" class="h-8 w-8" />
-              </div>
-              <div>
-                <h3 class="font-semibold text-lg">Nova Aula</h3>
-                <p class="text-sm text-white/80">Enviar gravacao para analise</p>
-              </div>
-            </div>
-          </div>
-        </.link>
+        <.quick_action_card
+          title="Nova Aula"
+          description="Enviar gravacao para analise"
+          icon="hero-plus-circle"
+          href={~p"/lessons/new"}
+          variant="primary"
+        />
 
-        <.link navigate={~p"/aulas"} class="block group">
-          <div class="bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600 hover:shadow-md transition-all">
-            <div class="flex items-center gap-4">
-              <div class="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
-                <.icon name="hero-academic-cap" class="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
-              </div>
-              <div>
-                <h3 class="font-semibold text-lg text-gray-900 dark:text-white">Minhas Aulas</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Ver todas as aulas</p>
-              </div>
-            </div>
-          </div>
-        </.link>
+        <.quick_action_card
+          title="Minhas Aulas"
+          description="Ver todas as aulas"
+          icon="hero-academic-cap"
+          href={~p"/aulas"}
+        />
 
         <.async_result :let={data} assign={@stats}>
           <:loading>
-            <div class="bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-200 dark:border-slate-700 animate-pulse">
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700 animate-pulse">
               <div class="flex items-center gap-4">
-                <div class="h-14 w-14 bg-gray-200 dark:bg-slate-700 rounded-lg"></div>
+                <div class="h-14 w-14 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
                 <div class="space-y-2">
-                  <div class="h-5 w-24 bg-gray-200 dark:bg-slate-700 rounded"></div>
-                  <div class="h-4 w-16 bg-gray-200 dark:bg-slate-700 rounded"></div>
+                  <div class="h-5 w-24 bg-slate-200 dark:bg-slate-700 rounded"></div>
+                  <div class="h-4 w-16 bg-slate-200 dark:bg-slate-700 rounded"></div>
                 </div>
               </div>
             </div>
           </:loading>
           <:failed>
-            <div class="bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-200 dark:border-slate-700">
-              <p class="text-gray-500">Erro ao carregar</p>
+            <div class="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+              <p class="text-slate-500">Erro ao carregar</p>
             </div>
           </:failed>
 
-          <.link :if={data.pending > 0} navigate={~p"/aulas?status=pending"} class="block group">
-            <div class="bg-white dark:bg-slate-800 rounded-xl p-6 border-2 border-yellow-300 dark:border-yellow-600 hover:shadow-md transition-all">
-              <div class="flex items-center gap-4">
-                <div class="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-                  <.icon name="hero-clock" class="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
-                </div>
-                <div>
-                  <h3 class="font-semibold text-lg text-gray-900 dark:text-white">
-                    <%= data.pending %> Pendentes
-                  </h3>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">Aulas aguardando analise</p>
-                </div>
-              </div>
-            </div>
-          </.link>
+          <.quick_action_card
+            :if={data.pending > 0}
+            title={"#{data.pending} Pendentes"}
+            description="Aulas aguardando analise"
+            icon="hero-clock"
+            href={~p"/aulas?status=pending"}
+            variant="highlight"
+          />
 
-          <div
+          <.quick_action_card
             :if={data.pending == 0}
-            class="bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-200 dark:border-slate-700"
-          >
-            <div class="flex items-center gap-4">
-              <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <.icon name="hero-check-circle" class="h-8 w-8 text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <h3 class="font-semibold text-lg text-gray-900 dark:text-white">Tudo em dia!</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Nenhuma aula pendente</p>
-              </div>
-            </div>
-          </div>
+            title="Tudo em dia!"
+            description="Nenhuma aula pendente"
+            icon="hero-check-circle"
+            href={~p"/aulas"}
+          />
         </.async_result>
       </div>
+
       <!-- Stats Overview -->
       <.async_result :let={data} assign={@stats}>
         <:loading>
@@ -164,37 +161,64 @@ defmodule HellenWeb.DashboardLive.Index do
           <.alert variant="error">Erro ao carregar estatisticas</.alert>
         </:failed>
 
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <.stat_card title="Total de Aulas" value={data.total} icon="hero-academic-cap" />
-          <.stat_card
-            title="Concluidas"
-            value={data.completed}
-            icon="hero-check-circle"
-            variant="success"
-          />
-          <.stat_card
-            title="Em Progresso"
-            value={data.processing}
-            icon="hero-arrow-path"
-            variant="processing"
-          />
-          <.stat_card title="Pendentes" value={data.pending} icon="hero-clock" variant="pending" />
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">
+            Visao Geral
+          </h2>
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <.stat_card
+              title="Total de Aulas"
+              value={data.total}
+              icon="hero-academic-cap"
+              subtitle="todas as aulas enviadas"
+            />
+            <.stat_card
+              title="Concluidas"
+              value={data.completed}
+              icon="hero-check-circle"
+              variant="success"
+              subtitle="analises finalizadas"
+            />
+            <.stat_card
+              title="Em Progresso"
+              value={data.processing}
+              icon="hero-arrow-path"
+              variant="processing"
+              subtitle="processando agora"
+            />
+            <.stat_card
+              title="Pendentes"
+              value={data.pending}
+              icon="hero-clock"
+              variant="pending"
+              subtitle="aguardando inicio"
+            />
+          </div>
         </div>
       </.async_result>
+
       <!-- Recent Lessons -->
       <div>
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Aulas Recentes</h2>
+          <h2 class="text-lg font-semibold text-slate-900 dark:text-white">
+            Aulas Recentes
+          </h2>
           <.link
             navigate={~p"/aulas"}
-            class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+            class="text-sm font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors flex items-center gap-1"
           >
             Ver todas
+            <.icon name="hero-arrow-right-mini" class="h-4 w-4" />
           </.link>
         </div>
 
         <div id="recent-lessons-container" phx-update="stream" class="space-y-3">
-          <div :for={{dom_id, lesson} <- @streams.recent_lessons} id={dom_id}>
+          <div
+            :for={{dom_id, lesson} <- @streams.recent_lessons}
+            id={dom_id}
+            class="animate-fade-in-up"
+            style={"animation-delay: #{Enum.find_index(Map.keys(@streams.recent_lessons), &(&1 == dom_id)) * 50}ms"}
+          >
             <.lesson_card lesson={lesson} />
           </div>
         </div>
@@ -203,14 +227,38 @@ defmodule HellenWeb.DashboardLive.Index do
           :if={match?(%{ok?: true, result: %{total: 0}}, @stats)}
           icon="hero-document-text"
           title="Nenhuma aula ainda"
-          description="Comece enviando sua primeira aula para analise."
+          description="Comece enviando sua primeira aula para analise pedagogica com IA."
         >
           <.link navigate={~p"/lessons/new"}>
-            <.button>
-              <.icon name="hero-plus" class="h-4 w-4 mr-2" /> Nova Aula
+            <.button icon="hero-plus">
+              Criar Nova Aula
             </.button>
           </.link>
         </.empty_state>
+      </div>
+
+      <!-- Credits Card -->
+      <div class="bg-gradient-to-br from-slate-800 to-slate-900 dark:from-slate-900 dark:to-slate-950 rounded-2xl p-6 text-white">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-teal-500/20 flex items-center justify-center">
+              <.icon name="hero-bolt" class="h-6 w-6 text-teal-400" />
+            </div>
+            <div>
+              <p class="text-slate-400 text-sm">Creditos disponiveis</p>
+              <p class="text-3xl font-bold"><%= @current_user.credits || 0 %></p>
+            </div>
+          </div>
+          <.link navigate={~p"/billing"}>
+            <.button variant="secondary" class="bg-white/10 hover:bg-white/20 border-white/20 text-white">
+              <.icon name="hero-shopping-cart" class="h-4 w-4 mr-2" />
+              Comprar mais
+            </.button>
+          </.link>
+        </div>
+        <p class="mt-4 text-sm text-slate-400">
+          Cada analise de aula consome 1 credito. <.link navigate={~p"/billing"} class="text-teal-400 hover:text-teal-300 underline">Ver planos</.link>
+        </p>
       </div>
     </div>
     """
@@ -218,13 +266,14 @@ defmodule HellenWeb.DashboardLive.Index do
 
   defp stat_skeleton(assigns) do
     ~H"""
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 animate-pulse">
-      <div class="flex items-center justify-between">
-        <div class="space-y-2">
-          <div class="h-4 w-20 bg-gray-200 dark:bg-slate-700 rounded"></div>
-          <div class="h-8 w-12 bg-gray-200 dark:bg-slate-700 rounded"></div>
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200/50 dark:border-slate-700/50 p-6 animate-pulse">
+      <div class="flex items-start justify-between">
+        <div class="space-y-3 flex-1">
+          <div class="h-4 w-20 bg-slate-200 dark:bg-slate-700 rounded"></div>
+          <div class="h-8 w-12 bg-slate-200 dark:bg-slate-700 rounded"></div>
+          <div class="h-3 w-24 bg-slate-200 dark:bg-slate-700 rounded"></div>
         </div>
-        <div class="h-12 w-12 bg-gray-200 dark:bg-slate-700 rounded-full"></div>
+        <div class="h-12 w-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
       </div>
     </div>
     """

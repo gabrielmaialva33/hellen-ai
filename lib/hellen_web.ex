@@ -36,6 +36,32 @@ defmodule HellenWeb do
     end
   end
 
+  def api_controller do
+    quote do
+      use Phoenix.Controller,
+        formats: [:json]
+
+      import Plug.Conn
+      import HellenWeb.Gettext
+
+      unquote(verified_routes())
+
+      # Handle Ecto.NoResultsError gracefully
+      def action(conn, _opts) do
+        try do
+          apply(__MODULE__, action_name(conn), [conn, conn.params])
+        rescue
+          Ecto.NoResultsError ->
+            conn
+            |> put_status(:not_found)
+            |> put_view(json: HellenWeb.ErrorJSON)
+            |> Phoenix.Controller.render(:"404")
+            |> halt()
+        end
+      end
+    end
+  end
+
   def live_view do
     quote do
       use Phoenix.LiveView,
