@@ -4,6 +4,27 @@ defmodule HellenWeb.FallbackController do
   """
   use HellenWeb, :controller
 
+  # Handle Ecto.NoResultsError (raised by get! functions)
+  def call(conn, {:error, :user_not_found}) do
+    conn
+    |> put_status(:unauthorized)
+    |> put_view(json: HellenWeb.ErrorJSON)
+    |> render(:"401")
+  end
+
+  def call(conn, {:error, :invalid_password}) do
+    conn
+    |> put_status(:unauthorized)
+    |> put_view(json: HellenWeb.ErrorJSON)
+    |> render(:"401")
+  end
+
+  def call(conn, {:error, status, message}) when is_atom(status) and is_binary(message) do
+    conn
+    |> put_status(status)
+    |> json(%{error: message})
+  end
+
   def call(conn, {:error, %Ecto.Changeset{} = changeset}) do
     conn
     |> put_status(:unprocessable_entity)

@@ -40,21 +40,26 @@ defmodule Hellen.Billing.StripeService do
 
   @doc """
   Creates a Stripe Checkout session for purchasing credits.
+  Supports both card and PIX payment methods.
   """
-  @spec create_checkout_session(User.t(), String.t(), String.t()) ::
+  @spec create_checkout_session(User.t(), String.t(), String.t(), String.t()) ::
           {:ok, String.t()} | {:error, term()}
-  def create_checkout_session(%User{} = user, package_id, base_url) do
+  def create_checkout_session(%User{} = user, package_id, base_url, payment_method \\ "card") do
     with {:ok, package} <- get_package(package_id),
          {:ok, customer_id} <- get_or_create_customer(user) do
       stripe_config = Application.get_env(:hellen, :stripe)
       success_url = "#{base_url}#{stripe_config[:success_url]}&session_id={CHECKOUT_SESSION_ID}"
       cancel_url = "#{base_url}#{stripe_config[:cancel_url]}"
 
+      # Define payment method types based on selection
+      payment_method_types = get_payment_method_types(payment_method)
+
       params = %{
         customer: customer_id,
         mode: "payment",
         success_url: success_url,
         cancel_url: cancel_url,
+        payment_method_types: payment_method_types,
         line_items: [
           %{
             price_data: %{
@@ -71,7 +76,8 @@ defmodule Hellen.Billing.StripeService do
         metadata: %{
           user_id: user.id,
           package_id: package_id,
-          credits: package.credits
+          credits: package.credits,
+          payment_method: payment_method
         },
         payment_intent_data: %{
           metadata: %{
@@ -81,6 +87,18 @@ defmodule Hellen.Billing.StripeService do
           }
         }
       }
+
+      # Add PIX-specific options (expires in 30 minutes)
+      params =
+        if payment_method == "pix" do
+          Map.put(params, :payment_method_options, %{
+            pix: %{
+              expires_after_seconds: 1800
+            }
+          })
+        else
+          params
+        end
 
       case Stripe.Checkout.Session.create(params) do
         {:ok, %Stripe.Checkout.Session{url: url}} ->
@@ -92,6 +110,10 @@ defmodule Hellen.Billing.StripeService do
       end
     end
   end
+
+  defp get_payment_method_types("pix"), do: ["pix"]
+  defp get_payment_method_types("card"), do: ["card"]
+  defp get_payment_method_types(_), do: ["card", "pix"]
 
   @doc """
   Handles a completed checkout session webhook.

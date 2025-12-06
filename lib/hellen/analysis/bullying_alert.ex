@@ -59,6 +59,10 @@ defmodule Hellen.Analysis.BullyingAlert do
 
   def review_changeset(alert, reviewer_id) do
     alert
-    |> change(reviewed: true, reviewed_at: DateTime.utc_now(), reviewed_by_id: reviewer_id)
+    |> change(
+      reviewed: true,
+      reviewed_at: DateTime.utc_now() |> DateTime.truncate(:second),
+      reviewed_by_id: reviewer_id
+    )
   end
 end

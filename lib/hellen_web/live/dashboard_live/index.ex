@@ -41,7 +41,7 @@ defmodule HellenWeb.DashboardLive.Index do
     {:noreply,
      socket
      |> assign(loading: false)
-     |> stream(socket, :recent_lessons, lessons)}
+     |> stream(:recent_lessons, lessons, reset: true)}
   end
 
   def handle_async(:load_lessons, {:exit, _reason}, socket) do
@@ -54,16 +54,17 @@ defmodule HellenWeb.DashboardLive.Index do
   defp load_stats(user_id) do
     lessons = Lessons.list_lessons_by_user(user_id)
 
-    {:ok,
-     %{
-       stats: %{
-         total: length(lessons),
-         completed: Enum.count(lessons, &(&1.status == "completed")),
-         processing:
-           Enum.count(lessons, &(&1.status in ["transcribing", "analyzing", "transcribed"])),
-         pending: Enum.count(lessons, &(&1.status == "pending"))
-       }
-     }}
+    stats = %{
+      total: length(lessons),
+      completed: Enum.count(lessons, &(&1.status == "completed")),
+      processing:
+        Enum.count(lessons, &(&1.status in ["transcribing", "analyzing", "transcribed"])),
+      pending: Enum.count(lessons, &(&1.status == "pending"))
+    }
+
+    # assign_async(:stats, fn) expects {:ok, %{stats: value}}
+    # where :stats matches the assign name, and value will be accessible via @stats.result
+    {:ok, %{stats: stats}}
   end
 
   defp get_greeting do
@@ -145,26 +146,26 @@ defmodule HellenWeb.DashboardLive.Index do
 
         <div class="grid gap-4 grid-cols-2 lg:grid-cols-4">
           <.modern_stat_card
-            value={data.stats.total}
+            value={data.total}
             label="Total de Aulas"
             icon="hero-academic-cap"
             color="teal"
           />
           <.modern_stat_card
-            value={data.stats.completed}
+            value={data.completed}
             label="Concluidas"
             icon="hero-check-circle"
             color="emerald"
           />
           <.modern_stat_card
-            value={data.stats.processing}
+            value={data.processing}
             label="Processando"
             icon="hero-arrow-path"
             color="cyan"
-            animate={data.stats.processing > 0}
+            animate={data.processing > 0}
           />
           <.modern_stat_card
-            value={data.stats.pending}
+            value={data.pending}
             label="Pendentes"
             icon="hero-clock"
             color="amber"
@@ -203,7 +204,7 @@ defmodule HellenWeb.DashboardLive.Index do
 
             <!-- Empty State -->
             <div
-              :if={match?(%{ok?: true, result: %{stats: %{total: 0}}}, @stats)}
+              :if={match?(%{ok?: true, result: %{total: 0}}, @stats)}
               class="p-8 sm:p-12 text-center"
             >
               <div class="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-100 to-emerald-100 dark:from-teal-900/30 dark:to-emerald-900/30 flex items-center justify-center mb-4">

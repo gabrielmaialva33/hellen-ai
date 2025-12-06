@@ -3,7 +3,7 @@ defmodule HellenWeb.API.LessonController do
   API controller for lesson management.
   All actions are scoped to the user's institution for security.
   """
-  use HellenWeb, :controller
+  use HellenWeb, :api_controller
 
   alias Hellen.Lessons
   alias Hellen.Lessons.Lesson

@@ -11,7 +11,7 @@ defmodule HellenWeb.API.AuthController do
   * `GET /api/auth/me` - Get current user info
   """
 
-  use HellenWeb, :controller
+  use HellenWeb, :api_controller
 
   alias Hellen.Accounts
   alias Hellen.Auth.Firebase

@@ -1,5 +1,5 @@
 defmodule HellenWeb.API.CreditController do
-  use HellenWeb, :controller
+  use HellenWeb, :api_controller
 
   alias Hellen.Billing
 

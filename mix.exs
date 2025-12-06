@@ -81,7 +81,12 @@ defmodule Hellen.MixProject do
       {:stripity_stripe, "~> 3.2"},
 
       # Code quality
-      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+
+      # Testing
+      {:mox, "~> 1.1", only: :test},
+      {:ex_machina, "~> 2.8", only: :test},
+      {:excoveralls, "~> 0.18", only: :test}
     ]
   end
 

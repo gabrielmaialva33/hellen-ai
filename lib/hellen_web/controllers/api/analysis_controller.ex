@@ -3,7 +3,7 @@ defmodule HellenWeb.API.AnalysisController do
   API controller for analysis management.
   All actions are scoped to the user's institution for security.
   """
-  use HellenWeb, :controller
+  use HellenWeb, :api_controller
 
   alias Hellen.Analysis
 

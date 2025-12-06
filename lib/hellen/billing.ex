@@ -141,6 +141,19 @@ defmodule Hellen.Billing do
   def get_balance(%User{credits: credits}), do: credits
 
   @doc """
+  Gets a transaction by its Stripe payment intent ID.
+  Returns nil if not found.
+  """
+  def get_transaction_by_payment_intent(nil), do: nil
+
+  def get_transaction_by_payment_intent(payment_intent_id) do
+    CreditTransaction
+    |> where([t], t.stripe_payment_intent_id == ^payment_intent_id)
+    |> limit(1)
+    |> Repo.one()
+  end
+
+  @doc """
   Lists credit transactions for a user.
   """
   def list_transactions(user_id, opts \\ []) do

@@ -67,6 +67,11 @@ defmodule HellenWeb.LessonLive.New do
     {:noreply, cancel_upload(socket, :media, ref)}
   end
 
+  @impl true
+  def handle_event("online", _params, socket) do
+    {:noreply, socket}
+  end
+
   defp upload_and_create_lesson(socket, user, params) do
     # Server-side upload: consume_uploaded_entries receives the temp file path
     uploaded_files =

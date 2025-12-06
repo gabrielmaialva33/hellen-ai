@@ -35,6 +35,7 @@ defmodule HellenWeb.BillingLive.Index do
      |> assign(filter_reason: nil)
      |> assign(page: 1)
      |> assign(purchasing: false)
+     |> assign(payment_method: "card")
      |> assign(flash_success: nil)
      |> assign(flash_canceled: nil)}
   end
@@ -43,8 +44,24 @@ defmodule HellenWeb.BillingLive.Index do
   def handle_params(params, _url, socket) do
     socket =
       case params do
-        %{"success" => "true"} ->
+        %{"success" => "true", "session_id" => session_id} ->
+          # Verify and process payment if webhook hasn't done it yet
+          socket = maybe_process_checkout_session(socket, session_id)
+
           # Reload user data after successful purchase
+          user = Hellen.Accounts.get_user(socket.assigns.current_user.id)
+          stats = Billing.get_usage_stats(user.id, 30)
+          {transactions, total} = Billing.list_transactions_filtered(user.id, limit: 10)
+
+          socket
+          |> assign(current_user: user)
+          |> assign(stats: stats)
+          |> assign(transactions: transactions)
+          |> assign(transactions_total: total)
+          |> put_flash(:info, "Pagamento confirmado! Creditos adicionados com sucesso.")
+
+        %{"success" => "true"} ->
+          # Fallback without session_id
           user = Hellen.Accounts.get_user(socket.assigns.current_user.id)
           stats = Billing.get_usage_stats(user.id, 30)
           {transactions, total} = Billing.list_transactions_filtered(user.id, limit: 10)
@@ -65,6 +82,49 @@ defmodule HellenWeb.BillingLive.Index do
       end
 
     {:noreply, socket}
+  end
+
+  # Fallback: Process checkout session if webhook hasn't processed it yet
+  defp maybe_process_checkout_session(socket, session_id) do
+    case StripeService.get_session(session_id) do
+      {:ok, %{payment_status: "paid", metadata: metadata} = session} ->
+        user_id = metadata["user_id"]
+        credits = String.to_integer(metadata["credits"] || "0")
+        package_id = metadata["package_id"]
+        payment_intent = session.payment_intent
+
+        # Only process if this is for the current user
+        if user_id == socket.assigns.current_user.id do
+          # Check if already processed by looking for this payment_intent
+          case Billing.get_transaction_by_payment_intent(payment_intent) do
+            nil ->
+              # Not yet processed, add credits
+              case Billing.add_credits_with_stripe(
+                     socket.assigns.current_user,
+                     credits,
+                     package_id,
+                     payment_intent
+                   ) do
+                {:ok, _user} ->
+                  require Logger
+                  Logger.info("Credits added via fallback for session: #{session_id}")
+                  socket
+
+                {:error, _reason} ->
+                  socket
+              end
+
+            _transaction ->
+              # Already processed via webhook
+              socket
+          end
+        else
+          socket
+        end
+
+      _ ->
+        socket
+    end
   end
 
   @impl true
@@ -127,15 +187,25 @@ defmodule HellenWeb.BillingLive.Index do
 
   def handle_event("close_modal", _params, socket) do
     {:noreply,
-     assign(socket, show_purchase_modal: false, selected_package: nil, purchasing: false)}
+     assign(socket,
+       show_purchase_modal: false,
+       selected_package: nil,
+       purchasing: false,
+       payment_method: "card"
+     )}
+  end
+
+  def handle_event("select_payment_method", %{"method" => method}, socket) do
+    {:noreply, assign(socket, payment_method: method)}
   end
 
   def handle_event("purchase", %{"package" => package_id}, socket) do
     socket = assign(socket, purchasing: true)
     user = socket.assigns.current_user
     base_url = HellenWeb.Endpoint.url()
+    payment_method = socket.assigns.payment_method
 
-    case StripeService.create_checkout_session(user, package_id, base_url) do
+    case StripeService.create_checkout_session(user, package_id, base_url, payment_method) do
       {:ok, checkout_url} ->
         {:noreply, redirect(socket, external: checkout_url)}
 
@@ -387,6 +457,79 @@ defmodule HellenWeb.BillingLive.Index do
               </p>
             </div>
 
+            <!-- Payment Method Selection -->
+            <div class="mb-6">
+              <p class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                Forma de pagamento
+              </p>
+              <div class="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  phx-click="select_payment_method"
+                  phx-value-method="card"
+                  class={[
+                    "p-4 rounded-xl border-2 transition-all duration-200 flex flex-col items-center gap-2",
+                    if(@payment_method == "card",
+                      do: "border-teal-500 bg-teal-50 dark:bg-teal-900/20",
+                      else: "border-slate-200 dark:border-slate-600 hover:border-teal-300"
+                    )
+                  ]}
+                >
+                  <.icon
+                    name="hero-credit-card"
+                    class={"h-8 w-8 " <> if(@payment_method == "card", do: "text-teal-600 dark:text-teal-400", else: "text-slate-400")}
+                  />
+                  <span class={[
+                    "text-sm font-medium",
+                    if(@payment_method == "card",
+                      do: "text-teal-700 dark:text-teal-300",
+                      else: "text-slate-600 dark:text-slate-300"
+                    )
+                  ]}>
+                    Cartao
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  phx-click="select_payment_method"
+                  phx-value-method="pix"
+                  class={[
+                    "p-4 rounded-xl border-2 transition-all duration-200 flex flex-col items-center gap-2",
+                    if(@payment_method == "pix",
+                      do: "border-teal-500 bg-teal-50 dark:bg-teal-900/20",
+                      else: "border-slate-200 dark:border-slate-600 hover:border-teal-300"
+                    )
+                  ]}
+                >
+                  <svg
+                    class={[
+                      "h-8 w-8",
+                      if(@payment_method == "pix",
+                        do: "text-teal-600 dark:text-teal-400",
+                        else: "text-slate-400"
+                      )
+                    ]}
+                    viewBox="0 0 512 512"
+                    fill="currentColor"
+                  >
+                    <path d="M242.4 292.5C247.8 287.1 257.1 287.1 262.5 292.5L339.5 369.5C344.9 374.9 344.9 384.1 339.5 389.5C334.1 394.9 324.9 394.9 319.5 389.5L262.5 332.5V480C262.5 487.2 256.7 493 249.5 493C242.3 493 236.5 487.2 236.5 480V332.5L179.5 389.5C174.1 394.9 164.9 394.9 159.5 389.5C154.1 384.1 154.1 374.9 159.5 369.5L236.5 292.5C241.9 287.1 251.1 287.1 256.5 292.5H242.4zM377.9 169.9L294.1 253.8C283.7 264.2 267.3 264.2 256.9 253.8L173.1 169.9C162.7 159.5 162.7 143.1 173.1 132.7L256.9 48.9C267.3 38.5 283.7 38.5 294.1 48.9L377.9 132.7C388.3 143.1 388.3 159.5 377.9 169.9zM275.5 71.1L191.6 155C186.2 160.4 186.2 169.6 191.6 175L275.5 258.9C280.9 264.3 290.1 264.3 295.5 258.9L379.4 175C384.8 169.6 384.8 160.4 379.4 155L295.5 71.1C290.1 65.7 280.9 65.7 275.5 71.1zM425.6 219.6L341.7 303.5C336.3 308.9 336.3 318.1 341.7 323.5L425.6 407.4C431 412.8 440.2 412.8 445.6 407.4L529.5 323.5C534.9 318.1 534.9 308.9 529.5 303.5L445.6 219.6C440.2 214.2 431 214.2 425.6 219.6zM65.4 219.6L-18.5 303.5C-23.9 308.9 -23.9 318.1 -18.5 323.5L65.4 407.4C70.8 412.8 80 412.8 85.4 407.4L169.3 323.5C174.7 318.1 174.7 308.9 169.3 303.5L85.4 219.6C80 214.2 70.8 214.2 65.4 219.6z" />
+                  </svg>
+                  <span class={[
+                    "text-sm font-medium",
+                    if(@payment_method == "pix",
+                      do: "text-teal-700 dark:text-teal-300",
+                      else: "text-slate-600 dark:text-slate-300"
+                    )
+                  ]}>
+                    PIX
+                  </span>
+                </button>
+              </div>
+              <p :if={@payment_method == "pix"} class="mt-2 text-xs text-slate-500 dark:text-slate-400 text-center">
+                QR Code expira em 30 minutos
+              </p>
+            </div>
+
             <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 mb-6">
               <div class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
                 <.icon name="hero-shield-check" class="h-5 w-5 text-emerald-500" />
@@ -436,7 +579,7 @@ defmodule HellenWeb.BillingLive.Index do
                     Redirecionando...
                   </span>
                 <% else %>
-                  Pagar com Stripe
+                  Pagar com <%= if @payment_method == "pix", do: "PIX", else: "Cartao" %>
                 <% end %>
               </button>
             </div>
