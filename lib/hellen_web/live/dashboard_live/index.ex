@@ -145,26 +145,26 @@ defmodule HellenWeb.DashboardLive.Index do
 
         <div class="grid gap-4 grid-cols-2 lg:grid-cols-4">
           <.modern_stat_card
-            value={data.total}
+            value={data.stats.total}
             label="Total de Aulas"
             icon="hero-academic-cap"
             color="teal"
           />
           <.modern_stat_card
-            value={data.completed}
+            value={data.stats.completed}
             label="Concluidas"
             icon="hero-check-circle"
             color="emerald"
           />
           <.modern_stat_card
-            value={data.processing}
+            value={data.stats.processing}
             label="Processando"
             icon="hero-arrow-path"
             color="cyan"
-            animate={data.processing > 0}
+            animate={data.stats.processing > 0}
           />
           <.modern_stat_card
-            value={data.pending}
+            value={data.stats.pending}
             label="Pendentes"
             icon="hero-clock"
             color="amber"
@@ -203,7 +203,7 @@ defmodule HellenWeb.DashboardLive.Index do
 
             <!-- Empty State -->
             <div
-              :if={match?(%{ok?: true, result: %{total: 0}}, @stats)}
+              :if={match?(%{ok?: true, result: %{stats: %{total: 0}}}, @stats)}
               class="p-8 sm:p-12 text-center"
             >
               <div class="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-100 to-emerald-100 dark:from-teal-900/30 dark:to-emerald-900/30 flex items-center justify-center mb-4">
