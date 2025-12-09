@@ -71,11 +71,11 @@ defmodule HellenWeb.UIComponents do
           </span>
 
           <span
-            :if={@lesson.overall_score}
+            :if={Map.get(@lesson, :overall_score)}
             class="flex items-center gap-1.5 text-teal-600 dark:text-teal-400 font-medium"
           >
             <.icon name="hero-chart-bar" class="h-3.5 w-3.5" />
-            <%= round(@lesson.overall_score * 100) %>%
+            <%= round(Map.get(@lesson, :overall_score) * 100) %>%
           </span>
         </div>
       </div>
