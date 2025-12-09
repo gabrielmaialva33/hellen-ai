@@ -48,7 +48,7 @@ defmodule HellenWeb.UIComponents do
             </h3>
             <p class="mt-1 text-sm text-slate-500 dark:text-slate-400 truncate">
               <%= @lesson.subject || "Disciplina nao informada" %>
-              <%= if @lesson.grade, do: " · #{@lesson.grade}" %>
+              <%= if @lesson.grade_level, do: " · #{@lesson.grade_level}" %>
             </p>
           </div>
 
