@@ -167,15 +167,7 @@ defmodule Hellen.Gamification do
     |> Enum.map(fn {key, definition} ->
       unlocked = MapSet.member?(unlocked_keys, key)
 
-      progress =
-        cond do
-          unlocked -> 100
-          key == "first_lesson" -> if lesson_count >= 1, do: 100, else: 0
-          key == "lesson_explorer" -> min(lesson_count / 5 * 100, 100) |> round()
-          key == "lesson_master" -> min(lesson_count / 25 * 100, 100) |> round()
-          key == "lesson_legend" -> min(lesson_count / 100 * 100, 100) |> round()
-          true -> 0
-        end
+      progress = calculate_achievement_progress(key, unlocked, lesson_count)
 
       %{
         key: key,
@@ -187,6 +179,13 @@ defmodule Hellen.Gamification do
     |> Enum.sort_by(fn a -> {!a.unlocked, -a.progress, a.definition.name} end)
   end
 
+  defp calculate_achievement_progress(_key, true, _lesson_count), do: 100
+  defp calculate_achievement_progress("first_lesson", false, count), do: if(count >= 1, do: 100, else: 0)
+  defp calculate_achievement_progress("lesson_explorer", false, count), do: min(count / 5 * 100, 100) |> round()
+  defp calculate_achievement_progress("lesson_master", false, count), do: min(count / 25 * 100, 100) |> round()
+  defp calculate_achievement_progress("lesson_legend", false, count), do: min(count / 100 * 100, 100) |> round()
+  defp calculate_achievement_progress(_key, false, _count), do: 0
+
   @doc """
   Unlocks an achievement for a user if not already unlocked.
   Returns {:ok, achievement} or {:already_unlocked, nil}.
@@ -195,19 +194,23 @@ defmodule Hellen.Gamification do
     if get_achievement_definition(achievement_key) == nil do
       {:error, :invalid_achievement}
     else
-      case Repo.get_by(UserAchievement, user_id: user_id, achievement_key: achievement_key) do
-        nil ->
-          %UserAchievement{}
-          |> UserAchievement.changeset(%{
-            user_id: user_id,
-            achievement_key: achievement_key,
-            unlocked_at: DateTime.utc_now()
-          })
-          |> Repo.insert()
+      do_unlock_achievement(user_id, achievement_key)
+    end
+  end
 
-        _existing ->
-          {:already_unlocked, nil}
-      end
+  defp do_unlock_achievement(user_id, achievement_key) do
+    case Repo.get_by(UserAchievement, user_id: user_id, achievement_key: achievement_key) do
+      nil ->
+        %UserAchievement{}
+        |> UserAchievement.changeset(%{
+          user_id: user_id,
+          achievement_key: achievement_key,
+          unlocked_at: DateTime.utc_now()
+        })
+        |> Repo.insert()
+
+      _existing ->
+        {:already_unlocked, nil}
     end
   end
 
@@ -217,56 +220,40 @@ defmodule Hellen.Gamification do
   """
   def check_lesson_achievements(user_id) do
     lesson_count = Lessons.count_lessons_by_user(user_id)
-
-    newly_unlocked = []
-
-    newly_unlocked =
-      if lesson_count >= 1 do
-        case unlock_achievement(user_id, "first_lesson") do
-          {:ok, achievement} -> [achievement | newly_unlocked]
-          _ -> newly_unlocked
-        end
-      else
-        newly_unlocked
-      end
+    thresholds = lesson_achievement_thresholds()
 
     newly_unlocked =
-      if lesson_count >= 5 do
-        case unlock_achievement(user_id, "lesson_explorer") do
-          {:ok, achievement} -> [achievement | newly_unlocked]
-          _ -> newly_unlocked
-        end
-      else
-        newly_unlocked
-      end
+      thresholds
+      |> Enum.filter(fn {_key, required} -> lesson_count >= required end)
+      |> Enum.reduce([], fn {key, _required}, acc ->
+        maybe_add_unlocked_achievement(acc, user_id, key)
+      end)
 
-    newly_unlocked =
-      if lesson_count >= 25 do
-        case unlock_achievement(user_id, "lesson_master") do
-          {:ok, achievement} -> [achievement | newly_unlocked]
-          _ -> newly_unlocked
-        end
-      else
-        newly_unlocked
-      end
+    award_xp_for_achievements(user_id, newly_unlocked)
+    newly_unlocked
+  end
 
-    newly_unlocked =
-      if lesson_count >= 100 do
-        case unlock_achievement(user_id, "lesson_legend") do
-          {:ok, achievement} -> [achievement | newly_unlocked]
-          _ -> newly_unlocked
-        end
-      else
-        newly_unlocked
-      end
+  defp lesson_achievement_thresholds do
+    [
+      {"first_lesson", 1},
+      {"lesson_explorer", 5},
+      {"lesson_master", 25},
+      {"lesson_legend", 100}
+    ]
+  end
 
-    # Award XP for newly unlocked achievements
-    Enum.each(newly_unlocked, fn achievement ->
+  defp maybe_add_unlocked_achievement(acc, user_id, key) do
+    case unlock_achievement(user_id, key) do
+      {:ok, achievement} -> [achievement | acc]
+      _ -> acc
+    end
+  end
+
+  defp award_xp_for_achievements(user_id, achievements) do
+    Enum.each(achievements, fn achievement ->
       definition = get_achievement_definition(achievement.achievement_key)
       if definition, do: award_xp(user_id, definition.xp)
     end)
-
-    newly_unlocked
   end
 
   @doc """

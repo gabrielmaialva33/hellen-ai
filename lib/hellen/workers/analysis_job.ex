@@ -26,7 +26,7 @@ defmodule Hellen.Workers.AnalysisJob do
          {:ok, analysis} <- save_analysis(lesson, result),
          {:ok, _lesson} <- Lessons.update_lesson_status(lesson, "completed") do
       Logger.info("Analysis completed for lesson #{lesson_id}")
-      broadcast_progress(lesson_id, "analysis_complete", %{analysis_id: analysis.id})
+      broadcast_progress(lesson_id, "analysis_complete", %{analysis: analysis})
 
       # Send notifications asynchronously
       send_notifications(analysis)

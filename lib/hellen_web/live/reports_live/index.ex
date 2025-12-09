@@ -127,83 +127,97 @@ defmodule HellenWeb.ReportsLive.Index do
   # ============================================
 
   defp load_stats(socket, user_id, start_date, end_date) do
-    start_dt = DateTime.new!(start_date, ~T[00:00:00], "Etc/UTC")
-    end_dt = DateTime.new!(Date.add(end_date, 1), ~T[00:00:00], "Etc/UTC")
+    date_range = build_date_range(start_date, end_date)
+    stats = fetch_all_stats(user_id, date_range)
+    assign(socket, :stats, stats)
+  end
 
-    # Lessons stats
-    lessons_count =
-      Lesson
-      |> where([l], l.user_id == ^user_id)
-      |> where([l], l.inserted_at >= ^start_dt and l.inserted_at < ^end_dt)
-      |> Repo.aggregate(:count)
+  defp build_date_range(start_date, end_date) do
+    %{
+      start_dt: DateTime.new!(start_date, ~T[00:00:00], "Etc/UTC"),
+      end_dt: DateTime.new!(Date.add(end_date, 1), ~T[00:00:00], "Etc/UTC")
+    }
+  end
 
-    total_duration =
-      Lesson
-      |> where([l], l.user_id == ^user_id)
-      |> where([l], l.inserted_at >= ^start_dt and l.inserted_at < ^end_dt)
-      |> where([l], not is_nil(l.duration))
-      |> Repo.aggregate(:sum, :duration) || 0
+  defp fetch_all_stats(user_id, date_range) do
+    {lessons_count, total_duration} = fetch_lesson_stats(user_id, date_range)
+    {analyses_count, avg_score} = fetch_analysis_stats(user_id, date_range)
 
-    # Analyses stats
-    analyses_count =
-      Analysis
-      |> join(:inner, [a], l in assoc(a, :lesson))
-      |> where([a, l], l.user_id == ^user_id)
-      |> where([a], a.inserted_at >= ^start_dt and a.inserted_at < ^end_dt)
-      |> Repo.aggregate(:count)
-
-    avg_score =
-      Analysis
-      |> join(:inner, [a], l in assoc(a, :lesson))
-      |> where([a, l], l.user_id == ^user_id)
-      |> where([a], a.inserted_at >= ^start_dt and a.inserted_at < ^end_dt)
-      |> where([a], not is_nil(a.overall_score))
-      |> Repo.aggregate(:avg, :overall_score)
-
-    # BNCC matches count
-    bncc_count =
-      BnccMatch
-      |> join(:inner, [m], a in assoc(m, :analysis))
-      |> join(:inner, [m, a], l in assoc(a, :lesson))
-      |> where([m, a, l], l.user_id == ^user_id)
-      |> where([m, a], a.inserted_at >= ^start_dt and a.inserted_at < ^end_dt)
-      |> Repo.aggregate(:count)
-
-    # Bullying alerts
-    alerts_count =
-      BullyingAlert
-      |> join(:inner, [b], a in assoc(b, :analysis))
-      |> join(:inner, [b, a], l in assoc(a, :lesson))
-      |> where([b, a, l], l.user_id == ^user_id)
-      |> where([b], b.inserted_at >= ^start_dt and b.inserted_at < ^end_dt)
-      |> Repo.aggregate(:count)
-
-    # Plannings count
-    plannings_count =
-      Planning
-      |> where([p], p.user_id == ^user_id)
-      |> where([p], p.inserted_at >= ^start_dt and p.inserted_at < ^end_dt)
-      |> Repo.aggregate(:count)
-
-    # Assessments count
-    assessments_count =
-      Assessment
-      |> where([a], a.user_id == ^user_id)
-      |> where([a], a.inserted_at >= ^start_dt and a.inserted_at < ^end_dt)
-      |> Repo.aggregate(:count)
-
-    stats = %{
+    %{
       lessons: lessons_count,
       duration_hours: Float.round(total_duration / 3600, 1),
       analyses: analyses_count,
       avg_score: avg_score && Float.round(avg_score, 1),
-      bncc_matches: bncc_count,
-      alerts: alerts_count,
-      plannings: plannings_count,
-      assessments: assessments_count
+      bncc_matches: fetch_bncc_count(user_id, date_range),
+      alerts: fetch_alerts_count(user_id, date_range),
+      plannings: fetch_plannings_count(user_id, date_range),
+      assessments: fetch_assessments_count(user_id, date_range)
     }
+  end
 
-    assign(socket, :stats, stats)
+  defp fetch_lesson_stats(user_id, %{start_dt: start_dt, end_dt: end_dt}) do
+    base_query =
+      Lesson
+      |> where([l], l.user_id == ^user_id)
+      |> where([l], l.inserted_at >= ^start_dt and l.inserted_at < ^end_dt)
+
+    count = Repo.aggregate(base_query, :count)
+
+    duration =
+      base_query
+      |> where([l], not is_nil(l.duration))
+      |> Repo.aggregate(:sum, :duration) || 0
+
+    {count, duration}
+  end
+
+  defp fetch_analysis_stats(user_id, %{start_dt: start_dt, end_dt: end_dt}) do
+    base_query =
+      Analysis
+      |> join(:inner, [a], l in assoc(a, :lesson))
+      |> where([a, l], l.user_id == ^user_id)
+      |> where([a], a.inserted_at >= ^start_dt and a.inserted_at < ^end_dt)
+
+    count = Repo.aggregate(base_query, :count)
+
+    avg =
+      base_query
+      |> where([a], not is_nil(a.overall_score))
+      |> Repo.aggregate(:avg, :overall_score)
+
+    {count, avg}
+  end
+
+  defp fetch_bncc_count(user_id, %{start_dt: start_dt, end_dt: end_dt}) do
+    BnccMatch
+    |> join(:inner, [m], a in assoc(m, :analysis))
+    |> join(:inner, [m, a], l in assoc(a, :lesson))
+    |> where([m, a, l], l.user_id == ^user_id)
+    |> where([m, a], a.inserted_at >= ^start_dt and a.inserted_at < ^end_dt)
+    |> Repo.aggregate(:count)
+  end
+
+  defp fetch_alerts_count(user_id, %{start_dt: start_dt, end_dt: end_dt}) do
+    BullyingAlert
+    |> join(:inner, [b], a in assoc(b, :analysis))
+    |> join(:inner, [b, a], l in assoc(a, :lesson))
+    |> where([b, a, l], l.user_id == ^user_id)
+    |> where([b], b.inserted_at >= ^start_dt and b.inserted_at < ^end_dt)
+    |> Repo.aggregate(:count)
+  end
+
+  defp fetch_plannings_count(user_id, %{start_dt: start_dt, end_dt: end_dt}) do
+    Planning
+    |> where([p], p.user_id == ^user_id)
+    |> where([p], p.inserted_at >= ^start_dt and p.inserted_at < ^end_dt)
+    |> Repo.aggregate(:count)
+  end
+
+  defp fetch_assessments_count(user_id, %{start_dt: start_dt, end_dt: end_dt}) do
+    Assessment
+    |> where([a], a.user_id == ^user_id)
+    |> where([a], a.inserted_at >= ^start_dt and a.inserted_at < ^end_dt)
+    |> Repo.aggregate(:count)
   end
 
   defp load_charts_data(socket, user_id, start_date, end_date) do

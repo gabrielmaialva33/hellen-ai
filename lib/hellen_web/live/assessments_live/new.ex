@@ -163,45 +163,43 @@ defmodule HellenWeb.AssessmentsLive.New do
   end
 
   @impl true
-  def handle_info({ref, result}, socket) do
-    if Map.has_key?(socket.assigns, :generation_task) and
-         socket.assigns.generation_task.ref == ref do
-      Process.demonitor(ref, [:flush])
-
-      case result do
-        {:ok, assessment} ->
-          {:noreply,
-           socket
-           |> assign(:generating, false)
-           |> put_flash(:info, "Avaliação gerada com sucesso!")
-           |> push_navigate(to: ~p"/assessments/#{assessment.id}")}
-
-        {:error, reason} ->
-          error_msg =
-            case reason do
-              :planning_not_found -> "Planejamento não encontrado"
-              :invalid_json_response -> "Erro ao processar resposta da IA"
-              %{message: msg} -> msg
-              _ -> "Erro ao gerar avaliação"
-            end
-
-          {:noreply,
-           socket
-           |> assign(:generating, false)
-           |> assign(:generation_error, error_msg)}
-      end
-    else
-      {:noreply, socket}
-    end
-  end
-
-  @impl true
   def handle_info({:DOWN, _ref, :process, _pid, _reason}, socket) do
     {:noreply,
      socket
      |> assign(:generating, false)
      |> assign(:generation_error, "Erro inesperado ao gerar avaliação")}
   end
+
+  def handle_info({ref, result}, socket) do
+    if generation_task?(socket, ref) do
+      Process.demonitor(ref, [:flush])
+      {:noreply, handle_generation_result(socket, result)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp generation_task?(socket, ref) do
+    Map.has_key?(socket.assigns, :generation_task) and socket.assigns.generation_task.ref == ref
+  end
+
+  defp handle_generation_result(socket, {:ok, assessment}) do
+    socket
+    |> assign(:generating, false)
+    |> put_flash(:info, "Avaliação gerada com sucesso!")
+    |> push_navigate(to: ~p"/assessments/#{assessment.id}")
+  end
+
+  defp handle_generation_result(socket, {:error, reason}) do
+    socket
+    |> assign(:generating, false)
+    |> assign(:generation_error, format_generation_error(reason))
+  end
+
+  defp format_generation_error(:planning_not_found), do: "Planejamento não encontrado"
+  defp format_generation_error(:invalid_json_response), do: "Erro ao processar resposta da IA"
+  defp format_generation_error(%{message: msg}), do: msg
+  defp format_generation_error(_), do: "Erro ao gerar avaliação"
 
   defp maybe_assign(socket, _key, nil), do: socket
   defp maybe_assign(socket, key, value), do: assign(socket, key, value)

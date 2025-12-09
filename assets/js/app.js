@@ -45,6 +45,13 @@ Hooks.AnimatedCounter = AnimatedCounter
 Hooks.DropZone = DropZone
 Hooks.Ripple = Ripple
 
+// WebSocket channel hooks (for non-LiveView real-time updates)
+import { LessonChannel } from "./hooks/lesson_channel"
+Hooks.LessonChannel = LessonChannel
+
+// Import socket module (exposes window.HellenSocket for API/mobile use)
+import "./socket"
+
 let csrfToken = document.querySelector("meta[name='csrf-token']")?.getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
   hooks: Hooks,

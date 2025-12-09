@@ -6,6 +6,7 @@ defmodule Hellen.Analysis do
   import Ecto.Query, warn: false
 
   alias Hellen.Analysis.{Analysis, BnccMatch, BullyingAlert}
+  alias Hellen.Cache.AnalysisCache
   alias Hellen.Repo
 
   ## Analysis
@@ -67,8 +68,21 @@ defmodule Hellen.Analysis do
     end)
     |> Repo.transaction()
     |> case do
-      {:ok, %{analysis: analysis}} -> {:ok, analysis}
-      {:error, _failed_op, changeset, _changes} -> {:error, changeset}
+      {:ok, %{analysis: analysis}} ->
+        # Invalidate caches after new analysis
+        lesson = Repo.get!(Hellen.Lessons.Lesson, lesson_id)
+
+        AnalysisCache.on_analysis_created(
+          analysis.id,
+          lesson.user_id,
+          lesson.subject,
+          lesson.institution_id
+        )
+
+        {:ok, analysis}
+
+      {:error, _failed_op, changeset, _changes} ->
+        {:error, changeset}
     end
   end
 
@@ -180,8 +194,18 @@ defmodule Hellen.Analysis do
   @doc """
   Get score history for a user's lessons over time.
   Returns a list of %{date: Date.t(), score: float, lesson_title: String.t()}
+  Uses cache for performance.
   """
   def get_user_score_history(user_id, opts \\ []) do
+    {:ok, result} =
+      AnalysisCache.get_score_history_or_cache(user_id, fn ->
+        do_get_user_score_history(user_id, opts)
+      end)
+
+    result
+  end
+
+  defp do_get_user_score_history(user_id, opts) do
     limit = Keyword.get(opts, :limit, 20)
 
     Analysis
@@ -201,8 +225,21 @@ defmodule Hellen.Analysis do
 
   @doc """
   Get the average score for a discipline within an institution.
+  Uses cache for performance.
   """
-  def get_discipline_average(subject, institution_id) when is_binary(subject) do
+  def get_discipline_average(subject, institution_id)
+      when is_binary(subject) and is_binary(institution_id) do
+    {:ok, result} =
+      AnalysisCache.get_discipline_avg_or_cache(subject, institution_id, fn ->
+        do_get_discipline_average(subject, institution_id)
+      end)
+
+    result
+  end
+
+  def get_discipline_average(_subject, _institution_id), do: nil
+
+  defp do_get_discipline_average(subject, institution_id) do
     Analysis
     |> join(:inner, [a], l in assoc(a, :lesson))
     |> where([a, l], l.institution_id == ^institution_id)
@@ -212,14 +249,22 @@ defmodule Hellen.Analysis do
     |> Repo.one()
   end
 
-  def get_discipline_average(_subject, _institution_id), do: nil
-
   @doc """
   Calculate user's score trend based on recent analyses.
   Returns :improving, :stable, or :declining with the change percentage.
+  Uses cache for performance.
   """
   def get_user_trend(user_id) do
-    history = get_user_score_history(user_id, limit: 10)
+    {:ok, result} =
+      AnalysisCache.get_trend_or_cache(user_id, fn ->
+        do_get_user_trend(user_id)
+      end)
+
+    result
+  end
+
+  defp do_get_user_trend(user_id) do
+    history = do_get_user_score_history(user_id, limit: 10)
 
     case history do
       [] ->
@@ -251,8 +296,18 @@ defmodule Hellen.Analysis do
   @doc """
   Get BNCC competencies coverage for a user.
   Returns aggregated competencies with frequency and average score.
+  Uses cache for performance.
   """
   def get_bncc_coverage(user_id, opts \\ []) do
+    {:ok, result} =
+      AnalysisCache.get_bncc_coverage_or_cache(user_id, fn ->
+        do_get_bncc_coverage(user_id, opts)
+      end)
+
+    result
+  end
+
+  defp do_get_bncc_coverage(user_id, opts) do
     limit = Keyword.get(opts, :limit, 50)
 
     BnccMatch

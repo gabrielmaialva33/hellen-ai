@@ -224,53 +224,44 @@ defmodule Hellen.AI.Embeddings do
   """
   @spec index_lesson(String.t(), String.t(), map()) :: {:ok, integer()} | {:error, term()}
   def index_lesson(lesson_id, transcription, metadata \\ %{}) do
-    # Ensure collection exists
     :ok = QdrantClient.ensure_collection(@lessons_collection, :nv_embed)
 
-    # Chunk the transcription
     chunks = chunk_text(transcription)
+    do_index_lesson(lesson_id, chunks, metadata)
+  end
 
-    if Enum.empty?(chunks) do
-      Logger.warning("No chunks generated for lesson #{lesson_id}")
-      {:ok, 0}
-    else
-      # Generate embeddings for all chunks
-      texts = Enum.map(chunks, & &1.text)
+  defp do_index_lesson(lesson_id, [], _metadata) do
+    Logger.warning("No chunks generated for lesson #{lesson_id}")
+    {:ok, 0}
+  end
 
-      case generate_batch(texts, input_type: "passage") do
-        {:ok, %{embeddings: embeddings}} ->
-          # Build points for Qdrant
-          points =
-            chunks
-            |> Enum.zip(embeddings)
-            |> Enum.map(fn {chunk, embedding} ->
-              %{
-                id: Ecto.UUID.generate(),
-                vector: embedding,
-                payload:
-                  Map.merge(metadata, %{
-                    lesson_id: lesson_id,
-                    chunk_index: chunk.index,
-                    text: chunk.text,
-                    indexed_at: DateTime.utc_now() |> DateTime.to_iso8601()
-                  })
-              }
-            end)
+  defp do_index_lesson(lesson_id, chunks, metadata) do
+    texts = Enum.map(chunks, & &1.text)
 
-          # Upsert to Qdrant
-          case QdrantClient.upsert_points(@lessons_collection, points) do
-            {:ok, count} ->
-              Logger.info("Indexed #{count} chunks for lesson #{lesson_id}")
-              {:ok, count}
-
-            {:error, reason} ->
-              {:error, reason}
-          end
-
-        {:error, reason} ->
-          {:error, reason}
-      end
+    with {:ok, %{embeddings: embeddings}} <- generate_batch(texts, input_type: "passage"),
+         points <- build_index_points(lesson_id, chunks, embeddings, metadata),
+         {:ok, count} <- QdrantClient.upsert_points(@lessons_collection, points) do
+      Logger.info("Indexed #{count} chunks for lesson #{lesson_id}")
+      {:ok, count}
     end
+  end
+
+  defp build_index_points(lesson_id, chunks, embeddings, metadata) do
+    chunks
+    |> Enum.zip(embeddings)
+    |> Enum.map(fn {chunk, embedding} ->
+      %{
+        id: Ecto.UUID.generate(),
+        vector: embedding,
+        payload:
+          Map.merge(metadata, %{
+            lesson_id: lesson_id,
+            chunk_index: chunk.index,
+            text: chunk.text,
+            indexed_at: DateTime.utc_now() |> DateTime.to_iso8601()
+          })
+      }
+    end)
   end
 
   @doc """

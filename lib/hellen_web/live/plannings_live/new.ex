@@ -170,57 +170,65 @@ defmodule HellenWeb.PlanningsLive.New do
   end
 
   @impl true
+  def handle_info({:DOWN, _ref, :process, _pid, _reason}, socket) do
+    {:noreply, assign(socket, :generating, false)}
+  end
+
   def handle_info({ref, result}, socket) do
     cond do
-      # Handle generation task result
-      Map.has_key?(socket.assigns, :generation_task) and
-        socket.assigns.generation_task != nil and
-          ref == socket.assigns.generation_task.ref ->
-        Process.demonitor(ref, [:flush])
+      task_ref?(socket, :generation_task, ref) ->
+        handle_generation_task_result(socket, ref, result)
 
-        case result do
-          {:ok, planning} ->
-            {:noreply,
-             socket
-             |> assign(:generating, false)
-             |> put_flash(:info, "Planejamento gerado com sucesso!")
-             |> push_navigate(to: ~p"/plannings/#{planning.id}/edit")}
-
-          {:error, reason} ->
-            {:noreply,
-             socket
-             |> assign(:generating, false)
-             |> put_flash(:error, "Erro ao gerar planejamento: #{inspect(reason)}")}
-        end
-
-      # Handle suggestion task result
-      Map.has_key?(socket.assigns, :suggestion_task) and
-        socket.assigns.suggestion_task != nil and
-          ref == socket.assigns.suggestion_task.ref ->
-        Process.demonitor(ref, [:flush])
-
-        case result do
-          {:ok, suggestions} ->
-            {:noreply,
-             socket
-             |> assign(:suggesting, false)
-             |> assign(:suggestions, suggestions)}
-
-          {:error, _reason} ->
-            {:noreply,
-             socket
-             |> assign(:suggesting, false)
-             |> put_flash(:error, "Erro ao gerar sugestões")}
-        end
+      task_ref?(socket, :suggestion_task, ref) ->
+        handle_suggestion_task_result(socket, ref, result)
 
       true ->
         {:noreply, socket}
     end
   end
 
-  @impl true
-  def handle_info({:DOWN, _ref, :process, _pid, _reason}, socket) do
-    {:noreply, assign(socket, :generating, false)}
+  defp task_ref?(socket, task_key, ref) do
+    task = Map.get(socket.assigns, task_key)
+    task != nil and ref == task.ref
+  end
+
+  defp handle_generation_task_result(socket, ref, result) do
+    Process.demonitor(ref, [:flush])
+
+    socket =
+      case result do
+        {:ok, planning} ->
+          socket
+          |> assign(:generating, false)
+          |> put_flash(:info, "Planejamento gerado com sucesso!")
+          |> push_navigate(to: ~p"/plannings/#{planning.id}/edit")
+
+        {:error, reason} ->
+          socket
+          |> assign(:generating, false)
+          |> put_flash(:error, "Erro ao gerar planejamento: #{inspect(reason)}")
+      end
+
+    {:noreply, socket}
+  end
+
+  defp handle_suggestion_task_result(socket, ref, result) do
+    Process.demonitor(ref, [:flush])
+
+    socket =
+      case result do
+        {:ok, suggestions} ->
+          socket
+          |> assign(:suggesting, false)
+          |> assign(:suggestions, suggestions)
+
+        {:error, _reason} ->
+          socket
+          |> assign(:suggesting, false)
+          |> put_flash(:error, "Erro ao gerar sugestões")
+      end
+
+    {:noreply, socket}
   end
 
   @impl true

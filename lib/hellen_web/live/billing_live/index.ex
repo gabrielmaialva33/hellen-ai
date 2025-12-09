@@ -93,36 +93,45 @@ defmodule HellenWeb.BillingLive.Index do
         package_id = metadata["package_id"]
         payment_intent = session.payment_intent
 
-        # Only process if this is for the current user
-        if user_id == socket.assigns.current_user.id do
-          # Check if already processed by looking for this payment_intent
-          case Billing.get_transaction_by_payment_intent(payment_intent) do
-            nil ->
-              # Not yet processed, add credits
-              case Billing.add_credits_with_stripe(
-                     socket.assigns.current_user,
-                     credits,
-                     package_id,
-                     payment_intent
-                   ) do
-                {:ok, _user} ->
-                  require Logger
-                  Logger.info("Credits added via fallback for session: #{session_id}")
-                  socket
-
-                {:error, _reason} ->
-                  socket
-              end
-
-            _transaction ->
-              # Already processed via webhook
-              socket
-          end
-        else
-          socket
-        end
+        process_checkout_for_user(socket, user_id, session_id, credits, package_id, payment_intent)
 
       _ ->
+        socket
+    end
+  end
+
+  defp process_checkout_for_user(socket, user_id, session_id, credits, package_id, payment_intent) do
+    if user_id != socket.assigns.current_user.id do
+      socket
+    else
+      process_payment_if_new(socket, session_id, credits, package_id, payment_intent)
+    end
+  end
+
+  defp process_payment_if_new(socket, session_id, credits, package_id, payment_intent) do
+    case Billing.get_transaction_by_payment_intent(payment_intent) do
+      nil ->
+        add_credits_from_checkout(socket, session_id, credits, package_id, payment_intent)
+
+      _transaction ->
+        socket
+    end
+  end
+
+  defp add_credits_from_checkout(socket, session_id, credits, package_id, payment_intent) do
+    require Logger
+
+    case Billing.add_credits_with_stripe(
+           socket.assigns.current_user,
+           credits,
+           package_id,
+           payment_intent
+         ) do
+      {:ok, _user} ->
+        Logger.info("Credits added via fallback for session: #{session_id}")
+        socket
+
+      {:error, _reason} ->
         socket
     end
   end

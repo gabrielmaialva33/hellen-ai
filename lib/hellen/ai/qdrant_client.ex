@@ -350,23 +350,25 @@ defmodule Hellen.AI.QdrantClient do
 
     case request(:post, "/collections/#{collection}/points/search/batch", body) do
       {:ok, %{status: 200, body: body}} ->
-        results =
-          body["result"]
-          |> Enum.map(fn search_result ->
-            Enum.map(search_result, fn result ->
-              %{
-                id: result["id"],
-                score: result["score"],
-                payload: result["payload"]
-              }
-            end)
-          end)
-
-        {:ok, results}
+        {:ok, parse_batch_search_results(body["result"])}
 
       {:error, reason} ->
         {:error, reason}
     end
+  end
+
+  defp parse_batch_search_results(results) do
+    Enum.map(results, &parse_search_result/1)
+  end
+
+  defp parse_search_result(search_result) do
+    Enum.map(search_result, fn result ->
+      %{
+        id: result["id"],
+        score: result["score"],
+        payload: result["payload"]
+      }
+    end)
   end
 
   # ============================================================================
