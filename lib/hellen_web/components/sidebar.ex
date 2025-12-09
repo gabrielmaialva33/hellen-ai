@@ -49,15 +49,15 @@ defmodule HellenWeb.Sidebar do
     <aside
       id="sidebar"
       phx-hook="SidebarHook"
-      class="fixed inset-y-0 left-0 z-50 w-64 bg-sidebar dark:bg-slate-900 border-r border-sidebar-border dark:border-slate-800 transform -translate-x-full lg:translate-x-0 transition-all duration-300 ease-out flex flex-col shadow-xl lg:shadow-none"
+      class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transform -translate-x-full lg:translate-x-0 transition-all duration-300 ease-out flex flex-col shadow-xl lg:shadow-none"
     >
       <!-- Logo Section -->
-      <div class="h-16 flex items-center justify-between px-5 border-b border-sidebar-border dark:border-slate-800">
+      <div class="h-16 flex items-center justify-between px-5 border-b border-slate-200 dark:border-slate-800">
         <a href="/dashboard" class="flex items-center group">
           <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center shadow-sm group-hover:shadow-glow-teal transition-shadow duration-300">
             <span class="text-white font-bold text-sm">H</span>
           </div>
-          <span class="ml-2.5 text-lg font-bold text-sidebar-foreground">
+          <span class="ml-2.5 text-lg font-bold text-slate-900 dark:text-white">
             Hellen
           </span>
           <span class="ml-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-600 dark:text-teal-400">
@@ -68,9 +68,9 @@ defmodule HellenWeb.Sidebar do
         <button
           type="button"
           phx-click={hide_mobile_menu()}
-          class="lg:hidden p-1.5 rounded-lg hover:bg-sidebar-muted dark:hover:bg-slate-800 transition-colors"
+          class="lg:hidden p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
         >
-          <.icon name="hero-x-mark" class="h-5 w-5 text-sidebar-muted dark:text-slate-400" />
+          <.icon name="hero-x-mark" class="h-5 w-5 text-slate-500 dark:text-slate-400" />
         </button>
       </div>
       <!-- Search Button (Cmd+K) -->
@@ -78,11 +78,11 @@ defmodule HellenWeb.Sidebar do
         <button
           type="button"
           phx-click={JS.dispatch("open-search")}
-          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-sidebar-muted/50 dark:bg-slate-800/50 border border-sidebar-border dark:border-slate-700/50 text-sm text-sidebar-muted dark:text-slate-400 hover:bg-sidebar-muted dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 group"
+          class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 group"
         >
           <.icon name="hero-magnifying-glass" class="h-4 w-4" />
           <span class="flex-1 text-left">Buscar...</span>
-          <kbd class="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium bg-sidebar-muted dark:bg-slate-700 rounded border border-sidebar-border dark:border-slate-600 text-sidebar-muted dark:text-slate-400 group-hover:border-slate-400 dark:group-hover:border-slate-500 transition-colors">
+          <kbd class="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium bg-slate-100 dark:bg-slate-700 rounded border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 group-hover:border-slate-400 dark:group-hover:border-slate-500 transition-colors">
             <span class="text-[10px]">⌘</span>K
           </kbd>
         </button>
@@ -91,7 +91,7 @@ defmodule HellenWeb.Sidebar do
       <nav class="flex-1 overflow-y-auto py-2 px-3 scrollbar-thin">
         <!-- Main Menu -->
         <div class="space-y-0.5">
-          <p class="px-3 py-2 text-[11px] font-semibold text-sidebar-muted dark:text-slate-500 uppercase tracking-wider">
+          <p class="px-3 py-2 text-[11px] font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wider">
             Principal
           </p>
           <.nav_item
@@ -128,7 +128,7 @@ defmodule HellenWeb.Sidebar do
         </div>
         <!-- Ferramentas Pedagogicas -->
         <div class="mt-6 space-y-0.5">
-          <p class="px-3 py-2 text-[11px] font-semibold text-sidebar-muted dark:text-slate-500 uppercase tracking-wider">
+          <p class="px-3 py-2 text-[11px] font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wider">
             Ferramentas
           </p>
           <.nav_item
@@ -152,7 +152,7 @@ defmodule HellenWeb.Sidebar do
         </div>
         <!-- Coordinator Menu (conditional) -->
         <div :if={coordinator?(@current_user)} class="mt-6 space-y-0.5">
-          <p class="px-3 py-2 text-[11px] font-semibold text-sidebar-muted dark:text-slate-500 uppercase tracking-wider">
+          <p class="px-3 py-2 text-[11px] font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wider">
             Coordenacao
           </p>
           <.nav_item
@@ -176,7 +176,7 @@ defmodule HellenWeb.Sidebar do
         </div>
         <!-- Admin Menu (conditional) -->
         <div :if={admin?(@current_user)} class="mt-6 space-y-0.5">
-          <p class="px-3 py-2 text-[11px] font-semibold text-sidebar-muted dark:text-slate-500 uppercase tracking-wider">
+          <p class="px-3 py-2 text-[11px] font-semibold text-slate-500 dark:text-slate-500 uppercase tracking-wider">
             Administracao
           </p>
           <.nav_item
@@ -230,16 +230,16 @@ defmodule HellenWeb.Sidebar do
         </div>
       </div>
       <!-- User Section -->
-      <div class="border-t border-sidebar-border dark:border-slate-800 p-4">
+      <div class="border-t border-slate-200 dark:border-slate-800 p-4">
         <div class="flex items-center gap-3 mb-3">
           <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-sage-500 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
             <%= String.first(@current_user.name || @current_user.email) |> String.upcase() %>
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-semibold text-sidebar-foreground dark:text-white truncate">
+            <p class="text-sm font-semibold text-slate-900 dark:text-white truncate">
               <%= @current_user.name || "Usuario" %>
             </p>
-            <p class="text-xs text-sidebar-muted dark:text-slate-400 truncate flex items-center gap-1">
+            <p class="text-xs text-slate-500 dark:text-slate-400 truncate flex items-center gap-1">
               <span class={[
                 "w-1.5 h-1.5 rounded-full",
                 role_color(@current_user.role)
@@ -256,7 +256,7 @@ defmodule HellenWeb.Sidebar do
           <!-- Settings -->
           <a
             href="/settings"
-            class="p-2 rounded-lg hover:bg-sidebar-muted dark:hover:bg-slate-800 transition-colors text-sidebar-muted dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400"
+            class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400"
             title="Configuracoes"
           >
             <.icon name="hero-cog-6-tooth" class="h-5 w-5" />
@@ -266,7 +266,7 @@ defmodule HellenWeb.Sidebar do
             type="button"
             id="sidebar-theme-toggle"
             phx-hook="ThemeToggle"
-            class="p-2 rounded-lg hover:bg-sidebar-muted dark:hover:bg-slate-800 transition-colors text-sidebar-muted dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400"
+            class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400 hover:text-amber-500 dark:hover:text-amber-400"
             title="Alternar tema"
           >
             <.icon name="hero-moon" class="h-5 w-5 dark:hidden" />
@@ -275,7 +275,7 @@ defmodule HellenWeb.Sidebar do
           <!-- Logout -->
           <a
             href="/logout"
-            class="p-2 rounded-lg hover:bg-sidebar-muted dark:hover:bg-slate-800 transition-colors text-sidebar-muted dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400"
+            class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400"
             title="Sair"
           >
             <.icon name="hero-arrow-right-on-rectangle" class="h-5 w-5" />
@@ -304,7 +304,7 @@ defmodule HellenWeb.Sidebar do
         "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group",
         @is_active && "bg-teal-500/10 dark:bg-teal-500/15 text-teal-700 dark:text-teal-300 shadow-sm",
         !@is_active && !@highlight &&
-          "text-sidebar-foreground dark:text-slate-300 hover:bg-sidebar-muted dark:hover:bg-slate-800/70 hover:text-teal-600 dark:hover:text-teal-400",
+          "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70 hover:text-teal-600 dark:hover:text-teal-400",
         !@is_active && @highlight &&
           "text-teal-600 dark:text-teal-400 hover:bg-teal-500/10 dark:hover:bg-teal-500/15"
       ]}
