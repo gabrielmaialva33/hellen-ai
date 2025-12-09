@@ -177,7 +177,7 @@ defmodule HellenWeb.AnalyticsLive.Index do
       <!-- Tab Content -->
       <div class="space-y-6">
         <!-- Overview Tab -->
-        <div :if={@active_tab == :overview}>
+        <div :if={@active_tab == :overview} class="space-y-6">
           <!-- Score Comparison Cards -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <.comparison_card
@@ -273,7 +273,7 @@ defmodule HellenWeb.AnalyticsLive.Index do
           </div>
         </div>
         <!-- BNCC Tab -->
-        <div :if={@active_tab == :bncc}>
+        <div :if={@active_tab == :bncc} class="space-y-6">
           <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Competencias BNCC Trabalhadas
@@ -344,7 +344,7 @@ defmodule HellenWeb.AnalyticsLive.Index do
           </div>
         </div>
         <!-- Trends Tab -->
-        <div :if={@active_tab == :trends}>
+        <div :if={@active_tab == :trends} class="space-y-6">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Trend Indicator -->
             <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
@@ -414,7 +414,7 @@ defmodule HellenWeb.AnalyticsLive.Index do
           <!-- Alert Timeline (Coordinators only) -->
           <div
             :if={@alert_timeline != []}
-            class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 mt-6"
+            class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6"
           >
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Timeline de Alertas
@@ -433,7 +433,7 @@ defmodule HellenWeb.AnalyticsLive.Index do
           </div>
         </div>
         <!-- Comparison Tab -->
-        <div :if={@active_tab == :comparison && @institution_comparison}>
+        <div :if={@active_tab == :comparison && @institution_comparison} class="space-y-6">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Institution vs Platform -->
             <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
