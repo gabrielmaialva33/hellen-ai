@@ -456,6 +456,19 @@ defmodule Hellen.Reports.Helpers do
   def score_class(score) when score >= 6, do: "score-average"
   def score_class(_), do: "score-poor"
 
+  # Medal colors for ranking
+  def medal_color(1), do: "#f59e0b"
+  def medal_color(2), do: "#94a3b8"
+  def medal_color(3), do: "#b45309"
+  def medal_color(_), do: "#64748b"
+
+  # Calculate analysis rate percentage
+  def analysis_rate(%{lessons: lessons, analyses: analyses}) when lessons > 0 do
+    min(100, round(analyses / lessons * 100))
+  end
+
+  def analysis_rate(_), do: 0
+
   def severity_order("high"), do: 1
   def severity_order("medium"), do: 2
   def severity_order("low"), do: 3

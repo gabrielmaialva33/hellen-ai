@@ -51,10 +51,17 @@ defmodule HellenWeb.LiveAuth do
       |> assign_current_user(session)
       |> assign_current_path()
 
-    if socket.assigns.current_user do
-      {:cont, socket}
-    else
-      {:halt, redirect(socket, to: "/login")}
+    cond do
+      is_nil(socket.assigns.current_user) ->
+        {:halt, redirect(socket, to: "/login")}
+
+      # Redirect to onboarding if not completed (but not if already on onboarding page)
+      not socket.assigns.current_user.onboarding_completed and
+          socket.assigns.current_path != "/onboarding" ->
+        {:halt, redirect(socket, to: "/onboarding")}
+
+      true ->
+        {:cont, socket}
     end
   end
 

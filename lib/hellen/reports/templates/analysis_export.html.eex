@@ -10,12 +10,15 @@
   <div class="header">
     <div class="header-content">
       <div>
-        <div class="logo">Hellen AI</div>
+        <div class="logo">
+          <div class="logo-icon">H</div>
+          <span>Hellen AI</span>
+        </div>
         <h1><%= @lesson.title || "Aula sem titulo" %></h1>
         <p class="subtitle">Relatorio de Analise Pedagogica</p>
       </div>
       <div class="meta">
-        <p>Professor: <%= @teacher.name || "N/A" %></p>
+        <p><strong><%= @teacher.name || "Professor" %></strong></p>
         <p>Data da aula: <%= @h.format_date(@lesson.inserted_at) %></p>
         <p>Gerado em: <%= @h.format_datetime(@generated_at) %></p>
       </div>
@@ -54,50 +57,62 @@
 
       <!-- Summary -->
       <%= if @result["summary"] do %>
-        <div style="background: #f9fafb; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
-          <h3 style="font-size: 12px; font-weight: 600; margin-bottom: 8px;">Resumo</h3>
-          <p style="font-size: 11px; color: #374151; line-height: 1.6;"><%= @result["summary"] %></p>
+        <div class="info-card" style="margin-bottom: 16px;">
+          <div class="info-title">Resumo</div>
+          <div class="info-text"><%= @result["summary"] %></div>
         </div>
       <% end %>
 
-      <!-- Strengths -->
-      <%= if @result["strengths"] && length(@result["strengths"]) > 0 do %>
-        <div style="margin-bottom: 16px;">
-          <h3 style="font-size: 12px; font-weight: 600; margin-bottom: 8px; color: #059669;">Pontos Fortes</h3>
-          <ul style="list-style: none; padding: 0; margin: 0;">
-            <%= for strength <- @result["strengths"] do %>
-              <li style="padding: 8px 0; border-bottom: 1px solid #f3f4f6; font-size: 11px;">
-                <span style="color: #059669; margin-right: 8px;">+</span>
-                <%= strength %>
-              </li>
-            <% end %>
-          </ul>
+      <div class="two-column">
+        <!-- Strengths -->
+        <div>
+          <%= if @result["strengths"] && length(@result["strengths"]) > 0 do %>
+            <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); padding: 16px; border-radius: 12px; border-left: 4px solid #22c55e;">
+              <h3 style="font-size: 12px; font-weight: 700; margin-bottom: 12px; color: #059669; display: flex; align-items: center; gap: 8px;">
+                <span style="width: 20px; height: 20px; background: #22c55e; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">+</span>
+                Pontos Fortes
+              </h3>
+              <ul style="list-style: none; padding: 0; margin: 0;">
+                <%= for strength <- @result["strengths"] do %>
+                  <li style="padding: 8px 0; border-bottom: 1px solid rgba(34, 197, 94, 0.2); font-size: 11px; color: #334155;">
+                    <%= strength %>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
         </div>
-      <% end %>
 
-      <!-- Areas for Improvement -->
-      <%= if @result["improvements"] && length(@result["improvements"]) > 0 do %>
-        <div style="margin-bottom: 16px;">
-          <h3 style="font-size: 12px; font-weight: 600; margin-bottom: 8px; color: #d97706;">Areas de Melhoria</h3>
-          <ul style="list-style: none; padding: 0; margin: 0;">
-            <%= for improvement <- @result["improvements"] do %>
-              <li style="padding: 8px 0; border-bottom: 1px solid #f3f4f6; font-size: 11px;">
-                <span style="color: #d97706; margin-right: 8px;">!</span>
-                <%= improvement %>
-              </li>
-            <% end %>
-          </ul>
+        <!-- Areas for Improvement -->
+        <div>
+          <%= if @result["improvements"] && length(@result["improvements"]) > 0 do %>
+            <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); padding: 16px; border-radius: 12px; border-left: 4px solid #f59e0b;">
+              <h3 style="font-size: 12px; font-weight: 700; margin-bottom: 12px; color: #d97706; display: flex; align-items: center; gap: 8px;">
+                <span style="width: 20px; height: 20px; background: #f59e0b; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">!</span>
+                Areas de Melhoria
+              </h3>
+              <ul style="list-style: none; padding: 0; margin: 0;">
+                <%= for improvement <- @result["improvements"] do %>
+                  <li style="padding: 8px 0; border-bottom: 1px solid rgba(245, 158, 11, 0.2); font-size: 11px; color: #334155;">
+                    <%= improvement %>
+                  </li>
+                <% end %>
+              </ul>
+            </div>
+          <% end %>
         </div>
-      <% end %>
+      </div>
 
       <!-- Recommendations -->
       <%= if @result["recommendations"] && length(@result["recommendations"]) > 0 do %>
-        <div style="margin-bottom: 16px;">
-          <h3 style="font-size: 12px; font-weight: 600; margin-bottom: 8px; color: #4f46e5;">Recomendacoes</h3>
+        <div style="margin-top: 16px; background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); padding: 16px; border-radius: 12px; border-left: 4px solid #0d9488;">
+          <h3 style="font-size: 12px; font-weight: 700; margin-bottom: 12px; color: #0d9488; display: flex; align-items: center; gap: 8px;">
+            <span style="width: 20px; height: 20px; background: #0d9488; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 10px;">→</span>
+            Recomendacoes
+          </h3>
           <ul style="list-style: none; padding: 0; margin: 0;">
             <%= for recommendation <- @result["recommendations"] do %>
-              <li style="padding: 8px 0; border-bottom: 1px solid #f3f4f6; font-size: 11px;">
-                <span style="color: #4f46e5; margin-right: 8px;">-></span>
+              <li style="padding: 8px 0; border-bottom: 1px solid rgba(13, 148, 136, 0.2); font-size: 11px; color: #334155;">
                 <%= recommendation %>
               </li>
             <% end %>
@@ -116,7 +131,7 @@
           <tr>
             <th style="width: 100px;">Codigo</th>
             <th>Competencia</th>
-            <th class="text-center" style="width: 80px;">Score</th>
+            <th class="text-center" style="width: 80px;">Relevancia</th>
           </tr>
         </thead>
         <tbody>
@@ -128,11 +143,12 @@
               <td style="font-size: 10px;"><%= @h.truncate(match.competencia_name, 60) %></td>
               <td class="text-center">
                 <%= if match.match_score do %>
-                  <span class="<%= @h.score_class(match.match_score * 10) %>">
-                    <%= Float.round(match.match_score * 10, 1) %>
-                  </span>
+                  <div class="progress-bar" style="width: 60px; height: 6px; margin: 0 auto;">
+                    <div class="progress-bar-fill" style="width: <%= Float.round(match.match_score * 100, 0) %>%;"></div>
+                  </div>
+                  <span style="font-size: 9px; color: #64748b;"><%= Float.round(match.match_score * 100, 0) %>%</span>
                 <% else %>
-                  -
+                  <span style="color: #94a3b8;">-</span>
                 <% end %>
               </td>
             </tr>
@@ -145,7 +161,7 @@
   <!-- Bullying Alerts -->
   <%= if length(@bullying_alerts) > 0 do %>
     <div class="section">
-      <h2 class="section-title">Alertas de Conformidade</h2>
+      <h2 class="section-title">Alertas de Conformidade (Lei 13.185)</h2>
       <%= for alert <- @bullying_alerts do %>
         <div class="alert-box <%= alert.severity %>">
           <div style="display: flex; justify-content: space-between; align-items: flex-start;">
@@ -160,7 +176,7 @@
             <%= alert.description %>
           </div>
           <%= if alert.timestamp do %>
-            <div style="margin-top: 8px; font-size: 9px; color: #9ca3af;">
+            <div style="margin-top: 8px; font-size: 9px; color: #94a3b8;">
               Momento: <%= alert.timestamp %>
             </div>
           <% end %>
@@ -172,31 +188,46 @@
   <!-- Metadata -->
   <div class="section">
     <h2 class="section-title">Informacoes Tecnicas</h2>
-    <table>
-      <tbody>
-        <tr>
-          <td style="font-weight: 600; width: 200px;">ID da Analise</td>
-          <td style="font-family: monospace; font-size: 10px;"><%= @analysis.id %></td>
-        </tr>
-        <tr>
-          <td style="font-weight: 600;">Modelo Utilizado</td>
-          <td><%= @analysis.model_used || "N/A" %></td>
-        </tr>
-        <tr>
-          <td style="font-weight: 600;">Tokens Utilizados</td>
-          <td><%= @analysis.tokens_used || "N/A" %></td>
-        </tr>
-        <tr>
-          <td style="font-weight: 600;">Data da Analise</td>
-          <td><%= @h.format_datetime(@analysis.inserted_at) %></td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="info-card">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div>
+          <p style="font-size: 10px; color: #64748b; margin-bottom: 4px;">ID da Analise</p>
+          <p style="font-family: 'Monaco', 'Consolas', monospace; font-size: 10px; color: #334155;"><%= @analysis.id %></p>
+        </div>
+        <div>
+          <p style="font-size: 10px; color: #64748b; margin-bottom: 4px;">Modelo Utilizado</p>
+          <p style="font-size: 11px; font-weight: 600; color: #334155;"><%= @analysis.model_used || "N/A" %></p>
+        </div>
+        <div>
+          <p style="font-size: 10px; color: #64748b; margin-bottom: 4px;">Tokens Utilizados</p>
+          <p style="font-size: 11px; font-weight: 600; color: #334155;"><%= @analysis.tokens_used || "N/A" %></p>
+        </div>
+        <div>
+          <p style="font-size: 10px; color: #64748b; margin-bottom: 4px;">Data da Analise</p>
+          <p style="font-size: 11px; font-weight: 600; color: #334155;"><%= @h.format_datetime(@analysis.inserted_at) %></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info about the report -->
+  <div class="section">
+    <div class="info-card">
+      <div class="info-title">Sobre este Relatorio</div>
+      <div class="info-text">
+        Este relatorio foi gerado automaticamente pela Hellen AI, uma plataforma de analise pedagogica baseada em inteligencia artificial.
+        A analise identifica competencias da BNCC presentes na aula, verifica conformidade com a Lei 13.185 (Combate ao Bullying)
+        e oferece recomendacoes para aprimoramento pedagogico. Os dados sao processados de forma segura e confidencial.
+      </div>
+    </div>
   </div>
 
   <!-- Footer -->
   <div class="footer">
-    <span>Relatorio gerado automaticamente por Hellen AI</span>
+    <div class="footer-logo">
+      <span>H</span>
+      <span>Hellen AI</span>
+    </div>
     <span>Analise ID: <%= String.slice(@analysis.id || "", 0, 8) %>...</span>
   </div>
 </body>

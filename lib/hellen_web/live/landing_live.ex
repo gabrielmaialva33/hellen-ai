@@ -20,10 +20,12 @@ defmodule HellenWeb.LandingLive do
 
       <main>
         <.hero_section />
+        <.impact_metrics />
         <.how_it_works />
         <.features_section />
         <.pricing_section />
         <.testimonials_section />
+        <.faq_section />
         <.cta_section />
       </main>
 

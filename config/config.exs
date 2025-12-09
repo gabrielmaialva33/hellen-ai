@@ -81,6 +81,9 @@ config :hellen, Hellen.Auth.Guardian,
 # Configure Firebase
 config :hellen, :firebase, project_id: "hellen-ai"
 
+# Configure Qdrant vector database
+config :hellen, :qdrant_url, System.get_env("QDRANT_URL") || "http://localhost:6333"
+
 # Configure ChromicPDF for PDF generation
 config :hellen, :chromic_pdf,
   session_pool: [size: 2],

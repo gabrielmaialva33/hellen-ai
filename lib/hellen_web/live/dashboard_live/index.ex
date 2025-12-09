@@ -87,11 +87,18 @@ defmodule HellenWeb.DashboardLive.Index do
         <div class="absolute inset-0 opacity-10">
           <svg class="h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
             <defs>
-              <pattern id="hero-pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-                <circle cx="2" cy="2" r="1" fill="white"/>
+              <pattern
+                id="hero-pattern"
+                x="0"
+                y="0"
+                width="20"
+                height="20"
+                patternUnits="userSpaceOnUse"
+              >
+                <circle cx="2" cy="2" r="1" fill="white" />
               </pattern>
             </defs>
-            <rect fill="url(#hero-pattern)" width="100" height="100"/>
+            <rect fill="url(#hero-pattern)" width="100" height="100" />
           </svg>
         </div>
 
@@ -99,7 +106,8 @@ defmodule HellenWeb.DashboardLive.Index do
           <div class="flex-1">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm mb-4">
               <span class="relative flex h-2 w-2">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75">
+                </span>
                 <span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
               </span>
               <span class="text-sm font-medium text-white/90">Hellen AI</span>
@@ -115,24 +123,20 @@ defmodule HellenWeb.DashboardLive.Index do
           <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
             <.link navigate={~p"/lessons/new"} class="flex-1 lg:flex-none">
               <button class="w-full lg:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white text-teal-600 font-semibold shadow-lg hover:shadow-xl hover:bg-slate-50 transition-all duration-200">
-                <.icon name="hero-plus" class="h-5 w-5" />
-                Nova Aula
+                <.icon name="hero-plus" class="h-5 w-5" /> Nova Aula
               </button>
             </.link>
             <.link navigate={~p"/aulas"} class="flex-1 lg:flex-none">
               <button class="w-full lg:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white/10 backdrop-blur-sm text-white font-medium border border-white/20 hover:bg-white/20 transition-all duration-200">
-                <.icon name="hero-folder" class="h-5 w-5" />
-                Ver Aulas
+                <.icon name="hero-folder" class="h-5 w-5" /> Ver Aulas
               </button>
             </.link>
           </div>
         </div>
-
         <!-- Floating decoration -->
         <div class="absolute -bottom-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
         <div class="absolute -top-8 -left-8 w-24 h-24 bg-emerald-400/20 rounded-full blur-2xl"></div>
       </div>
-
       <!-- Stats Grid -->
       <.async_result :let={data} assign={@stats}>
         <:loading>
@@ -146,48 +150,49 @@ defmodule HellenWeb.DashboardLive.Index do
 
         <div class="grid gap-4 grid-cols-2 lg:grid-cols-4">
           <.modern_stat_card
-            value={data.total}
+            value={data.stats.total}
             label="Total de Aulas"
             icon="hero-academic-cap"
             color="teal"
           />
           <.modern_stat_card
-            value={data.completed}
+            value={data.stats.completed}
             label="Concluidas"
             icon="hero-check-circle"
             color="emerald"
           />
           <.modern_stat_card
-            value={data.processing}
+            value={data.stats.processing}
             label="Processando"
             icon="hero-arrow-path"
             color="cyan"
-            animate={data.processing > 0}
+            animate={data.stats.processing > 0}
           />
           <.modern_stat_card
-            value={data.pending}
+            value={data.stats.pending}
             label="Pendentes"
             icon="hero-clock"
             color="amber"
           />
         </div>
       </.async_result>
-
       <!-- Main Content Grid -->
       <div class="grid gap-6 lg:grid-cols-3">
         <!-- Recent Lessons (2 cols) -->
         <div class="lg:col-span-2 space-y-4">
           <div class="flex items-center justify-between">
             <h2 class="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-              <.icon name="hero-clock" class="h-5 w-5 text-slate-400" />
-              Aulas Recentes
+              <.icon name="hero-clock" class="h-5 w-5 text-slate-400" /> Aulas Recentes
             </h2>
             <.link
               navigate={~p"/aulas"}
               class="text-sm font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors flex items-center gap-1 group"
             >
               Ver todas
-              <.icon name="hero-arrow-right-mini" class="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+              <.icon
+                name="hero-arrow-right-mini"
+                class="h-4 w-4 group-hover:translate-x-0.5 transition-transform"
+              />
             </.link>
           </div>
 
@@ -201,10 +206,9 @@ defmodule HellenWeb.DashboardLive.Index do
                 <.lesson_row lesson={lesson} />
               </div>
             </div>
-
             <!-- Empty State -->
             <div
-              :if={match?(%{ok?: true, result: %{total: 0}}, @stats)}
+              :if={match?(%{ok?: true, result: %{stats: %{total: 0}}}, @stats)}
               class="p-8 sm:p-12 text-center"
             >
               <div class="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-100 to-emerald-100 dark:from-teal-900/30 dark:to-emerald-900/30 flex items-center justify-center mb-4">
@@ -218,14 +222,12 @@ defmodule HellenWeb.DashboardLive.Index do
               </p>
               <.link navigate={~p"/lessons/new"}>
                 <button class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-600 text-white font-medium hover:bg-teal-700 transition-colors">
-                  <.icon name="hero-plus" class="h-5 w-5" />
-                  Enviar Primeira Aula
+                  <.icon name="hero-plus" class="h-5 w-5" /> Enviar Primeira Aula
                 </button>
               </.link>
             </div>
           </div>
         </div>
-
         <!-- Sidebar (1 col) -->
         <div class="space-y-4">
           <!-- Credits Card -->
@@ -236,41 +238,46 @@ defmodule HellenWeb.DashboardLive.Index do
               </div>
               <div>
                 <p class="text-slate-400 text-sm">Creditos</p>
-                <p class="text-3xl font-bold" phx-hook="AnimatedCounter" id="credits-counter" data-target={@current_user.credits || 0}>
+                <p
+                  class="text-3xl font-bold"
+                  phx-hook="AnimatedCounter"
+                  id="credits-counter"
+                  data-target={@current_user.credits || 0}
+                >
                   <span class="counter-value"><%= @current_user.credits || 0 %></span>
                 </p>
               </div>
             </div>
             <.link navigate={~p"/billing"} class="block">
               <button class="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium transition-colors flex items-center justify-center gap-2">
-                <.icon name="hero-plus" class="h-4 w-4" />
-                Comprar Creditos
+                <.icon name="hero-plus" class="h-4 w-4" /> Comprar Creditos
               </button>
             </.link>
           </div>
-
           <!-- Quick Tips -->
           <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5">
             <h3 class="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-              <.icon name="hero-light-bulb" class="h-5 w-5 text-amber-500" />
-              Dica do dia
+              <.icon name="hero-light-bulb" class="h-5 w-5 text-amber-500" /> Dica do dia
             </h3>
             <div class="space-y-3">
               <p class="text-sm text-slate-600 dark:text-slate-300">
-                Grave aulas de <span class="font-medium text-teal-600 dark:text-teal-400">15-30 minutos</span> para obter analises mais precisas da IA.
+                Grave aulas de
+                <span class="font-medium text-teal-600 dark:text-teal-400">15-30 minutos</span>
+                para obter analises mais precisas da IA.
               </p>
               <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                <.icon name="hero-clock" class="h-4 w-4" />
-                Duracao ideal para melhor qualidade
+                <.icon name="hero-clock" class="h-4 w-4" /> Duracao ideal para melhor qualidade
               </div>
             </div>
           </div>
-
           <!-- BNCC Info -->
           <div class="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 rounded-2xl border border-violet-200/50 dark:border-violet-800/50 p-5">
             <div class="flex items-start gap-3">
               <div class="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center flex-shrink-0">
-                <.icon name="hero-document-check" class="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                <.icon
+                  name="hero-document-check"
+                  class="h-5 w-5 text-violet-600 dark:text-violet-400"
+                />
               </div>
               <div>
                 <h4 class="font-semibold text-slate-900 dark:text-white text-sm">
@@ -303,7 +310,8 @@ defmodule HellenWeb.DashboardLive.Index do
         </div>
         <div :if={@animate} class="flex items-center gap-1.5">
           <span class="relative flex h-2 w-2">
-            <span class={"animate-ping absolute inline-flex h-full w-full rounded-full #{stat_dot(@color)} opacity-75"}></span>
+            <span class={"animate-ping absolute inline-flex h-full w-full rounded-full #{stat_dot(@color)} opacity-75"}>
+            </span>
             <span class={"relative inline-flex rounded-full h-2 w-2 #{stat_dot(@color)}"}></span>
           </span>
           <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Ativo</span>
@@ -344,7 +352,10 @@ defmodule HellenWeb.DashboardLive.Index do
         "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
         lesson_status_bg(@lesson.status)
       ]}>
-        <.icon name={lesson_status_icon(@lesson.status)} class={"h-5 w-5 #{lesson_status_color(@lesson.status)}"} />
+        <.icon
+          name={lesson_status_icon(@lesson.status)}
+          class={"h-5 w-5 #{lesson_status_color(@lesson.status)}"}
+        />
       </div>
       <div class="flex-1 min-w-0">
         <p class="font-medium text-slate-900 dark:text-white truncate group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
@@ -357,7 +368,10 @@ defmodule HellenWeb.DashboardLive.Index do
         </p>
       </div>
       <.lesson_status_badge status={@lesson.status} />
-      <.icon name="hero-chevron-right" class="h-5 w-5 text-slate-300 dark:text-slate-600 group-hover:text-slate-400 dark:group-hover:text-slate-500 transition-colors" />
+      <.icon
+        name="hero-chevron-right"
+        class="h-5 w-5 text-slate-300 dark:text-slate-600 group-hover:text-slate-400 dark:group-hover:text-slate-500 transition-colors"
+      />
     </.link>
     """
   end
@@ -397,13 +411,26 @@ defmodule HellenWeb.DashboardLive.Index do
   defp lesson_status_color("failed"), do: "text-red-600 dark:text-red-400"
   defp lesson_status_color(_), do: "text-slate-600 dark:text-slate-400"
 
-  defp lesson_badge_class("completed"), do: "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300"
-  defp lesson_badge_class("analyzing"), do: "bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300"
-  defp lesson_badge_class("transcribing"), do: "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
-  defp lesson_badge_class("transcribed"), do: "bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300"
-  defp lesson_badge_class("pending"), do: "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300"
-  defp lesson_badge_class("failed"), do: "bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300"
-  defp lesson_badge_class(_), do: "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
+  defp lesson_badge_class("completed"),
+    do: "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300"
+
+  defp lesson_badge_class("analyzing"),
+    do: "bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300"
+
+  defp lesson_badge_class("transcribing"),
+    do: "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"
+
+  defp lesson_badge_class("transcribed"),
+    do: "bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300"
+
+  defp lesson_badge_class("pending"),
+    do: "bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300"
+
+  defp lesson_badge_class("failed"),
+    do: "bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300"
+
+  defp lesson_badge_class(_),
+    do: "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
 
   defp lesson_status_label("completed"), do: "Concluida"
   defp lesson_status_label("analyzing"), do: "Analisando"

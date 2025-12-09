@@ -136,7 +136,6 @@ defmodule HellenWeb.SettingsLive.Index do
           </p>
         </div>
       </div>
-
       <!-- Tabs -->
       <div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200/50 dark:border-slate-700/50 p-1.5">
         <nav class="flex gap-1">
@@ -151,7 +150,6 @@ defmodule HellenWeb.SettingsLive.Index do
           </.tab_button>
         </nav>
       </div>
-
       <!-- Tab Content -->
       <div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200/50 dark:border-slate-700/50 p-6 animate-fade-in-up">
         <!-- Profile Tab -->
@@ -199,7 +197,6 @@ defmodule HellenWeb.SettingsLive.Index do
             </div>
           </.form>
         </div>
-
         <!-- Notifications Tab -->
         <div :if={@active_tab == "notifications"} class="space-y-6">
           <div class="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-700">
@@ -207,7 +204,9 @@ defmodule HellenWeb.SettingsLive.Index do
               <.icon name="hero-envelope" class="h-5 w-5 text-violet-600 dark:text-violet-400" />
             </div>
             <div>
-              <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Preferencias de Email</h3>
+              <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
+                Preferencias de Email
+              </h3>
               <p class="text-sm text-slate-500 dark:text-slate-400">
                 Escolha quais notificacoes deseja receber por email
               </p>
@@ -270,7 +269,6 @@ defmodule HellenWeb.SettingsLive.Index do
             </div>
           </.form>
         </div>
-
         <!-- Security Tab -->
         <div :if={@active_tab == "security"} class="space-y-6">
           <div class="flex items-center gap-3 pb-4 border-b border-slate-200 dark:border-slate-700">
@@ -311,8 +309,7 @@ defmodule HellenWeb.SettingsLive.Index do
                   class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white px-4 py-3 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all duration-200"
                 />
                 <p class="mt-2 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                  <.icon name="hero-information-circle-mini" class="h-4 w-4" />
-                  Minimo de 8 caracteres
+                  <.icon name="hero-information-circle-mini" class="h-4 w-4" /> Minimo de 8 caracteres
                 </p>
               </div>
 
@@ -335,7 +332,6 @@ defmodule HellenWeb.SettingsLive.Index do
               </.button>
             </div>
           </form>
-
           <!-- Security Info -->
           <div class="mt-8 p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600">
             <div class="flex items-start gap-3">
@@ -343,7 +339,9 @@ defmodule HellenWeb.SettingsLive.Index do
                 <.icon name="hero-shield-check" class="h-4 w-4 text-teal-600 dark:text-teal-400" />
               </div>
               <div>
-                <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Dicas de Seguranca</h4>
+                <h4 class="text-sm font-semibold text-slate-900 dark:text-white">
+                  Dicas de Seguranca
+                </h4>
                 <ul class="mt-2 text-xs text-slate-500 dark:text-slate-400 space-y-1">
                   <li class="flex items-center gap-1.5">
                     <.icon name="hero-check-mini" class="h-3 w-3 text-emerald-500" />
@@ -405,7 +403,9 @@ defmodule HellenWeb.SettingsLive.Index do
       <div class="flex items-center gap-3">
         <div class={["w-2 h-2 rounded-full", toggle_dot_color(@color)]}></div>
         <div>
-          <label class="font-medium text-slate-900 dark:text-white cursor-pointer"><%= @label %></label>
+          <label class="font-medium text-slate-900 dark:text-white cursor-pointer">
+            <%= @label %>
+          </label>
           <p class="text-sm text-slate-500 dark:text-slate-400"><%= @description %></p>
         </div>
       </div>

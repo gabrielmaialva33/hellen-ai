@@ -328,13 +328,22 @@ defmodule HellenWeb.CoreComponents do
       ]}
       {@rest}
     >
-      <div :if={@header != []} class={["border-b border-slate-200 dark:border-slate-700", card_padding(@padding)]}>
+      <div
+        :if={@header != []}
+        class={["border-b border-slate-200 dark:border-slate-700", card_padding(@padding)]}
+      >
         <%= render_slot(@header) %>
       </div>
       <div class={card_padding(@padding)}>
         <%= render_slot(@inner_block) %>
       </div>
-      <div :if={@footer != []} class={["border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50", card_padding(@padding)]}>
+      <div
+        :if={@footer != []}
+        class={[
+          "border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50",
+          card_padding(@padding)
+        ]}
+      >
         <%= render_slot(@footer) %>
       </div>
     </div>
@@ -378,7 +387,11 @@ defmodule HellenWeb.CoreComponents do
   attr :title, :string, required: true
   attr :value, :any, required: true
   attr :icon, :string, default: nil
-  attr :variant, :string, default: "default", values: ~w(default success processing pending warning error)
+
+  attr :variant, :string,
+    default: "default",
+    values: ~w(default success processing pending warning error)
+
   attr :color, :string, default: nil, doc: "Deprecated: use variant instead"
   attr :subtitle, :string, default: nil
   attr :trend, :map, default: nil, doc: "Map with :value and :direction (:up, :down, :stable)"
@@ -386,12 +399,16 @@ defmodule HellenWeb.CoreComponents do
 
   def stat_card(assigns) do
     # Support both color (legacy) and variant (new) attributes
-    assigns = assign_new(assigns, :effective_variant, fn ->
-      assigns[:color] || assigns[:variant] || "default"
-    end)
+    assigns =
+      assign_new(assigns, :effective_variant, fn ->
+        assigns[:color] || assigns[:variant] || "default"
+      end)
 
     ~H"""
-    <div class={["bg-white dark:bg-slate-800 rounded-xl shadow-card hover:shadow-elevated border border-slate-200/50 dark:border-slate-700/50 transition-all duration-300 p-5 group", @class]}>
+    <div class={[
+      "bg-white dark:bg-slate-800 rounded-xl shadow-card hover:shadow-elevated border border-slate-200/50 dark:border-slate-700/50 transition-all duration-300 p-5 group",
+      @class
+    ]}>
       <div class="flex items-start justify-between">
         <div class="flex-1 min-w-0">
           <p class="text-sm font-medium text-slate-500 dark:text-slate-400 truncate">
@@ -416,10 +433,13 @@ defmodule HellenWeb.CoreComponents do
             </span>
           </div>
         </div>
-        <div :if={@icon} class={[
-          "flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110",
-          stat_icon_bg(@effective_variant)
-        ]}>
+        <div
+          :if={@icon}
+          class={[
+            "flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110",
+            stat_icon_bg(@effective_variant)
+          ]}
+        >
           <.icon name={@icon} class={"h-6 w-6 #{stat_icon_color(@effective_variant)}"} />
         </div>
       </div>
@@ -483,9 +503,17 @@ defmodule HellenWeb.CoreComponents do
     assigns = assign(assigns, :percentage, min(100, max(0, assigns.value / assigns.max * 100)))
 
     ~H"""
-    <div class={["w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden", progress_height(@size), @class]}>
+    <div class={[
+      "w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden",
+      progress_height(@size),
+      @class
+    ]}>
       <div
-        class={["rounded-full transition-all duration-500 ease-out", progress_height(@size), progress_color(@color)]}
+        class={[
+          "rounded-full transition-all duration-500 ease-out",
+          progress_height(@size),
+          progress_color(@color)
+        ]}
         style={"width: #{@percentage}%"}
       >
       </div>
@@ -543,16 +571,33 @@ defmodule HellenWeb.CoreComponents do
     """
   end
 
-  defp badge_variant("default"), do: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-  defp badge_variant("pending"), do: "bg-ochre-100 text-ochre-700 dark:bg-ochre-900/30 dark:text-ochre-400"
-  defp badge_variant("processing"), do: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400"
-  defp badge_variant("completed"), do: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+  defp badge_variant("default"),
+    do: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+
+  defp badge_variant("pending"),
+    do: "bg-ochre-100 text-ochre-700 dark:bg-ochre-900/30 dark:text-ochre-400"
+
+  defp badge_variant("processing"),
+    do: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400"
+
+  defp badge_variant("completed"),
+    do: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+
   defp badge_variant("failed"), do: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-  defp badge_variant("success"), do: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-  defp badge_variant("warning"), do: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+
+  defp badge_variant("success"),
+    do: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+
+  defp badge_variant("warning"),
+    do: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+
   defp badge_variant("error"), do: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-  defp badge_variant("info"), do: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400"
-  defp badge_variant("alert"), do: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
+
+  defp badge_variant("info"),
+    do: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400"
+
+  defp badge_variant("alert"),
+    do: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
 
   defp badge_dot("default"), do: "bg-slate-500"
   defp badge_dot("pending"), do: "bg-ochre-500"
@@ -586,7 +631,12 @@ defmodule HellenWeb.CoreComponents do
     assigns = assign(assigns, :initials, get_initials(assigns.name))
 
     ~H"""
-    <div class={["relative inline-flex items-center justify-center rounded-full font-medium overflow-hidden", avatar_size(@size), avatar_bg(), @class]}>
+    <div class={[
+      "relative inline-flex items-center justify-center rounded-full font-medium overflow-hidden",
+      avatar_size(@size),
+      avatar_bg(),
+      @class
+    ]}>
       <img :if={@src} src={@src} alt={@name} class="w-full h-full object-cover" />
       <span :if={!@src} class={avatar_text_size(@size)}>
         <%= @initials %>
@@ -599,8 +649,7 @@ defmodule HellenWeb.CoreComponents do
     name
     |> String.split(" ")
     |> Enum.take(2)
-    |> Enum.map(&String.first/1)
-    |> Enum.join("")
+    |> Enum.map_join("", &String.first/1)
     |> String.upcase()
   end
 
@@ -657,7 +706,8 @@ defmodule HellenWeb.CoreComponents do
         class={[
           "inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium -mb-px border-b-2 transition-colors",
           tab.id == @active && "text-teal-600 dark:text-teal-400 border-teal-600 dark:border-teal-400",
-          tab.id != @active && "text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300"
+          tab.id != @active &&
+            "text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-300"
         ]}
       >
         <.icon :if={tab[:icon]} name={tab.icon} class="h-4 w-4" />
@@ -720,10 +770,21 @@ defmodule HellenWeb.CoreComponents do
     """
   end
 
-  defp alert_variant("info"), do: "bg-cyan-50 text-cyan-800 dark:bg-cyan-900/20 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800"
-  defp alert_variant("success"), do: "bg-emerald-50 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
-  defp alert_variant("warning"), do: "bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
-  defp alert_variant("error"), do: "bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-300 border border-red-200 dark:border-red-800"
+  defp alert_variant("info"),
+    do:
+      "bg-cyan-50 text-cyan-800 dark:bg-cyan-900/20 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800"
+
+  defp alert_variant("success"),
+    do:
+      "bg-emerald-50 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+
+  defp alert_variant("warning"),
+    do:
+      "bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+
+  defp alert_variant("error"),
+    do:
+      "bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-300 border border-red-200 dark:border-red-800"
 
   defp alert_icon("info"), do: "hero-information-circle-mini"
   defp alert_icon("success"), do: "hero-check-circle-mini"
@@ -757,7 +818,10 @@ defmodule HellenWeb.CoreComponents do
   def empty_state(assigns) do
     ~H"""
     <div class={["flex flex-col items-center justify-center py-12 px-4 text-center", @class]}>
-      <div :if={@icon} class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+      <div
+        :if={@icon}
+        class="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4"
+      >
         <.icon name={@icon} class="h-8 w-8 text-slate-400 dark:text-slate-500" />
       </div>
       <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">
@@ -916,7 +980,10 @@ defmodule HellenWeb.CoreComponents do
             >
               Entrar
             </a>
-            <a href="/register" class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 shadow-sm transition-colors">
+            <a
+              href="/register"
+              class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 shadow-sm transition-colors"
+            >
               Criar Conta
             </a>
           </div>
@@ -998,7 +1065,9 @@ defmodule HellenWeb.CoreComponents do
             <button
               type="button"
               class="p-2 text-slate-400 dark:text-slate-300 hover:text-slate-600 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              phx-click={JS.toggle(to: "#app-mobile-menu", in: "fade-in-scale", out: "fade-out-scale")}
+              phx-click={
+                JS.toggle(to: "#app-mobile-menu", in: "fade-in-scale", out: "fade-out-scale")
+              }
               aria-expanded="false"
               aria-controls="app-mobile-menu"
             >
@@ -1150,7 +1219,8 @@ defmodule HellenWeb.CoreComponents do
           <.icon name="hero-cloud-arrow-up" class="h-7 w-7 text-slate-400" />
         </div>
         <div class="text-sm text-slate-600 dark:text-slate-400">
-          <span class="font-semibold text-teal-600 dark:text-teal-400">Clique para enviar</span> ou arraste e solte
+          <span class="font-semibold text-teal-600 dark:text-teal-400">Clique para enviar</span>
+          ou arraste e solte
         </div>
         <p class="text-xs text-slate-500 dark:text-slate-500">
           <%= @accept %>
@@ -1224,7 +1294,11 @@ defmodule HellenWeb.CoreComponents do
           phx-update={match?(%Phoenix.LiveView.LiveStream{}, @rows) && "stream"}
           class="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700"
         >
-          <tr :for={row <- @rows} id={@row_id && @row_id.(row)} class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+          <tr
+            :for={row <- @rows}
+            id={@row_id && @row_id.(row)}
+            class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+          >
             <td
               :for={{col, _i} <- Enum.with_index(@col)}
               phx-click={@row_click && @row_click.(row)}
@@ -1309,17 +1383,26 @@ defmodule HellenWeb.CoreComponents do
       role="alert"
       class={[
         "fixed top-4 right-4 w-80 sm:w-96 z-50 rounded-xl p-4 shadow-elevated",
-        @kind == :info && "bg-emerald-50 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200 ring-1 ring-emerald-500/20",
-        @kind == :error && "bg-red-50 dark:bg-red-900/50 text-red-800 dark:text-red-200 ring-1 ring-red-500/20"
+        @kind == :info &&
+          "bg-emerald-50 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200 ring-1 ring-emerald-500/20",
+        @kind == :error &&
+          "bg-red-50 dark:bg-red-900/50 text-red-800 dark:text-red-200 ring-1 ring-red-500/20"
       ]}
       {@rest}
     >
       <p :if={@title} class="flex items-center gap-1.5 text-sm font-semibold leading-6">
-        <.icon name={if @kind == :info, do: "hero-check-circle-mini", else: "hero-x-circle-mini"} class="h-5 w-5" />
+        <.icon
+          name={if @kind == :info, do: "hero-check-circle-mini", else: "hero-x-circle-mini"}
+          class="h-5 w-5"
+        />
         <%= @title %>
       </p>
       <p class={["text-sm leading-5", @title && "mt-1"]}><%= msg %></p>
-      <button type="button" class="absolute top-3 right-3 p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors" aria-label="close">
+      <button
+        type="button"
+        class="absolute top-3 right-3 p-1 rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+        aria-label="close"
+      >
         <.icon name="hero-x-mark-mini" class="h-4 w-4" />
       </button>
     </div>
@@ -1470,7 +1553,10 @@ defmodule HellenWeb.CoreComponents do
         @class
       ]}
     >
-      <div class={["w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
+      <div class={[
+        "w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700",
+        @animated && "animate-pulse"
+      ]} />
       <div class="space-y-2 flex-1">
         <div class={["h-4 w-1/3 rounded bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
         <div class={["h-3 w-1/2 rounded bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
@@ -1485,10 +1571,19 @@ defmodule HellenWeb.CoreComponents do
       ]}
     >
       <div class="flex items-center gap-3">
-        <div class={["w-12 h-12 rounded-xl bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
+        <div class={[
+          "w-12 h-12 rounded-xl bg-slate-200 dark:bg-slate-700",
+          @animated && "animate-pulse"
+        ]} />
         <div class="flex-1 space-y-2">
-          <div class={["h-4 w-1/2 rounded bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
-          <div class={["h-3 w-3/4 rounded bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
+          <div class={[
+            "h-4 w-1/2 rounded bg-slate-200 dark:bg-slate-700",
+            @animated && "animate-pulse"
+          ]} />
+          <div class={[
+            "h-3 w-3/4 rounded bg-slate-200 dark:bg-slate-700",
+            @animated && "animate-pulse"
+          ]} />
         </div>
       </div>
       <div class="space-y-2">
@@ -1506,11 +1601,23 @@ defmodule HellenWeb.CoreComponents do
     >
       <div class="flex items-start justify-between">
         <div class="space-y-3 flex-1">
-          <div class={["h-4 w-1/3 rounded bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
-          <div class={["h-8 w-1/2 rounded bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
-          <div class={["h-3 w-2/3 rounded bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
+          <div class={[
+            "h-4 w-1/3 rounded bg-slate-200 dark:bg-slate-700",
+            @animated && "animate-pulse"
+          ]} />
+          <div class={[
+            "h-8 w-1/2 rounded bg-slate-200 dark:bg-slate-700",
+            @animated && "animate-pulse"
+          ]} />
+          <div class={[
+            "h-3 w-2/3 rounded bg-slate-200 dark:bg-slate-700",
+            @animated && "animate-pulse"
+          ]} />
         </div>
-        <div class={["w-12 h-12 rounded-xl bg-slate-200 dark:bg-slate-700", @animated && "animate-pulse"]} />
+        <div class={[
+          "w-12 h-12 rounded-xl bg-slate-200 dark:bg-slate-700",
+          @animated && "animate-pulse"
+        ]} />
       </div>
     </div>
     """
@@ -1549,9 +1656,18 @@ defmodule HellenWeb.CoreComponents do
       role="status"
       aria-label="Loading"
     >
-      <span class={["rounded-full bg-teal-600 dark:bg-teal-400 animate-bounce", dots_size(@size)]} style="animation-delay: 0ms" />
-      <span class={["rounded-full bg-teal-600 dark:bg-teal-400 animate-bounce", dots_size(@size)]} style="animation-delay: 150ms" />
-      <span class={["rounded-full bg-teal-600 dark:bg-teal-400 animate-bounce", dots_size(@size)]} style="animation-delay: 300ms" />
+      <span
+        class={["rounded-full bg-teal-600 dark:bg-teal-400 animate-bounce", dots_size(@size)]}
+        style="animation-delay: 0ms"
+      />
+      <span
+        class={["rounded-full bg-teal-600 dark:bg-teal-400 animate-bounce", dots_size(@size)]}
+        style="animation-delay: 150ms"
+      />
+      <span
+        class={["rounded-full bg-teal-600 dark:bg-teal-400 animate-bounce", dots_size(@size)]}
+        style="animation-delay: 300ms"
+      />
     </div>
 
     <div
@@ -1560,10 +1676,22 @@ defmodule HellenWeb.CoreComponents do
       role="status"
       aria-label="Loading"
     >
-      <span class={["bg-teal-600 dark:bg-teal-400 animate-pulse rounded-sm", bars_size(@size)]} style="animation-delay: 0ms" />
-      <span class={["bg-teal-600 dark:bg-teal-400 animate-pulse rounded-sm", bars_size(@size)]} style="animation-delay: 100ms" />
-      <span class={["bg-teal-600 dark:bg-teal-400 animate-pulse rounded-sm", bars_size(@size)]} style="animation-delay: 200ms" />
-      <span class={["bg-teal-600 dark:bg-teal-400 animate-pulse rounded-sm", bars_size(@size)]} style="animation-delay: 300ms" />
+      <span
+        class={["bg-teal-600 dark:bg-teal-400 animate-pulse rounded-sm", bars_size(@size)]}
+        style="animation-delay: 0ms"
+      />
+      <span
+        class={["bg-teal-600 dark:bg-teal-400 animate-pulse rounded-sm", bars_size(@size)]}
+        style="animation-delay: 100ms"
+      />
+      <span
+        class={["bg-teal-600 dark:bg-teal-400 animate-pulse rounded-sm", bars_size(@size)]}
+        style="animation-delay: 200ms"
+      />
+      <span
+        class={["bg-teal-600 dark:bg-teal-400 animate-pulse rounded-sm", bars_size(@size)]}
+        style="animation-delay: 300ms"
+      />
     </div>
     """
   end
@@ -1636,7 +1764,10 @@ defmodule HellenWeb.CoreComponents do
         @class
       ]}>
         <%= @text %>
-        <div class={["absolute w-2 h-2 rotate-45 bg-slate-900 dark:bg-slate-100", tooltip_arrow(@position)]} />
+        <div class={[
+          "absolute w-2 h-2 rotate-45 bg-slate-900 dark:bg-slate-100",
+          tooltip_arrow(@position)
+        ]} />
       </div>
     </div>
     """
@@ -1707,20 +1838,28 @@ defmodule HellenWeb.CoreComponents do
       </.dropdown>
   """
   attr :id, :string, required: true
-  attr :position, :string, default: "bottom-right", values: ~w(bottom-left bottom-right top-left top-right)
+
+  attr :position, :string,
+    default: "bottom-right",
+    values: ~w(bottom-left bottom-right top-left top-right)
+
   attr :class, :string, default: nil
 
   slot :trigger, required: true
+
   slot :item do
     attr :href, :string
     attr :variant, :string
   end
+
   slot :divider
 
   def dropdown(assigns) do
     ~H"""
     <div class={["relative inline-block", @class]}>
-      <div phx-click={JS.toggle(to: "##{@id}-menu", in: "animate-fade-in-scale", out: "animate-fade-out-scale")}>
+      <div phx-click={
+        JS.toggle(to: "##{@id}-menu", in: "animate-fade-in-scale", out: "animate-fade-out-scale")
+      }>
         <%= render_slot(@trigger) %>
       </div>
       <div
@@ -1767,6 +1906,9 @@ defmodule HellenWeb.CoreComponents do
   defp dropdown_position("top-right"), do: "right-0 bottom-full mb-2"
   defp dropdown_position("top-left"), do: "left-0 bottom-full mb-2"
 
-  defp dropdown_item_variant("danger"), do: "text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-  defp dropdown_item_variant(_), do: "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
+  defp dropdown_item_variant("danger"),
+    do: "text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+
+  defp dropdown_item_variant(_),
+    do: "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
 end

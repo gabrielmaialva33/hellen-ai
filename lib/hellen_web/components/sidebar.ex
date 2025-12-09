@@ -73,7 +73,6 @@ defmodule HellenWeb.Sidebar do
           <.icon name="hero-x-mark" class="h-5 w-5 text-sidebar-muted dark:text-slate-400" />
         </button>
       </div>
-
       <!-- Search Button (Cmd+K) -->
       <div class="px-4 py-3">
         <button
@@ -88,7 +87,6 @@ defmodule HellenWeb.Sidebar do
           </kbd>
         </button>
       </div>
-
       <!-- Navigation -->
       <nav class="flex-1 overflow-y-auto py-2 px-3 scrollbar-thin">
         <!-- Main Menu -->
@@ -128,17 +126,30 @@ defmodule HellenWeb.Sidebar do
             current_path={@current_path}
           />
         </div>
-
-        <!-- Future Features (Disabled) -->
+        <!-- Ferramentas Pedagogicas -->
         <div class="mt-6 space-y-0.5">
           <p class="px-3 py-2 text-[11px] font-semibold text-sidebar-muted dark:text-slate-500 uppercase tracking-wider">
-            Em Breve
+            Ferramentas
           </p>
-          <.nav_item_disabled icon="hero-document-text" label="Planejamentos" />
-          <.nav_item_disabled icon="hero-clipboard-document-list" label="Provas" />
-          <.nav_item_disabled icon="hero-chart-bar" label="Relatorios" />
+          <.nav_item
+            path={~p"/plannings"}
+            icon="hero-document-text"
+            label="Planejamentos"
+            current_path={@current_path}
+          />
+          <.nav_item
+            path={~p"/assessments"}
+            icon="hero-clipboard-document-list"
+            label="Avaliacoes"
+            current_path={@current_path}
+          />
+          <.nav_item
+            path={~p"/reports"}
+            icon="hero-chart-bar"
+            label="Relatorios"
+            current_path={@current_path}
+          />
         </div>
-
         <!-- Coordinator Menu (conditional) -->
         <div :if={coordinator?(@current_user)} class="mt-6 space-y-0.5">
           <p class="px-3 py-2 text-[11px] font-semibold text-sidebar-muted dark:text-slate-500 uppercase tracking-wider">
@@ -163,7 +174,6 @@ defmodule HellenWeb.Sidebar do
             current_path={@current_path}
           />
         </div>
-
         <!-- Admin Menu (conditional) -->
         <div :if={admin?(@current_user)} class="mt-6 space-y-0.5">
           <p class="px-3 py-2 text-[11px] font-semibold text-sidebar-muted dark:text-slate-500 uppercase tracking-wider">
@@ -195,7 +205,6 @@ defmodule HellenWeb.Sidebar do
           />
         </div>
       </nav>
-
       <!-- Credits Display -->
       <div :if={@current_user.credits} class="mx-4 mb-3">
         <div class="p-3 rounded-xl bg-gradient-to-br from-teal-500/10 to-sage-500/10 dark:from-teal-900/20 dark:to-sage-900/20 border border-teal-200/50 dark:border-teal-800/50">
@@ -220,7 +229,6 @@ defmodule HellenWeb.Sidebar do
           </div>
         </div>
       </div>
-
       <!-- User Section -->
       <div class="border-t border-sidebar-border dark:border-slate-800 p-4">
         <div class="flex items-center gap-3 mb-3">
@@ -235,7 +243,8 @@ defmodule HellenWeb.Sidebar do
               <span class={[
                 "w-1.5 h-1.5 rounded-full",
                 role_color(@current_user.role)
-              ]}></span>
+              ]}>
+              </span>
               <%= role_label(@current_user.role) %>
             </p>
           </div>
@@ -294,8 +303,10 @@ defmodule HellenWeb.Sidebar do
       class={[
         "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group",
         @is_active && "bg-teal-500/10 dark:bg-teal-500/15 text-teal-700 dark:text-teal-300 shadow-sm",
-        !@is_active && !@highlight && "text-sidebar-foreground dark:text-slate-300 hover:bg-sidebar-muted dark:hover:bg-slate-800/70 hover:text-teal-600 dark:hover:text-teal-400",
-        !@is_active && @highlight && "text-teal-600 dark:text-teal-400 hover:bg-teal-500/10 dark:hover:bg-teal-500/15"
+        !@is_active && !@highlight &&
+          "text-sidebar-foreground dark:text-slate-300 hover:bg-sidebar-muted dark:hover:bg-slate-800/70 hover:text-teal-600 dark:hover:text-teal-400",
+        !@is_active && @highlight &&
+          "text-teal-600 dark:text-teal-400 hover:bg-teal-500/10 dark:hover:bg-teal-500/15"
       ]}
     >
       <span class={[
@@ -311,10 +322,7 @@ defmodule HellenWeb.Sidebar do
       >
         <%= @badge %>
       </span>
-      <span
-        :if={@is_active}
-        class="w-1 h-6 rounded-full bg-teal-500"
-      ></span>
+      <span :if={@is_active} class="w-1 h-6 rounded-full bg-teal-500"></span>
     </a>
     """
   end

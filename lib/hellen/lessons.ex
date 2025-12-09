@@ -53,6 +53,15 @@ defmodule Hellen.Lessons do
   end
 
   @doc """
+  Counts total lessons for a user.
+  """
+  def count_lessons_by_user(user_id) do
+    Lesson
+    |> where([l], l.user_id == ^user_id)
+    |> Repo.aggregate(:count)
+  end
+
+  @doc """
   Lists all lessons for an institution with optional filters.
   """
   def list_lessons_by_institution(institution_id, opts \\ []) do

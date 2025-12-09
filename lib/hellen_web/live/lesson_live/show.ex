@@ -203,7 +203,6 @@ defmodule HellenWeb.LessonLive.Show do
           </.badge>
         </div>
       </div>
-
       <!-- Pending State -->
       <div :if={@lesson.status == "pending"} class="animate-fade-in-up">
         <.card>
@@ -225,13 +224,15 @@ defmodule HellenWeb.LessonLive.Show do
           </div>
         </.card>
       </div>
-
       <!-- Processing State -->
       <div :if={@lesson.status in ["transcribing", "analyzing"]} class="animate-fade-in-up">
         <.card>
           <div class="py-8 text-center">
             <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-cyan-100 dark:bg-cyan-900/30 mb-4">
-              <.icon name="hero-arrow-path" class="h-10 w-10 text-cyan-600 dark:text-cyan-400 animate-spin" />
+              <.icon
+                name="hero-arrow-path"
+                class="h-10 w-10 text-cyan-600 dark:text-cyan-400 animate-spin"
+              />
             </div>
             <h3 class="text-xl font-semibold text-slate-900 dark:text-white">
               <%= if @lesson.status == "transcribing", do: "Transcrevendo...", else: "Analisando..." %>
@@ -242,12 +243,14 @@ defmodule HellenWeb.LessonLive.Show do
                 else: "Gerando feedback pedagogico baseado na BNCC" %>
             </p>
             <div class="mt-6 max-w-md mx-auto">
-              <.progress value={assigns[:transcription_progress] || assigns[:analysis_progress] || 0} color="teal" />
+              <.progress
+                value={assigns[:transcription_progress] || assigns[:analysis_progress] || 0}
+                color="teal"
+              />
             </div>
           </div>
         </.card>
       </div>
-
       <!-- Failed State -->
       <div :if={@lesson.status == "failed"} class="animate-fade-in-up">
         <.alert variant="error" title="Erro no processamento">
@@ -255,7 +258,6 @@ defmodule HellenWeb.LessonLive.Show do
           Voce pode tentar novamente.
         </.alert>
       </div>
-
       <!-- Completed State - Main Content -->
       <div :if={@lesson.status in ["transcribed", "completed"]} class="space-y-8">
         <!-- Score Evolution Chart -->
@@ -298,7 +300,6 @@ defmodule HellenWeb.LessonLive.Show do
             </div>
           </div>
         </.card>
-
         <!-- Transcription & Analysis Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- Transcription -->
@@ -321,11 +322,15 @@ defmodule HellenWeb.LessonLive.Show do
               </p>
             </div>
             <div :if={!@lesson.transcription} class="text-center py-8">
-              <.icon name="hero-document-text" class="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600" />
-              <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Transcricao nao disponivel</p>
+              <.icon
+                name="hero-document-text"
+                class="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600"
+              />
+              <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                Transcricao nao disponivel
+              </p>
             </div>
           </.card>
-
           <!-- Analysis -->
           <.card class="animate-fade-in-up" style="animation-delay: 100ms">
             <:header>
@@ -404,9 +409,12 @@ defmodule HellenWeb.LessonLive.Show do
             </div>
           </.card>
         </div>
-
         <!-- BNCC Coverage -->
-        <.card :if={assigns[:bncc_coverage] && length(@bncc_coverage) > 0} class="animate-fade-in-up" style="animation-delay: 200ms">
+        <.card
+          :if={assigns[:bncc_coverage] && length(@bncc_coverage) > 0}
+          class="animate-fade-in-up"
+          style="animation-delay: 200ms"
+        >
           <:header>
             <div class="flex items-center gap-2">
               <.icon name="hero-academic-cap" class="h-5 w-5 text-violet-600 dark:text-violet-400" />
@@ -456,7 +464,8 @@ defmodule HellenWeb.LessonLive.Show do
     ~H"""
     <div class={[
       "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
-      @trend == :improving && "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400",
+      @trend == :improving &&
+        "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400",
       @trend == :declining && "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400",
       @trend == :stable && "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
     ]}>
@@ -487,7 +496,8 @@ defmodule HellenWeb.LessonLive.Show do
     ~H"""
     <div class={[
       "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-colors",
-      @trend == :improving && "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400",
+      @trend == :improving &&
+        "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400",
       @trend == :declining && "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400",
       @trend == :stable && "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
     ]}>

@@ -19,13 +19,14 @@ Hooks.SidebarHook = SidebarHook
 Hooks.SearchModal = SearchModal
 
 // Chart hooks
-import { ScoreChart, BnccHeatmap, AlertsChart, CoordinatorBarChart, AnalyticsChart, ScoreGauge } from "./hooks/charts"
+import { ScoreChart, BnccHeatmap, AlertsChart, CoordinatorBarChart, AnalyticsChart, ScoreGauge, BillingUsageChart } from "./hooks/charts"
 Hooks.ScoreChart = ScoreChart
 Hooks.BnccHeatmap = BnccHeatmap
 Hooks.AlertsChart = AlertsChart
 Hooks.CoordinatorBarChart = CoordinatorBarChart
 Hooks.AnalyticsChart = AnalyticsChart
 Hooks.ScoreGauge = ScoreGauge
+Hooks.BillingUsageChart = BillingUsageChart
 
 // PWA hooks
 import { registerServiceWorker, InstallPrompt, OfflineIndicator, UpdateAvailable } from "./hooks/pwa"

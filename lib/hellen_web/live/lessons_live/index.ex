@@ -161,13 +161,18 @@ defmodule HellenWeb.LessonsLive.Index do
           </.button>
         </.link>
       </div>
-
       <!-- Stats Summary -->
-      <div :if={@lessons_count} class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+      <div
+        :if={@lessons_count}
+        class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400"
+      >
         <.icon name="hero-document-text" class="h-4 w-4" />
-        <span><%= @lessons_count %> aula<%= if @lessons_count != 1, do: "s" %> encontrada<%= if @lessons_count != 1, do: "s" %></span>
+        <span>
+          <%= @lessons_count %> aula<%= if @lessons_count != 1, do: "s" %> encontrada<%= if @lessons_count !=
+                                                                                              1,
+                                                                                            do: "s" %>
+        </span>
       </div>
-
       <!-- Filters Card -->
       <div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200/50 dark:border-slate-700/50 p-5">
         <div class="flex flex-wrap gap-4 items-center">
@@ -190,7 +195,6 @@ defmodule HellenWeb.LessonsLive.Index do
               </div>
             </form>
           </div>
-
           <!-- Status Filter -->
           <div class="flex items-center gap-3">
             <span class="text-sm font-medium text-slate-500 dark:text-slate-400">Status:</span>
@@ -212,7 +216,6 @@ defmodule HellenWeb.LessonsLive.Index do
               </button>
             </div>
           </div>
-
           <!-- Subject Filter (if subjects exist) -->
           <div :if={@subjects != []} class="flex items-center gap-3">
             <span class="text-sm font-medium text-slate-500 dark:text-slate-400">Disciplina:</span>
@@ -233,18 +236,12 @@ defmodule HellenWeb.LessonsLive.Index do
           </div>
         </div>
       </div>
-
       <!-- Lessons Grid -->
       <div id="lessons-container" phx-update="stream" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div
-          :for={{dom_id, lesson} <- @streams.lessons}
-          id={dom_id}
-          class="animate-fade-in-up"
-        >
+        <div :for={{dom_id, lesson} <- @streams.lessons} id={dom_id} class="animate-fade-in-up">
           <.lesson_card lesson={lesson} />
         </div>
       </div>
-
       <!-- Empty State -->
       <.empty_state
         :if={@lessons_count == 0}

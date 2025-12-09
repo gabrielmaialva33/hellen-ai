@@ -26,9 +26,20 @@ defmodule Hellen.Accounts.User do
     # Stripe fields
     field :stripe_customer_id, :string
 
+    # Onboarding fields
+    field :onboarding_completed, :boolean, default: false
+    field :onboarding_step, :integer, default: 0
+    field :subject, :string
+    field :grade_level, :string
+
+    # Gamification fields
+    field :level, :integer, default: 1
+    field :experience_points, :integer, default: 0
+
     belongs_to :institution, Hellen.Accounts.Institution
     has_many :lessons, Hellen.Lessons.Lesson
     has_many :credit_transactions, Hellen.Billing.CreditTransaction
+    has_many :achievements, Hellen.Gamification.UserAchievement
 
     timestamps(type: :utc_datetime)
   end
@@ -45,7 +56,11 @@ defmodule Hellen.Accounts.User do
       :institution_id,
       :firebase_uid,
       :email_verified,
-      :stripe_customer_id
+      :stripe_customer_id,
+      :onboarding_completed,
+      :onboarding_step,
+      :subject,
+      :grade_level
     ])
     |> validate_required([:email, :name])
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+$/, message: "must have the @ sign and no spaces")
@@ -91,6 +106,12 @@ defmodule Hellen.Accounts.User do
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+$/, message: "must have the @ sign and no spaces")
     |> validate_length(:email, max: 160)
     |> unique_constraint(:email)
+  end
+
+  @doc "Changeset for onboarding"
+  def onboarding_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:onboarding_completed, :onboarding_step, :subject, :grade_level])
   end
 
   def valid_password?(%__MODULE__{password_hash: hashed_password}, password)

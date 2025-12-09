@@ -232,7 +232,6 @@ defmodule HellenWeb.BillingLive.Index do
           </p>
         </div>
       </div>
-
       <!-- Stats Cards -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <.billing_stat_card
@@ -260,7 +259,6 @@ defmodule HellenWeb.BillingLive.Index do
           color="violet"
         />
       </div>
-
       <!-- Usage Chart -->
       <div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200/50 dark:border-slate-700/50 p-6">
         <div class="flex items-center gap-2 mb-4">
@@ -280,13 +278,15 @@ defmodule HellenWeb.BillingLive.Index do
             class="flex items-center justify-center h-full text-slate-500 dark:text-slate-400"
           >
             <div class="text-center">
-              <.icon name="hero-chart-bar" class="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600 mb-2" />
+              <.icon
+                name="hero-chart-bar"
+                class="h-12 w-12 mx-auto text-slate-300 dark:text-slate-600 mb-2"
+              />
               <p>Sem movimentacao no periodo</p>
             </div>
           </div>
         </div>
       </div>
-
       <!-- Credit Packages -->
       <div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200/50 dark:border-slate-700/50 p-6">
         <div class="flex items-center gap-2 mb-6">
@@ -332,7 +332,6 @@ defmodule HellenWeb.BillingLive.Index do
           <span>Pagamento seguro via Stripe</span>
         </div>
       </div>
-
       <!-- Transaction History -->
       <div class="bg-white dark:bg-slate-800 rounded-xl shadow-card border border-slate-200/50 dark:border-slate-700/50 overflow-hidden">
         <div class="p-6 border-b border-slate-200 dark:border-slate-700">
@@ -421,7 +420,6 @@ defmodule HellenWeb.BillingLive.Index do
           </button>
         </div>
       </div>
-
       <!-- Purchase Modal -->
       <div
         :if={@show_purchase_modal && @selected_package}
@@ -443,10 +441,7 @@ defmodule HellenWeb.BillingLive.Index do
 
             <div class="text-center py-6">
               <div class="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-teal-100 to-sage-100 dark:from-teal-900/30 dark:to-sage-900/30 flex items-center justify-center mb-4">
-                <.icon
-                  name="hero-bolt"
-                  class="h-10 w-10 text-teal-600 dark:text-teal-400"
-                />
+                <.icon name="hero-bolt" class="h-10 w-10 text-teal-600 dark:text-teal-400" />
               </div>
               <p class="text-4xl font-bold text-slate-900 dark:text-white">
                 <%= @selected_package.credits %>
@@ -456,7 +451,6 @@ defmodule HellenWeb.BillingLive.Index do
                 <%= @selected_package.price_display %>
               </p>
             </div>
-
             <!-- Payment Method Selection -->
             <div class="mb-6">
               <p class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
@@ -525,7 +519,10 @@ defmodule HellenWeb.BillingLive.Index do
                   </span>
                 </button>
               </div>
-              <p :if={@payment_method == "pix"} class="mt-2 text-xs text-slate-500 dark:text-slate-400 text-center">
+              <p
+                :if={@payment_method == "pix"}
+                class="mt-2 text-xs text-slate-500 dark:text-slate-400 text-center"
+              >
                 QR Code expira em 30 minutos
               </p>
             </div>
@@ -601,7 +598,9 @@ defmodule HellenWeb.BillingLive.Index do
           <.icon name={@icon} class={"h-5 w-5 " <> billing_stat_icon_color(@color)} />
         </div>
         <div>
-          <p class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight"><%= @value %></p>
+          <p class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+            <%= @value %>
+          </p>
           <p class="text-xs text-slate-500 dark:text-slate-400"><%= @label %></p>
         </div>
       </div>

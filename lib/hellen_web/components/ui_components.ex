@@ -70,7 +70,10 @@ defmodule HellenWeb.UIComponents do
             <%= format_duration(@lesson.duration_seconds) %>
           </span>
 
-          <span :if={@lesson.overall_score} class="flex items-center gap-1.5 text-teal-600 dark:text-teal-400 font-medium">
+          <span
+            :if={@lesson.overall_score}
+            class="flex items-center gap-1.5 text-teal-600 dark:text-teal-400 font-medium"
+          >
             <.icon name="hero-chart-bar" class="h-3.5 w-3.5" />
             <%= round(@lesson.overall_score * 100) %>%
           </span>
@@ -262,11 +265,20 @@ defmodule HellenWeb.UIComponents do
     """
   end
 
-  defp analysis_section_bg("success"), do: "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/50"
-  defp analysis_section_bg("warning"), do: "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/50"
-  defp analysis_section_bg("error"), do: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/50"
-  defp analysis_section_bg("info"), do: "bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800/50"
-  defp analysis_section_bg(_), do: "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50"
+  defp analysis_section_bg("success"),
+    do: "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/50"
+
+  defp analysis_section_bg("warning"),
+    do: "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/50"
+
+  defp analysis_section_bg("error"),
+    do: "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/50"
+
+  defp analysis_section_bg("info"),
+    do: "bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800/50"
+
+  defp analysis_section_bg(_),
+    do: "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/50"
 
   defp analysis_section_icon("success"), do: "text-emerald-600 dark:text-emerald-400"
   defp analysis_section_icon("warning"), do: "text-amber-600 dark:text-amber-400"
@@ -329,9 +341,17 @@ defmodule HellenWeb.UIComponents do
     """
   end
 
-  defp quick_action_variant("primary"), do: "bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg hover:shadow-xl hover:shadow-teal-500/25"
-  defp quick_action_variant("highlight"), do: "bg-white dark:bg-slate-800 border-2 border-amber-300 dark:border-amber-600 hover:shadow-lg"
-  defp quick_action_variant(_), do: "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-600 hover:shadow-lg"
+  defp quick_action_variant("primary"),
+    do:
+      "bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg hover:shadow-xl hover:shadow-teal-500/25"
+
+  defp quick_action_variant("highlight"),
+    do:
+      "bg-white dark:bg-slate-800 border-2 border-amber-300 dark:border-amber-600 hover:shadow-lg"
+
+  defp quick_action_variant(_),
+    do:
+      "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-600 hover:shadow-lg"
 
   defp quick_action_icon_bg("primary"), do: "bg-white/20"
   defp quick_action_icon_bg("highlight"), do: "bg-amber-100 dark:bg-amber-900/30"

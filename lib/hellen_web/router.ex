@@ -77,6 +77,9 @@ defmodule HellenWeb.Router do
     live_session :landing,
       on_mount: [{HellenWeb.LiveAuth, :none}] do
       live "/", LandingLive, :index
+      live "/terms", LegalLive.TermsLive, :index
+      live "/privacy", LegalLive.PrivacyLive, :index
+      live "/support", LegalLive.SupportLive, :index
     end
   end
 
@@ -98,14 +101,30 @@ defmodule HellenWeb.Router do
     pipe_through :browser
 
     live_session :authenticated, on_mount: [{HellenWeb.LiveAuth, :require_auth}] do
+      live "/onboarding", OnboardingLive, :index
       live "/dashboard", DashboardLive.Index, :index
       live "/aulas", LessonsLive.Index, :index
       live "/lessons/new", LessonLive.New, :new
       live "/lessons/:id", LessonLive.Show, :show
       live "/lessons/:id/analysis", LessonLive.Show, :analysis
+
+      # Plannings
+      live "/plannings", PlanningsLive.Index, :index
+      live "/plannings/new", PlanningsLive.New, :new
+      live "/plannings/:id", PlanningsLive.Show, :show
+      live "/plannings/:id/edit", PlanningsLive.Edit, :edit
+
+      # Assessments
+      live "/assessments", AssessmentsLive.Index, :index
+      live "/assessments/new", AssessmentsLive.New, :new
+      live "/assessments/:id", AssessmentsLive.Show, :show
+      live "/assessments/:id/edit", AssessmentsLive.Edit, :edit
+
       live "/analytics", AnalyticsLive.Index, :index
+      live "/reports", ReportsLive.Index, :index
       live "/settings", SettingsLive.Index, :index
       live "/billing", BillingLive.Index, :index
+      live "/achievements", AchievementsLive, :index
     end
   end
 

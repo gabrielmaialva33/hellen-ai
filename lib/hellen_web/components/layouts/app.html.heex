@@ -12,7 +12,6 @@
     <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-br from-ochre-100/10 to-transparent dark:from-ochre-900/5 rounded-full blur-3xl">
     </div>
   </div>
-
   <!-- Sidebar -->
   <HellenWeb.Sidebar.sidebar
     current_user={assigns[:current_user]}
@@ -28,7 +27,6 @@
       <% end %>
     </:notification_bell>
   </HellenWeb.Sidebar.sidebar>
-
   <!-- Main Content Area -->
   <div class="lg:pl-64">
     <!-- Top bar for mobile -->
@@ -88,7 +86,6 @@
             </p>
           </div>
         </div>
-
         <!-- Install PWA Banner -->
         <div
           id="install-prompt"
@@ -136,7 +133,6 @@
         <%= @inner_content %>
       </div>
     </main>
-
     <!-- Footer -->
     <footer class="relative z-10 py-6 border-t border-slate-200/50 dark:border-slate-800/50">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -150,13 +146,22 @@
             <span>2024-2025</span>
           </div>
           <div class="flex items-center gap-4">
-            <a href="/terms" class="hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
+            <a
+              href="/terms"
+              class="hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+            >
               Termos
             </a>
-            <a href="/privacy" class="hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
+            <a
+              href="/privacy"
+              class="hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+            >
               Privacidade
             </a>
-            <a href="/support" class="hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
+            <a
+              href="/support"
+              class="hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+            >
               Suporte
             </a>
           </div>
@@ -164,7 +169,6 @@
       </div>
     </footer>
   </div>
-
   <!-- Global Search Modal (Cmd+K) -->
   <div
     id="search-modal"
@@ -176,14 +180,28 @@
   >
     <div class="min-h-screen px-4 text-center">
       <!-- Overlay -->
-      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" aria-hidden="true"></div>
+      <div
+        class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+        aria-hidden="true"
+      >
+      </div>
       <!-- Modal -->
       <div class="inline-block w-full max-w-xl my-16 text-left align-middle transition-all transform">
         <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-elevated border border-slate-200 dark:border-slate-700 overflow-hidden">
           <!-- Search Input -->
           <div class="flex items-center gap-3 px-4 border-b border-slate-200 dark:border-slate-700">
-            <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            <svg
+              class="h-5 w-5 text-slate-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+              />
             </svg>
             <input
               id="search-input"
@@ -198,8 +216,18 @@
           <!-- Results -->
           <div id="search-results" class="max-h-96 overflow-y-auto p-2">
             <div class="px-3 py-8 text-center text-slate-400">
-              <svg class="h-12 w-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              <svg
+                class="h-12 w-12 mx-auto mb-3 text-slate-300 dark:text-slate-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                />
               </svg>
               <p class="text-sm">Digite para buscar...</p>
             </div>

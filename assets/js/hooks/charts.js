@@ -616,6 +616,128 @@ export const AnalyticsChart = {
   }
 }
 
+// Billing Usage Chart - Daily credit usage over 30 days
+export const BillingUsageChart = {
+  mounted() {
+    this.chart = null
+    this.renderChart()
+  },
+
+  updated() {
+    this.renderChart()
+  },
+
+  destroyed() {
+    if (this.chart) {
+      this.chart.destroy()
+    }
+  },
+
+  renderChart() {
+    const data = JSON.parse(this.el.dataset.usage || '[]')
+
+    if (data.length === 0) {
+      this.el.innerHTML = '<p class="text-slate-500 dark:text-slate-400 text-center py-8">Sem dados de uso para exibir</p>'
+      return
+    }
+
+    const isDark = document.documentElement.classList.contains('dark')
+
+    const options = {
+      series: [{
+        name: 'Creditos Usados',
+        data: data.map(d => ({
+          x: new Date(d.date).getTime(),
+          y: d.credits
+        }))
+      }],
+      chart: {
+        type: 'bar',
+        height: '100%',
+        fontFamily: 'Inter var, Inter, system-ui, sans-serif',
+        toolbar: { show: false },
+        background: 'transparent',
+        animations: {
+          enabled: true,
+          easing: 'easeinout',
+          speed: 600
+        }
+      },
+      colors: [COLORS.teal],
+      fill: {
+        type: 'gradient',
+        gradient: {
+          shade: 'light',
+          type: 'vertical',
+          shadeIntensity: 0.25,
+          gradientToColors: [COLORS.sage],
+          inverseColors: false,
+          opacityFrom: 1,
+          opacityTo: 0.85,
+          stops: [0, 100]
+        }
+      },
+      plotOptions: {
+        bar: {
+          borderRadius: 4,
+          columnWidth: '70%'
+        }
+      },
+      dataLabels: { enabled: false },
+      xaxis: {
+        type: 'datetime',
+        labels: {
+          style: {
+            colors: isDark ? '#94a3b8' : '#64748b',
+            fontSize: '11px',
+            fontFamily: 'Inter var, Inter, system-ui, sans-serif'
+          },
+          datetimeFormatter: {
+            day: 'dd/MM'
+          }
+        },
+        axisBorder: { show: false },
+        axisTicks: { show: false }
+      },
+      yaxis: {
+        labels: {
+          style: {
+            colors: isDark ? '#94a3b8' : '#64748b',
+            fontSize: '11px',
+            fontFamily: 'Inter var, Inter, system-ui, sans-serif'
+          },
+          formatter: (val) => Math.round(val)
+        }
+      },
+      grid: {
+        borderColor: isDark ? '#334155' : '#e2e8f0',
+        strokeDashArray: 4,
+        padding: {
+          left: 10,
+          right: 10
+        }
+      },
+      tooltip: {
+        theme: isDark ? 'dark' : 'light',
+        x: { format: 'dd/MM/yyyy' },
+        y: {
+          formatter: (val) => `${val} credito${val !== 1 ? 's' : ''}`
+        },
+        style: {
+          fontFamily: 'Inter var, Inter, system-ui, sans-serif'
+        }
+      }
+    }
+
+    if (this.chart) {
+      this.chart.updateOptions(options)
+    } else {
+      this.chart = new ApexCharts(this.el, options)
+      this.chart.render()
+    }
+  }
+}
+
 // Score Gauge - Circular progress for score display
 export const ScoreGauge = {
   mounted() {

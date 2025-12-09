@@ -202,7 +202,6 @@ defmodule HellenWeb.LandingComponents do
         <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-400/20 dark:bg-cyan-500/10 rounded-full blur-3xl animate-float-delayed" />
         <div class="absolute top-1/2 left-1/2 w-96 h-96 bg-emerald-400/10 dark:bg-emerald-500/5 rounded-full blur-3xl animate-pulse-glow" />
       </div>
-
       <!-- Grid pattern -->
       <div class="absolute inset-0 bg-[linear-gradient(to_right,#8882_1px,transparent_1px),linear-gradient(to_bottom,#8882_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_110%)] dark:opacity-20" />
 
@@ -211,7 +210,8 @@ defmodule HellenWeb.LandingComponents do
           <!-- Badge -->
           <div class="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-teal-100/80 dark:bg-teal-900/30 backdrop-blur-sm mb-6 sm:mb-8 animate-fade-in-up border border-teal-200/50 dark:border-teal-700/50">
             <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75">
+              </span>
               <span class="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
             </span>
             <span class="text-xs sm:text-sm font-semibold text-teal-700 dark:text-teal-300">
@@ -227,7 +227,8 @@ defmodule HellenWeb.LandingComponents do
           </h1>
           <!-- Subtitle -->
           <p class="text-base sm:text-xl lg:text-2xl text-slate-600 dark:text-slate-300 mb-8 sm:mb-12 max-w-3xl mx-auto animate-fade-in-up leading-relaxed px-2">
-            Analise gravações de aulas automaticamente com base na <strong class="text-teal-600 dark:text-teal-400">BNCC</strong>
+            Analise gravações de aulas automaticamente com base na
+            <strong class="text-teal-600 dark:text-teal-400">BNCC</strong>
             e <strong class="text-teal-600 dark:text-teal-400">Lei 13.185</strong>. Receba insights pedagógicos em minutos.
           </p>
           <!-- CTAs -->
@@ -236,7 +237,11 @@ defmodule HellenWeb.LandingComponents do
               href="/register"
               class="group inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 text-base font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl hover:shadow-teal-500/25 hover:scale-105 w-full sm:w-auto"
             >
-              Comece Grátis <.icon name="hero-arrow-right" class="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              Comece Grátis
+              <.icon
+                name="hero-arrow-right"
+                class="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform"
+              />
             </a>
 
             <a
@@ -246,31 +251,107 @@ defmodule HellenWeb.LandingComponents do
               <.icon name="hero-sparkles" class="mr-2 h-5 w-5" /> Ver Recursos
             </a>
           </div>
-          <!-- Social Proof -->
-          <div class="flex items-center justify-center gap-3 text-sm text-slate-600 dark:text-slate-400 animate-fade-in-up">
-            <div class="flex -space-x-2">
-              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-teal-500 border-2 border-white dark:border-slate-900 flex items-center justify-center text-white text-xs font-bold">M</div>
-              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500 border-2 border-white dark:border-slate-900 flex items-center justify-center text-white text-xs font-bold">J</div>
-              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 border-2 border-white dark:border-slate-900 flex items-center justify-center text-white text-xs font-bold">A</div>
-              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 border-2 border-white dark:border-slate-900 flex items-center justify-center text-white text-xs font-bold">+</div>
+          <!-- Social Proof Enhanced -->
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 animate-fade-in-up">
+            <div class="flex items-center gap-3">
+              <div class="flex -space-x-2">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-teal-500 border-2 border-white dark:border-slate-900 flex items-center justify-center text-white text-xs font-bold">
+                  M
+                </div>
+                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-500 border-2 border-white dark:border-slate-900 flex items-center justify-center text-white text-xs font-bold">
+                  J
+                </div>
+                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-500 border-2 border-white dark:border-slate-900 flex items-center justify-center text-white text-xs font-bold">
+                  A
+                </div>
+                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 border-2 border-white dark:border-slate-900 flex items-center justify-center text-white text-xs font-bold">
+                  R
+                </div>
+                <div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 border-2 border-white dark:border-slate-900 flex items-center justify-center text-slate-600 dark:text-slate-300 text-xs font-bold">
+                  +
+                </div>
+              </div>
+              <div class="text-sm text-slate-600 dark:text-slate-400">
+                <strong class="text-slate-900 dark:text-white">847</strong> professores ativos
+              </div>
             </div>
-            <span class="font-medium">
-              <strong class="text-slate-900 dark:text-white">500+</strong> professores confiam em nós
-            </span>
-            <div class="flex items-center gap-0.5 text-amber-400">
-              <.icon name="hero-star-solid" class="h-4 w-4" />
-              <.icon name="hero-star-solid" class="h-4 w-4" />
-              <.icon name="hero-star-solid" class="h-4 w-4" />
-              <.icon name="hero-star-solid" class="h-4 w-4" />
-              <.icon name="hero-star-solid" class="h-4 w-4" />
+            <div class="hidden sm:block w-px h-6 bg-slate-300 dark:bg-slate-700"></div>
+            <div class="flex items-center gap-2">
+              <div class="flex items-center gap-0.5 text-amber-400">
+                <.icon name="hero-star-solid" class="h-4 w-4" />
+                <.icon name="hero-star-solid" class="h-4 w-4" />
+                <.icon name="hero-star-solid" class="h-4 w-4" />
+                <.icon name="hero-star-solid" class="h-4 w-4" />
+                <.icon name="hero-star-solid" class="h-4 w-4" />
+              </div>
+              <span class="text-sm text-slate-600 dark:text-slate-400">
+                <strong class="text-slate-900 dark:text-white">4.9</strong>/5 (312 avaliações)
+              </span>
+            </div>
+          </div>
+          <!-- Trust Badges -->
+          <div class="mt-8 flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs text-slate-500 dark:text-slate-400 animate-fade-in-up">
+            <div class="flex items-center gap-2">
+              <.icon name="hero-shield-check" class="h-5 w-5 text-emerald-500" />
+              <span>Dados Criptografados</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <.icon name="hero-academic-cap" class="h-5 w-5 text-teal-500" />
+              <span>Alinhado à BNCC</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <.icon name="hero-clock" class="h-5 w-5 text-cyan-500" />
+              <span>Análise em &lt;5 min</span>
             </div>
           </div>
         </div>
       </div>
-
       <!-- Scroll indicator -->
       <div class="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
         <.icon name="hero-chevron-down" class="h-6 w-6 text-slate-400" />
+      </div>
+    </section>
+    """
+  end
+
+  # ============================================================================
+  # IMPACT METRICS SECTION
+  # ============================================================================
+
+  @doc """
+  Renders the impact metrics section.
+
+  ## Examples
+
+      <.impact_metrics />
+  """
+  attr :class, :string, default: nil
+
+  def impact_metrics(assigns) do
+    ~H"""
+    <section class={[
+      "py-16 bg-gradient-to-r from-teal-600 to-cyan-600 dark:from-teal-800 dark:to-cyan-800",
+      @class
+    ]}>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center text-white">
+          <div data-animate>
+            <div class="text-4xl sm:text-5xl font-bold mb-2">12.847</div>
+            <div class="text-teal-100 text-sm sm:text-base">Aulas Analisadas</div>
+          </div>
+          <div data-animate>
+            <div class="text-4xl sm:text-5xl font-bold mb-2">847</div>
+            <div class="text-teal-100 text-sm sm:text-base">Professores Ativos</div>
+          </div>
+          <div data-animate>
+            <div class="text-4xl sm:text-5xl font-bold mb-2">98.7%</div>
+            <div class="text-teal-100 text-sm sm:text-base">Satisfação</div>
+          </div>
+          <div data-animate>
+            <div class="text-4xl sm:text-5xl font-bold mb-2">&lt;5min</div>
+            <div class="text-teal-100 text-sm sm:text-base">Tempo Médio</div>
+          </div>
+        </div>
       </div>
     </section>
     """
@@ -291,10 +372,13 @@ defmodule HellenWeb.LandingComponents do
 
   def how_it_works(assigns) do
     ~H"""
-    <section class={[
-      "py-24 bg-white dark:bg-slate-900",
-      @class
-    ]} data-animate>
+    <section
+      class={[
+        "py-24 bg-white dark:bg-slate-900",
+        @class
+      ]}
+      data-animate
+    >
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-16">
           <div class="inline-flex items-center px-3 py-1 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 text-sm font-medium mb-4">
@@ -314,7 +398,9 @@ defmodule HellenWeb.LandingComponents do
             <div class="text-center">
               <div class="relative inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 mb-4 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-teal-500/25 transition-all duration-300">
                 <.icon name="hero-cloud-arrow-up" class="h-8 w-8" />
-                <span class="absolute -top-2 -right-2 w-6 h-6 bg-teal-600 text-white text-xs font-bold rounded-full flex items-center justify-center">1</span>
+                <span class="absolute -top-2 -right-2 w-6 h-6 bg-teal-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                  1
+                </span>
               </div>
               <div class="absolute top-8 left-full w-full h-0.5 bg-gradient-to-r from-teal-300 to-transparent dark:from-teal-700 hidden lg:block" />
               <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">
@@ -330,7 +416,9 @@ defmodule HellenWeb.LandingComponents do
             <div class="text-center">
               <div class="relative inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 mb-4 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-cyan-500/25 transition-all duration-300">
                 <.icon name="hero-document-text" class="h-8 w-8" />
-                <span class="absolute -top-2 -right-2 w-6 h-6 bg-cyan-600 text-white text-xs font-bold rounded-full flex items-center justify-center">2</span>
+                <span class="absolute -top-2 -right-2 w-6 h-6 bg-cyan-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                  2
+                </span>
               </div>
               <div class="absolute top-8 left-full w-full h-0.5 bg-gradient-to-r from-cyan-300 to-transparent dark:from-cyan-700 hidden lg:block" />
               <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">
@@ -346,7 +434,9 @@ defmodule HellenWeb.LandingComponents do
             <div class="text-center">
               <div class="relative inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 mb-4 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-emerald-500/25 transition-all duration-300">
                 <.icon name="hero-academic-cap" class="h-8 w-8" />
-                <span class="absolute -top-2 -right-2 w-6 h-6 bg-emerald-600 text-white text-xs font-bold rounded-full flex items-center justify-center">3</span>
+                <span class="absolute -top-2 -right-2 w-6 h-6 bg-emerald-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                  3
+                </span>
               </div>
               <div class="absolute top-8 left-full w-full h-0.5 bg-gradient-to-r from-emerald-300 to-transparent dark:from-emerald-700 hidden lg:block" />
               <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">
@@ -362,7 +452,9 @@ defmodule HellenWeb.LandingComponents do
             <div class="text-center">
               <div class="relative inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 mb-4 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-amber-500/25 transition-all duration-300">
                 <.icon name="hero-light-bulb" class="h-8 w-8" />
-                <span class="absolute -top-2 -right-2 w-6 h-6 bg-amber-600 text-white text-xs font-bold rounded-full flex items-center justify-center">4</span>
+                <span class="absolute -top-2 -right-2 w-6 h-6 bg-amber-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                  4
+                </span>
               </div>
               <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">
                 Plano de Ação
@@ -406,14 +498,17 @@ defmodule HellenWeb.LandingComponents do
 
   def feature_card(assigns) do
     ~H"""
-    <div class={[
-      "group relative bg-white dark:bg-slate-800 rounded-xl sm:rounded-2xl p-5 sm:p-8",
-      "border border-slate-200/50 dark:border-slate-700/50",
-      "hover:border-transparent hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50",
-      "transition-all duration-300",
-      "overflow-hidden",
-      @class
-    ]} data-animate>
+    <div
+      class={[
+        "group relative bg-white dark:bg-slate-800 rounded-xl sm:rounded-2xl p-5 sm:p-8",
+        "border border-slate-200/50 dark:border-slate-700/50",
+        "hover:border-transparent hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50",
+        "transition-all duration-300",
+        "overflow-hidden",
+        @class
+      ]}
+      data-animate
+    >
       <!-- Colored bottom border on hover -->
       <div class={[
         "absolute bottom-0 left-0 right-0 h-1 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300",
@@ -579,19 +674,21 @@ defmodule HellenWeb.LandingComponents do
 
   def pricing_card(assigns) do
     ~H"""
-    <div class={[
-      "relative bg-white dark:bg-slate-800 rounded-2xl p-8",
-      "border-2",
-      @popular && "border-teal-500 shadow-xl shadow-teal-500/10 scale-105",
-      !@popular && "border-slate-200 dark:border-slate-700",
-      "transition-all duration-300 hover:shadow-lg",
-      @class
-    ]} data-animate>
+    <div
+      class={[
+        "relative bg-white dark:bg-slate-800 rounded-2xl p-8",
+        "border-2",
+        @popular && "border-teal-500 shadow-xl shadow-teal-500/10 scale-105",
+        !@popular && "border-slate-200 dark:border-slate-700",
+        "transition-all duration-300 hover:shadow-lg",
+        @class
+      ]}
+      data-animate
+    >
       <!-- Popular badge -->
       <div :if={@popular} class="absolute -top-4 left-1/2 -translate-x-1/2">
         <span class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-teal-600 to-cyan-500 text-white text-sm font-semibold shadow-lg">
-          <.icon name="hero-star-solid" class="h-4 w-4" />
-          Mais Popular
+          <.icon name="hero-star-solid" class="h-4 w-4" /> Mais Popular
         </span>
       </div>
       <!-- Plan name -->
@@ -666,6 +763,11 @@ defmodule HellenWeb.LandingComponents do
     >
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-16">
+          <!-- Urgency Badge -->
+          <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-sm font-medium mb-4 animate-pulse">
+            <.icon name="hero-fire" class="h-4 w-4" />
+            <span>Oferta de Lançamento - 3 créditos grátis!</span>
+          </div>
           <h2 class="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-4">
             Planos e Preços
           </h2>
@@ -727,6 +829,15 @@ defmodule HellenWeb.LandingComponents do
             cta_link="mailto:contato@hellen.ai"
           />
         </div>
+        <!-- Money Back Guarantee -->
+        <div class="mt-12 text-center">
+          <div class="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+            <.icon name="hero-shield-check" class="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+            <span class="text-emerald-700 dark:text-emerald-300 font-medium">
+              Garantia de satisfação - Se não gostar, devolvemos seus créditos
+            </span>
+          </div>
+        </div>
       </div>
     </section>
     """
@@ -755,18 +866,18 @@ defmodule HellenWeb.LandingComponents do
 
   def testimonial_card(assigns) do
     ~H"""
-    <div class={[
-      "bg-white dark:bg-slate-800 rounded-2xl p-8",
-      "border border-slate-200/50 dark:border-slate-700/50",
-      "hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50 transition-all duration-300",
-      @class
-    ]} data-animate>
+    <div
+      class={[
+        "bg-white dark:bg-slate-800 rounded-2xl p-8",
+        "border border-slate-200/50 dark:border-slate-700/50",
+        "hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50 transition-all duration-300",
+        @class
+      ]}
+      data-animate
+    >
       <!-- Quote icon -->
       <div class="mb-6">
-        <.icon
-          name="hero-chat-bubble-left-right"
-          class="h-10 w-10 text-teal-600 dark:text-teal-400"
-        />
+        <.icon name="hero-chat-bubble-left-right" class="h-10 w-10 text-teal-600 dark:text-teal-400" />
       </div>
       <!-- Stars -->
       <div class="flex items-center gap-0.5 mb-4 text-amber-400">
@@ -862,6 +973,122 @@ defmodule HellenWeb.LandingComponents do
   end
 
   # ============================================================================
+  # FAQ SECTION
+  # ============================================================================
+
+  @doc """
+  Renders the FAQ section.
+
+  ## Examples
+
+      <.faq_section />
+  """
+  attr :class, :string, default: nil
+
+  def faq_section(assigns) do
+    faqs = [
+      %{
+        question: "Como funciona a análise de aulas?",
+        answer:
+          "Você envia um áudio ou vídeo da sua aula, nossa IA transcreve automaticamente e analisa o conteúdo com base na BNCC e Lei 13.185. Em menos de 5 minutos você recebe um relatório completo com pontuação, pontos fortes, sugestões de melhoria e competências identificadas."
+      },
+      %{
+        question: "Preciso pagar mensalidade?",
+        answer:
+          "Não! Trabalhamos com sistema de créditos. Você compra créditos quando precisar e eles nunca expiram. 1 crédito = 1 análise completa. Ao se cadastrar você ganha 3 créditos grátis para experimentar."
+      },
+      %{
+        question: "Meus dados estão seguros?",
+        answer:
+          "Sim! Utilizamos criptografia de ponta a ponta e seguimos rigorosamente a LGPD. Seus áudios são processados e depois automaticamente excluídos. Apenas os relatórios ficam salvos na sua conta."
+      },
+      %{
+        question: "Funciona com qualquer disciplina?",
+        answer:
+          "Sim! A Hellen AI funciona com todas as disciplinas e níveis de ensino. Nossa IA foi treinada com base na BNCC completa, abrangendo desde a Educação Infantil até o Ensino Médio."
+      },
+      %{
+        question: "Posso usar em reuniões pedagógicas?",
+        answer:
+          "Com certeza! Muitos coordenadores usam para analisar aulas observadas. O plano Escola inclui dashboard de coordenação com visão consolidada de todos os professores."
+      },
+      %{
+        question: "E se eu não gostar do serviço?",
+        answer:
+          "Oferecemos garantia de satisfação. Se você não ficar satisfeito com a análise, devolvemos seus créditos. Simples assim."
+      }
+    ]
+
+    assigns = assign(assigns, :faqs, faqs)
+
+    ~H"""
+    <section
+      id="faq"
+      class={[
+        "py-24 bg-slate-50 dark:bg-slate-950",
+        @class
+      ]}
+    >
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+          <div class="inline-flex items-center px-3 py-1 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 text-sm font-medium mb-4">
+            Dúvidas Frequentes
+          </div>
+          <h2 class="text-4xl sm:text-5xl font-bold text-slate-900 dark:text-white mb-4 tracking-tight">
+            Perguntas Frequentes
+          </h2>
+          <p class="text-xl text-slate-600 dark:text-slate-400">
+            Tire suas dúvidas sobre a plataforma
+          </p>
+        </div>
+
+        <div class="space-y-4">
+          <%= for faq <- @faqs do %>
+            <div
+              class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden"
+              data-animate
+            >
+              <details class="group">
+                <summary class="flex items-center justify-between p-6 cursor-pointer list-none">
+                  <h3 class="text-lg font-semibold text-slate-900 dark:text-white pr-4">
+                    <%= faq.question %>
+                  </h3>
+                  <div class="flex-shrink-0 w-8 h-8 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-teal-600 dark:text-teal-400 group-open:rotate-180 transition-transform duration-200">
+                    <.icon name="hero-chevron-down" class="h-5 w-5" />
+                  </div>
+                </summary>
+                <div class="px-6 pb-6 pt-0">
+                  <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
+                    <%= faq.answer %>
+                  </p>
+                </div>
+              </details>
+            </div>
+          <% end %>
+        </div>
+
+        <div class="mt-12 text-center">
+          <p class="text-slate-600 dark:text-slate-400 mb-4">
+            Ainda tem dúvidas?
+          </p>
+          <a
+            href="https://wa.me/5515997701743"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-2 px-6 py-3 text-white bg-green-600 hover:bg-green-700 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl"
+          >
+            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+            </svg>
+            Falar pelo WhatsApp
+          </a>
+        </div>
+      </div>
+    </section>
+    """
+  end
+
+  # ============================================================================
   # CTA SECTION
   # ============================================================================
 
@@ -885,14 +1112,14 @@ defmodule HellenWeb.LandingComponents do
         <div class="absolute top-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl" />
         <div class="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl" />
       </div>
-
       <!-- Grid pattern -->
       <div class="absolute inset-0 bg-[linear-gradient(to_right,#fff1_1px,transparent_1px),linear-gradient(to_bottom,#fff1_1px,transparent_1px)] bg-[size:4rem_4rem]" />
 
       <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm mb-6">
           <span class="relative flex h-2 w-2">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75">
+            </span>
             <span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
           </span>
           <span class="text-sm font-medium text-white">Comece agora, é grátis!</span>
@@ -910,30 +1137,30 @@ defmodule HellenWeb.LandingComponents do
             href="/register"
             class="group inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-teal-600 bg-white hover:bg-slate-50 rounded-xl transition-all duration-200 shadow-xl hover:shadow-2xl hover:scale-105 w-full sm:w-auto"
           >
-            Criar Conta Gratuita <.icon name="hero-arrow-right" class="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            Criar Conta Gratuita
+            <.icon
+              name="hero-arrow-right"
+              class="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform"
+            />
           </a>
 
           <a
             href="#contact"
             class="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm border-2 border-white/30 rounded-xl transition-all duration-200 w-full sm:w-auto"
           >
-            <.icon name="hero-chat-bubble-left-right" class="mr-2 h-5 w-5" />
-            Falar com Vendas
+            <.icon name="hero-chat-bubble-left-right" class="mr-2 h-5 w-5" /> Falar com Vendas
           </a>
         </div>
 
         <div class="mt-8 flex flex-wrap justify-center gap-4 text-sm text-teal-100">
           <span class="flex items-center gap-1.5">
-            <.icon name="hero-check-circle" class="h-5 w-5 text-white" />
-            Sem cartão de crédito
+            <.icon name="hero-check-circle" class="h-5 w-5 text-white" /> Sem cartão de crédito
           </span>
           <span class="flex items-center gap-1.5">
-            <.icon name="hero-check-circle" class="h-5 w-5 text-white" />
-            3 créditos grátis
+            <.icon name="hero-check-circle" class="h-5 w-5 text-white" /> 3 créditos grátis
           </span>
           <span class="flex items-center gap-1.5">
-            <.icon name="hero-check-circle" class="h-5 w-5 text-white" />
-            Pague apenas pelo que usar
+            <.icon name="hero-check-circle" class="h-5 w-5 text-white" /> Pague apenas pelo que usar
           </span>
         </div>
       </div>
@@ -993,12 +1220,18 @@ defmodule HellenWeb.LandingComponents do
             <h3 class="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Plataforma</h3>
             <ul class="space-y-1.5 sm:space-y-2">
               <li>
-                <a href="#features" class="text-sm text-slate-400 hover:text-teal-400 transition-colors">
+                <a
+                  href="#features"
+                  class="text-sm text-slate-400 hover:text-teal-400 transition-colors"
+                >
                   Recursos
                 </a>
               </li>
               <li>
-                <a href="#pricing" class="text-sm text-slate-400 hover:text-teal-400 transition-colors">
+                <a
+                  href="#pricing"
+                  class="text-sm text-slate-400 hover:text-teal-400 transition-colors"
+                >
                   Precos
                 </a>
               </li>
@@ -1011,7 +1244,10 @@ defmodule HellenWeb.LandingComponents do
                 </a>
               </li>
               <li>
-                <a href="/register" class="text-sm text-slate-400 hover:text-teal-400 transition-colors">
+                <a
+                  href="/register"
+                  class="text-sm text-slate-400 hover:text-teal-400 transition-colors"
+                >
                   Criar Conta
                 </a>
               </li>
@@ -1023,6 +1259,14 @@ defmodule HellenWeb.LandingComponents do
             <ul class="space-y-1.5 sm:space-y-2">
               <li>
                 <a
+                  href="/support"
+                  class="text-sm text-slate-400 hover:text-teal-400 transition-colors"
+                >
+                  Suporte
+                </a>
+              </li>
+              <li>
+                <a
                   href="mailto:contato@hellen.ai"
                   class="text-sm text-slate-400 hover:text-teal-400 transition-colors"
                 >
@@ -1031,30 +1275,37 @@ defmodule HellenWeb.LandingComponents do
               </li>
               <li>
                 <a
-                  href="mailto:suporte@hellen.ai"
-                  class="text-sm text-slate-400 hover:text-teal-400 transition-colors"
+                  href="https://wa.me/5515997701743"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-sm text-slate-400 hover:text-green-400 transition-colors flex items-center gap-1.5"
                 >
-                  suporte@hellen.ai
+                  <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                  </svg>
+                  WhatsApp
                 </a>
-              </li>
-              <li>
-                <span class="text-sm text-slate-500 flex items-center gap-1.5">
-                  <.icon name="hero-map-pin" class="h-4 w-4" />
-                  Brasil
-                </span>
               </li>
             </ul>
           </div>
         </div>
         <!-- Bottom bar -->
         <div class="pt-6 sm:pt-8 border-t border-slate-800">
-          <div class="flex flex-col sm:flex-row justify-between items-center gap-2">
+          <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
             <p class="text-xs sm:text-sm text-slate-400 text-center sm:text-left">
               © 2025 Hellen AI. Todos os direitos reservados.
             </p>
-            <p class="text-xs sm:text-sm text-slate-400 flex items-center gap-1">
-              Feito com <.icon name="hero-heart-solid" class="h-4 w-4 text-red-500" /> para educadores
-            </p>
+            <div class="flex items-center gap-4 text-xs sm:text-sm">
+              <a href="/terms" class="text-slate-400 hover:text-teal-400 transition-colors">
+                Termos de Uso
+              </a>
+              <a href="/privacy" class="text-slate-400 hover:text-teal-400 transition-colors">
+                Privacidade
+              </a>
+              <a href="/support" class="text-slate-400 hover:text-teal-400 transition-colors">
+                Suporte
+              </a>
+            </div>
           </div>
         </div>
       </div>

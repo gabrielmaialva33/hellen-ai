@@ -133,6 +133,24 @@ defmodule Hellen.Accounts do
   end
 
   @doc """
+  Update user onboarding progress.
+  """
+  @spec update_user_onboarding(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def update_user_onboarding(%User{} = user, attrs) do
+    user
+    |> User.onboarding_changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Mark user onboarding as completed.
+  """
+  @spec complete_onboarding(User.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
+  def complete_onboarding(%User{} = user) do
+    update_user_onboarding(user, %{onboarding_completed: true})
+  end
+
+  @doc """
   Change user password after verifying current password.
   Returns {:error, :invalid_password} if current password doesn't match.
   """

@@ -132,7 +132,8 @@ defmodule HellenWeb.LessonLive.New do
         <div class="mb-10 text-center">
           <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-100/80 dark:bg-teal-900/30 mb-4">
             <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75">
+              </span>
               <span class="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
             </span>
             <span class="text-sm font-medium text-teal-700 dark:text-teal-300">Analise com IA</span>
@@ -167,7 +168,8 @@ defmodule HellenWeb.LessonLive.New do
               <%!-- Icone Central com animacao --%>
               <div class="flex justify-center mb-8">
                 <div class="relative">
-                  <div class="absolute inset-0 bg-teal-500/20 rounded-full blur-2xl animate-pulse-glow"></div>
+                  <div class="absolute inset-0 bg-teal-500/20 rounded-full blur-2xl animate-pulse-glow">
+                  </div>
                   <div class="relative bg-gradient-to-br from-teal-500 to-cyan-500 rounded-2xl p-6 sm:p-8 shadow-lg shadow-teal-500/30 group-hover:scale-110 transition-transform duration-300">
                     <.icon name="hero-cloud-arrow-up" class="h-12 w-12 sm:h-16 sm:w-16 text-white" />
                   </div>
@@ -192,13 +194,19 @@ defmodule HellenWeb.LessonLive.New do
                 <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
                   <div class="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-100/50 dark:bg-slate-700/30">
                     <div class="w-8 h-8 rounded-lg bg-teal-500/10 dark:bg-teal-500/20 flex items-center justify-center">
-                      <.icon name="hero-musical-note" class="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                      <.icon
+                        name="hero-musical-note"
+                        class="h-4 w-4 text-teal-600 dark:text-teal-400"
+                      />
                     </div>
                     <span class="text-sm text-slate-600 dark:text-slate-400">MP4, MP3, WAV, M4A</span>
                   </div>
                   <div class="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-100/50 dark:bg-slate-700/30">
                     <div class="w-8 h-8 rounded-lg bg-cyan-500/10 dark:bg-cyan-500/20 flex items-center justify-center">
-                      <.icon name="hero-arrow-up-tray" class="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                      <.icon
+                        name="hero-arrow-up-tray"
+                        class="h-4 w-4 text-cyan-600 dark:text-cyan-400"
+                      />
                     </div>
                     <span class="text-sm text-slate-600 dark:text-slate-400">Ate 500MB</span>
                   </div>
@@ -241,9 +249,13 @@ defmodule HellenWeb.LessonLive.New do
                   <%!-- Icone do Arquivo --%>
                   <div class="flex-shrink-0">
                     <div class="relative">
-                      <div class="absolute inset-0 bg-teal-500/10 dark:bg-teal-500/20 rounded-xl blur"></div>
+                      <div class="absolute inset-0 bg-teal-500/10 dark:bg-teal-500/20 rounded-xl blur">
+                      </div>
                       <div class="relative bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-900/50 dark:to-cyan-900/50 rounded-xl p-4 sm:p-5 border border-teal-100 dark:border-teal-800">
-                        <.icon name="hero-film" class="h-8 w-8 sm:h-10 sm:w-10 text-teal-600 dark:text-teal-400" />
+                        <.icon
+                          name="hero-film"
+                          class="h-8 w-8 sm:h-10 sm:w-10 text-teal-600 dark:text-teal-400"
+                        />
                       </div>
                     </div>
                   </div>
