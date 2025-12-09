@@ -180,10 +180,19 @@ defmodule Hellen.Gamification do
   end
 
   defp calculate_achievement_progress(_key, true, _lesson_count), do: 100
-  defp calculate_achievement_progress("first_lesson", false, count), do: if(count >= 1, do: 100, else: 0)
-  defp calculate_achievement_progress("lesson_explorer", false, count), do: min(count / 5 * 100, 100) |> round()
-  defp calculate_achievement_progress("lesson_master", false, count), do: min(count / 25 * 100, 100) |> round()
-  defp calculate_achievement_progress("lesson_legend", false, count), do: min(count / 100 * 100, 100) |> round()
+
+  defp calculate_achievement_progress("first_lesson", false, count),
+    do: if(count >= 1, do: 100, else: 0)
+
+  defp calculate_achievement_progress("lesson_explorer", false, count),
+    do: min(count / 5 * 100, 100) |> round()
+
+  defp calculate_achievement_progress("lesson_master", false, count),
+    do: min(count / 25 * 100, 100) |> round()
+
+  defp calculate_achievement_progress("lesson_legend", false, count),
+    do: min(count / 100 * 100, 100) |> round()
+
   defp calculate_achievement_progress(_key, false, _count), do: 0
 
   @doc """

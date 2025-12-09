@@ -153,7 +153,10 @@ defmodule Hellen.AI.AnalysisOrchestrator do
     }
   end
 
-  defp run_core_analysis_v3(transcription, context, %{use_self_consistency: true, samples: samples}) do
+  defp run_core_analysis_v3(transcription, context, %{
+         use_self_consistency: true,
+         samples: samples
+       }) do
     NvidiaClient.analyze_with_self_consistency(transcription, context, samples: samples)
   end
 
@@ -169,7 +172,9 @@ defmodule Hellen.AI.AnalysisOrchestrator do
   defp process_v3_pipeline({:ok, core_analysis}, transcription, context, config, start_time) do
     critical_dimensions = extract_critical_dimensions(core_analysis)
 
-    parallel_tasks = build_v3_parallel_tasks(transcription, context, core_analysis, critical_dimensions, config)
+    parallel_tasks =
+      build_v3_parallel_tasks(transcription, context, core_analysis, critical_dimensions, config)
+
     results = run_parallel_tasks_v3(parallel_tasks)
 
     processing_time = System.monotonic_time(:millisecond) - start_time
@@ -177,7 +182,15 @@ defmodule Hellen.AI.AnalysisOrchestrator do
 
     Logger.info("[AnalysisOrchestrator] v3.0 pipeline completed in #{processing_time}ms")
 
-    {:ok, build_v3_response(core_analysis, critical_dimensions, results, config, processing_time, total_tokens)}
+    {:ok,
+     build_v3_response(
+       core_analysis,
+       critical_dimensions,
+       results,
+       config,
+       processing_time,
+       total_tokens
+     )}
   end
 
   defp build_v3_parallel_tasks(transcription, context, core_analysis, critical_dimensions, config) do
@@ -207,7 +220,8 @@ defmodule Hellen.AI.AnalysisOrchestrator do
   defp maybe_add_example_tasks(tasks, transcription, critical_dimensions, true) do
     example_tasks =
       Enum.map(critical_dimensions, fn dim ->
-        {:example, dim, fn -> NvidiaClient.generate_practical_examples(transcription, dim.nome, dim.gap) end}
+        {:example, dim,
+         fn -> NvidiaClient.generate_practical_examples(transcription, dim.nome, dim.gap) end}
       end)
 
     tasks ++ example_tasks
@@ -220,7 +234,14 @@ defmodule Hellen.AI.AnalysisOrchestrator do
     [{:email, nil, fn -> NvidiaClient.generate_coaching_email(email_context) end} | tasks]
   end
 
-  defp build_v3_response(core_analysis, critical_dimensions, results, config, processing_time, total_tokens) do
+  defp build_v3_response(
+         core_analysis,
+         critical_dimensions,
+         results,
+         config,
+         processing_time,
+         total_tokens
+       ) do
     %{
       core_analysis: normalize_core_analysis(core_analysis),
       legal_compliance: Map.get(results, :legal),

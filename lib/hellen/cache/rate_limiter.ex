@@ -80,18 +80,16 @@ defmodule Hellen.Cache.RateLimiter do
 
     count = get_counter(key)
 
-    cond do
-      count >= @login_limit ->
-        # Check if in lockout period
-        case Cache.ttl(key) do
-          {:ok, ttl} when ttl > 0 -> {:deny, ttl}
-          _ -> {:deny, @login_lockout}
-        end
-
-      true ->
-        # Increment counter
-        increment_with_expiry(key, @login_window)
-        {:allow, @login_limit - count - 1}
+    if count >= @login_limit do
+      # Check if in lockout period
+      case Cache.ttl(key) do
+        {:ok, ttl} when ttl > 0 -> {:deny, ttl}
+        _ -> {:deny, @login_lockout}
+      end
+    else
+      # Increment counter
+      increment_with_expiry(key, @login_window)
+      {:allow, @login_limit - count - 1}
     end
   end
 

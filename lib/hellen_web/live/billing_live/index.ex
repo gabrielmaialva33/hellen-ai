@@ -93,7 +93,14 @@ defmodule HellenWeb.BillingLive.Index do
         package_id = metadata["package_id"]
         payment_intent = session.payment_intent
 
-        process_checkout_for_user(socket, user_id, session_id, credits, package_id, payment_intent)
+        process_checkout_for_user(
+          socket,
+          user_id,
+          session_id,
+          credits,
+          package_id,
+          payment_intent
+        )
 
       _ ->
         socket
