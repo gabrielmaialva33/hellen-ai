@@ -39,10 +39,14 @@ registerServiceWorker()
 import { GoogleSignIn } from "./hooks/firebase"
 Hooks.GoogleSignIn = GoogleSignIn
 
-// UI Enhancement hooks
-import { AnimatedCounter, DropZone, Ripple } from "./hooks/ui_enhancements"
+// UI Hooks
+import { AnimatedCounter } from "./hooks/animated_counter"
 Hooks.AnimatedCounter = AnimatedCounter
+
+import { DropZone } from "./hooks/drop_zone"
 Hooks.DropZone = DropZone
+
+import { Ripple } from "./hooks/ripple"
 Hooks.Ripple = Ripple
 
 // WebSocket channel hooks (for non-LiveView real-time updates)
