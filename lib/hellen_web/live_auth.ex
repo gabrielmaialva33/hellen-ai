@@ -46,22 +46,29 @@ defmodule HellenWeb.LiveAuth do
   end
 
   def on_mount(:require_auth, _params, session, socket) do
-    socket =
-      socket
-      |> assign_current_user(session)
-      |> assign_current_path()
+    socket = assign_current_user(socket, session)
 
     cond do
       is_nil(socket.assigns.current_user) ->
         {:halt, redirect(socket, to: "/login")}
 
-      # Redirect to onboarding if not completed (but not if already on onboarding page)
-      not socket.assigns.current_user.onboarding_completed and
-          socket.assigns.current_path != "/onboarding" ->
+      # Redirect to onboarding if not completed
+      not socket.assigns.current_user.onboarding_completed ->
         {:halt, redirect(socket, to: "/onboarding")}
 
       true ->
         {:cont, socket}
+    end
+  end
+
+  # For the onboarding page - requires auth but doesn't redirect to onboarding
+  def on_mount(:require_auth_no_onboarding, _params, session, socket) do
+    socket = assign_current_user(socket, session)
+
+    if is_nil(socket.assigns.current_user) do
+      {:halt, redirect(socket, to: "/login")}
+    else
+      {:cont, socket}
     end
   end
 

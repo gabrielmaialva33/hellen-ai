@@ -11,9 +11,15 @@ export const DropZone = {
 
     // Click to open file dialog
     this.el.addEventListener("click", (e) => {
+      console.log("DropZone click:", e.target.tagName, e.target)
       if (e.target.tagName !== "INPUT") {
         const input = this.el.querySelector("input[type='file']")
-        if (input) input.click()
+        if (input) {
+           console.log("DropZone triggering input click programmatically")
+           input.click()
+        } else {
+           console.error("DropZone: Input not found")
+        }
       }
     })
 
@@ -23,6 +29,7 @@ export const DropZone = {
   handleDragEnter(e) {
     e.preventDefault()
     this.dragCounter++
+    console.log("DropZone dragEnter", this.dragCounter)
 
     if (this.dragCounter === 1) {
       this.el.classList.add(
@@ -41,6 +48,7 @@ export const DropZone = {
   handleDragLeave(e) {
     e.preventDefault()
     this.dragCounter--
+    // console.log("DropZone dragLeave", this.dragCounter)
 
     if (this.dragCounter === 0) {
       this.resetStyles()
@@ -52,7 +60,13 @@ export const DropZone = {
   },
 
   handleDrop(e) {
-    e.preventDefault()
+    console.log("DropZone drop detected on", e.target.tagName)
+    
+    // Only prevent default if it's NOT the input
+    if (e.target.tagName !== "INPUT") {
+      e.preventDefault()
+    }
+    
     this.dragCounter = 0
     this.resetStyles()
 

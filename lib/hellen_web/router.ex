@@ -96,12 +96,20 @@ defmodule HellenWeb.Router do
     end
   end
 
+  # Onboarding (separate session to avoid redirect loop)
+  scope "/", HellenWeb do
+    pipe_through :browser
+
+    live_session :onboarding, on_mount: [{HellenWeb.LiveAuth, :require_auth_no_onboarding}] do
+      live "/onboarding", OnboardingLive, :index
+    end
+  end
+
   # Authenticated LiveView routes
   scope "/", HellenWeb do
     pipe_through :browser
 
     live_session :authenticated, on_mount: [{HellenWeb.LiveAuth, :require_auth}] do
-      live "/onboarding", OnboardingLive, :index
       live "/dashboard", DashboardLive.Index, :index
       live "/aulas", LessonsLive.Index, :index
       live "/lessons/new", LessonLive.New, :new

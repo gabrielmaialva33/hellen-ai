@@ -18,6 +18,10 @@ defmodule Hellen.Lessons.Lesson do
     field :subject, :string
     field :status, :string, default: "pending"
     field :metadata, :map, default: %{}
+    field :planned_content, :string
+    field :planned_file_url, :string
+    field :planned_file_name, :string
+    field :ai_suggestions, :map
 
     belongs_to :user, Hellen.Accounts.User
     belongs_to :institution, Hellen.Accounts.Institution
@@ -42,6 +46,8 @@ defmodule Hellen.Lessons.Lesson do
       :subject,
       :status,
       :metadata,
+      :planned_content,
+      :ai_suggestions,
       :user_id,
       :institution_id
     ])
@@ -49,6 +55,11 @@ defmodule Hellen.Lessons.Lesson do
     |> validate_inclusion(:status, @statuses)
     |> foreign_key_constraint(:user_id)
     |> foreign_key_constraint(:institution_id)
+  end
+
+  def planned_content_changeset(lesson, attrs) do
+    lesson
+    |> cast(attrs, [:planned_content, :planned_file_url, :planned_file_name])
   end
 
   def status_changeset(lesson, status) do

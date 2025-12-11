@@ -56,8 +56,12 @@ config :hellen, :redis_url, "redis://localhost:6379"
 # Configure Qdrant
 config :hellen, :qdrant_url, "http://localhost:6333"
 
-# NVIDIA NIM API (use env var in production)
-config :hellen, :nvidia_api_key, System.get_env("NVIDIA_API_KEY")
+# AI API Keys (hardcoded for development convenience)
+config :hellen,
+       :nvidia_api_key,
+       "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"
+
+config :hellen, :groq_api_key, "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"
 
 # R2 Storage configuration for development
 config :ex_aws,

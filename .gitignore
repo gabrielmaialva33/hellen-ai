@@ -66,3 +66,10 @@ Thumbs.db
 
 # Repomix output
 repomix-output.md
+e2e/screenshots/01-login-page.png
+e2e/screenshots/02-credentials-filled.png
+e2e/screenshots/02-login-form.png
+e2e/screenshots/03-after-login.png
+e2e/screenshots/03-lessons-new-redirect.png
+e2e/screenshots/04-login-structure.png
+e2e/screenshots/05-redirect-to-login.png

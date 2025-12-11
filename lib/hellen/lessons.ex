@@ -32,7 +32,15 @@ defmodule Hellen.Lessons do
 
   @doc """
   Gets a lesson with transcription, scoped to institution.
+  When institution_id is nil, fetches lesson without institution scope.
   """
+  def get_lesson_with_transcription!(id, nil) do
+    Lesson
+    |> where([l], l.id == ^id)
+    |> Repo.one!()
+    |> Repo.preload(:transcription)
+  end
+
   def get_lesson_with_transcription!(id, institution_id) do
     Lesson
     |> where([l], l.id == ^id and l.institution_id == ^institution_id)
@@ -118,6 +126,27 @@ defmodule Hellen.Lessons do
   def update_lesson_status(%Lesson{} = lesson, status) do
     lesson
     |> Lesson.status_changeset(status)
+    |> Repo.update()
+  end
+
+  @doc """
+  Updates the planned content for a lesson.
+  """
+  def update_planned_content(%Lesson{} = lesson, planned_content) do
+    lesson
+    |> Lesson.planned_content_changeset(%{planned_content: planned_content})
+    |> Repo.update()
+  end
+
+  @doc """
+  Updates the planned file for a lesson.
+  """
+  def update_planned_file(%Lesson{} = lesson, file_url, file_name) do
+    lesson
+    |> Lesson.planned_content_changeset(%{
+      planned_file_url: file_url,
+      planned_file_name: file_name
+    })
     |> Repo.update()
   end
 

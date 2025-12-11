@@ -15,7 +15,11 @@ defmodule Hellen.Analysis do
   Gets an analysis by ID, scoped to institution.
   Raises if not found or institution doesn't match.
   """
-  @spec get_analysis!(binary(), binary()) :: Analysis.t()
+  @spec get_analysis!(binary(), binary() | nil) :: Analysis.t()
+  def get_analysis!(id, nil) do
+    Repo.get!(Analysis, id)
+  end
+
   def get_analysis!(id, institution_id) do
     Analysis
     |> where([a], a.id == ^id and a.institution_id == ^institution_id)
@@ -25,7 +29,14 @@ defmodule Hellen.Analysis do
   @doc """
   Gets an analysis with details, scoped to institution.
   """
-  @spec get_analysis_with_details!(binary(), binary()) :: Analysis.t()
+  @spec get_analysis_with_details!(binary(), binary() | nil) :: Analysis.t()
+  def get_analysis_with_details!(id, nil) do
+    Analysis
+    |> where([a], a.id == ^id)
+    |> Repo.one!()
+    |> Repo.preload([:bncc_matches, :bullying_alerts])
+  end
+
   def get_analysis_with_details!(id, institution_id) do
     Analysis
     |> where([a], a.id == ^id and a.institution_id == ^institution_id)
@@ -35,8 +46,16 @@ defmodule Hellen.Analysis do
 
   @doc """
   Lists analyses for a lesson, verifying institution ownership.
+  When institution_id is nil, fetches analyses without institution scope.
   """
-  @spec list_analyses_by_lesson(binary(), binary()) :: [Analysis.t()]
+  @spec list_analyses_by_lesson(binary(), binary() | nil) :: [Analysis.t()]
+  def list_analyses_by_lesson(lesson_id, nil) do
+    Analysis
+    |> where([a], a.lesson_id == ^lesson_id)
+    |> order_by([a], desc: a.inserted_at)
+    |> Repo.all()
+  end
+
   def list_analyses_by_lesson(lesson_id, institution_id) do
     Analysis
     |> where([a], a.lesson_id == ^lesson_id and a.institution_id == ^institution_id)
