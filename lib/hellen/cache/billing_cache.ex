@@ -12,7 +12,7 @@ defmodule Hellen.Cache.BillingCache do
   """
 
   alias Hellen.Cache
-  alias Hellen.Cache.Keys
+  alias Hellen.Cache.{Keys, UserCache}
 
   # TTLs
   @transactions_ttl :timer.minutes(5)
@@ -81,7 +81,7 @@ defmodule Hellen.Cache.BillingCache do
     invalidate_usage(user_id)
 
     # Also invalidate user credits cache
-    Hellen.Cache.UserCache.invalidate_credits(user_id)
+    UserCache.invalidate_credits(user_id)
     :ok
   end
 end

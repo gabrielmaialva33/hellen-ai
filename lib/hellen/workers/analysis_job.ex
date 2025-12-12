@@ -8,6 +8,7 @@ defmodule Hellen.Workers.AnalysisJob do
     max_attempts: 3,
     unique: [period: 300, keys: [:lesson_id]]
 
+  alias Hellen.AI.AnalysisValidator
   alias Hellen.AI.NvidiaClient
   alias Hellen.Analysis
   alias Hellen.Lessons
@@ -87,7 +88,7 @@ defmodule Hellen.Workers.AnalysisJob do
   end
 
   defp validate_result(overall_score, transcription, context) do
-    case Hellen.AI.AnalysisValidator.validate_analysis(
+    case AnalysisValidator.validate_analysis(
            parse_float(overall_score),
            transcription,
            context

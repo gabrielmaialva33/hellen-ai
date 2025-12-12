@@ -9,15 +9,30 @@ defmodule HellenWeb.LessonLive.Show do
   alias Hellen.Lessons
   alias Hellen.Storage
 
+  require Logger
+
   @impl true
   def mount(%{"id" => id}, _session, socket) do
+    Logger.info("LessonLive.mount called for id: #{id}")
     user = socket.assigns.current_user
     lesson = Lessons.get_lesson_with_transcription!(id, user.institution_id)
     analyses = Analysis.list_analyses_by_lesson(id, user.institution_id)
-    latest_analysis = List.first(analyses) |> maybe_parse_raw_analysis()
+
+    Logger.info(
+      "Found lesson: #{lesson.id}, Status: #{lesson.status}, Analysis count: #{length(analyses)}"
+    )
+
+    # latest_analysis = List.first(analyses) |> maybe_parse_raw_analysis()
+    # Temporary fix: disabling raw parsing to debug loop
+    latest_analysis = List.first(analyses)
+
+    Logger.info(
+      "Refetched latest_analysis (raw parsing disabled): #{inspect(latest_analysis != nil)}"
+    )
 
     # Subscribe to real-time updates
     if connected?(socket) do
+      Logger.info("Subscribing to lesson:#{id}")
       Phoenix.PubSub.subscribe(Hellen.PubSub, "lesson:#{id}")
     end
 
@@ -39,7 +54,12 @@ defmodule HellenWeb.LessonLive.Show do
        max_file_size: 10_000_000,
        auto_upload: true
      )
-     |> load_analytics_async(user, lesson)}
+     # |> load_analytics_async(user, lesson)
+     |> assign(score_history: [])
+     |> assign(trend: :stable)
+     |> assign(trend_change: 0.0)
+     |> assign(discipline_avg: nil)
+     |> assign(bncc_coverage: [])}
   end
 
   # Try to recover analysis data from raw JSON string when parsing failed
@@ -104,7 +124,7 @@ defmodule HellenWeb.LessonLive.Show do
       end
 
     # Only create result if we found at least something
-    if raw_score || length(bncc_codes) > 0 do
+    if raw_score || bncc_codes != [] do
       # Calculate enhanced score using BNCC module
       enhanced_score =
         BNCC.calculate_score(%{
@@ -395,6 +415,23 @@ defmodule HellenWeb.LessonLive.Show do
 
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Erro ao remover arquivo")}
+    end
+  end
+
+  @impl true
+  def handle_event("reanalyze", _params, socket) do
+    lesson = socket.assigns.lesson
+    user = socket.assigns.current_user
+
+    case Lessons.reanalyze_lesson(lesson, user) do
+      {:ok, updated_lesson} ->
+        {:noreply,
+         socket
+         |> assign(lesson: updated_lesson)
+         |> put_flash(:info, "Reanálise iniciada!")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, "Erro ao reiniciar análise: #{inspect(reason)}")}
     end
   end
 
@@ -769,6 +806,16 @@ defmodule HellenWeb.LessonLive.Show do
                     <p class="text-base leading-relaxed text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
                       <%= @lesson.planned_content %>
                     </p>
+                  </div>
+                  <!-- Reanalyze Button -->
+                  <div class="mt-4 flex justify-end">
+                    <button
+                      phx-click="reanalyze"
+                      data-confirm="Deseja reanalisar a aula com base no novo conteúdo planejado?"
+                      class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center"
+                    >
+                      <.icon name="hero-arrow-path" class="h-4 w-4 mr-1.5" /> Reanalisar Aula
+                    </button>
                   </div>
                 </div>
                 <!-- Edit Mode or Empty State -->

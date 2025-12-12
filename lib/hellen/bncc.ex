@@ -60,35 +60,30 @@ defmodule Hellen.BNCC do
 
   def get_description(_), do: "Competencia BNCC"
 
+  # Category patterns for BNCC codes
+  @category_patterns [
+    {~r/LP0[12]/, "Leitura"},
+    {~r/LP0[345]/, "Producao"},
+    {~r/LP0[9]|LP10/, "Oralidade"},
+    {~r/LP1/, "Analise Linguistica"},
+    {~r/^LEI/, "Legislacao"}
+  ]
+
   @doc """
   Returns the category/area for a BNCC code.
   """
   def get_category(code) when is_binary(code) do
     normalized = code |> String.trim() |> String.upcase()
-
-    cond do
-      String.contains?(normalized, "LP01") or String.contains?(normalized, "LP02") ->
-        "Leitura"
-
-      String.contains?(normalized, "LP03") or String.contains?(normalized, "LP04") or
-          String.contains?(normalized, "LP05") ->
-        "Producao"
-
-      String.contains?(normalized, "LP09") or String.contains?(normalized, "LP10") ->
-        "Oralidade"
-
-      String.contains?(normalized, "LP1") ->
-        "Analise Linguistica"
-
-      String.starts_with?(normalized, "LEI") ->
-        "Legislacao"
-
-      true ->
-        "BNCC"
-    end
+    find_category(normalized, @category_patterns)
   end
 
   def get_category(_), do: "BNCC"
+
+  defp find_category(_code, []), do: "BNCC"
+
+  defp find_category(code, [{pattern, category} | rest]) do
+    if Regex.match?(pattern, code), do: category, else: find_category(code, rest)
+  end
 
   @doc """
   Returns all known BNCC codes.

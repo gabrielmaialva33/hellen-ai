@@ -8,7 +8,7 @@ defmodule Hellen.Lessons do
   alias Hellen.Billing
   alias Hellen.Lessons.{Lesson, Transcription}
   alias Hellen.Repo
-  alias Hellen.Workers.TranscriptionJob
+  alias Hellen.Workers.{AnalysisJob, TranscriptionJob}
 
   ## Lesson
 
@@ -166,6 +166,21 @@ defmodule Hellen.Lessons do
   defp enqueue_transcription(lesson) do
     %{lesson_id: lesson.id}
     |> TranscriptionJob.new()
+    |> Oban.insert()
+  end
+
+  def reanalyze_lesson(%Lesson{} = lesson, _user) do
+    # For re-analysis, we don't charge credit again for now (as per plan)
+    # Just update status and enqueue analysis job
+    with {:ok, lesson} <- update_lesson_status(lesson, "analyzing"),
+         {:ok, _job} <- enqueue_analysis(lesson) do
+      {:ok, lesson}
+    end
+  end
+
+  defp enqueue_analysis(lesson) do
+    %{lesson_id: lesson.id}
+    |> AnalysisJob.new()
     |> Oban.insert()
   end
 
