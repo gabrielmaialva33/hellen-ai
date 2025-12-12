@@ -553,10 +553,13 @@ defmodule HellenWeb.LessonLive.Show do
             <p class="text-slate-500 dark:text-slate-400 mb-6">
               <%= @lesson.title || "Aula sem titulo" %>
             </p>
-            <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
+            <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-2">
               <%= if @lesson.status == "transcribing",
                 do: "Convertendo audio em texto usando IA avancada",
                 else: "Gerando feedback pedagogico baseado na BNCC" %>
+            </p>
+            <p class="text-xs text-slate-400 dark:text-slate-500 max-w-md mx-auto mb-6">
+              Este processo pode demorar alguns minutos. Você pode sair desta página e notificaremos quando estiver pronto.
             </p>
             <div class="max-w-sm mx-auto">
               <.progress

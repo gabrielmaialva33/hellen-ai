@@ -55,7 +55,9 @@ defmodule Hellen.Workers.AnalysisJob do
 
     case NvidiaClient.analyze_pedagogy(transcription, context) do
       {:ok, result} ->
-        {:ok, build_analysis_result(result)}
+        # Enrich result with context and transcription for validation
+        enriched_result = Map.merge(result, %{transcription: transcription, context: context})
+        {:ok, build_analysis_result(enriched_result)}
 
       {:error, _} = error ->
         error
@@ -74,35 +76,79 @@ defmodule Hellen.Workers.AnalysisJob do
       processing_time_ms: nvidia_result.processing_time_ms,
       tokens_used: nvidia_result.tokens_used,
       bncc_matches: parse_bncc_matches(structured["bncc_matches"]),
-      bullying_alerts: parse_bullying_alerts(structured["bullying_alerts"])
+      bullying_alerts: parse_bullying_alerts(structured["bullying_alerts"]),
+      validation:
+        validate_result(
+          nvidia_result.structured["overall_score"],
+          nvidia_result.transcription,
+          nvidia_result[:context]
+        )
     }
+  end
+
+  defp validate_result(overall_score, transcription, context) do
+    case Hellen.AI.AnalysisValidator.validate_analysis(
+           parse_float(overall_score),
+           transcription,
+           context
+         ) do
+      {:warning, warning} -> warning
+      {:ok, _} -> nil
+    end
   end
 
   defp parse_bncc_matches(nil), do: []
 
   defp parse_bncc_matches(matches) when is_list(matches) do
-    Enum.map(matches, fn match ->
-      %{
-        competencia_code: match["code"] || match["competencia_code"],
-        competencia_name: match["name"] || match["competencia_name"],
-        match_score: parse_float(match["score"] || match["match_score"]),
-        evidence_text: match["evidence"] || match["evidence_text"]
-      }
+    Enum.map(matches, fn
+      match when is_binary(match) ->
+        %{
+          competencia_code: match,
+          competencia_name: nil,
+          score: 1.0,
+          explanation: nil
+        }
+
+      match when is_map(match) ->
+        %{
+          competencia_code: match["code"] || match["competencia_code"],
+          competencia_name: match["name"] || match["competencia_name"],
+          score: parse_float(match["score"] || match["relevance"] || 0.0),
+          explanation: match["explanation"] || match["description"]
+        }
     end)
   end
+
+  @valid_alert_types ~w(verbal_aggression exclusion intimidation mockery discrimination threat inappropriate_language other)
 
   defp parse_bullying_alerts(nil), do: []
 
   defp parse_bullying_alerts(alerts) when is_list(alerts) do
-    Enum.map(alerts, fn alert ->
-      %{
-        severity: alert["severity"] || "low",
-        alert_type: alert["type"] || alert["alert_type"] || "other",
-        description: alert["description"],
-        evidence_text: alert["evidence"] || alert["evidence_text"],
-        timestamp_start: parse_float(alert["start"]),
-        timestamp_end: parse_float(alert["end"])
-      }
+    Enum.map(alerts, fn
+      alert when is_binary(alert) ->
+        %{
+          # Default severity for string alerts
+          severity: "medium",
+          # valid type
+          alert_type: "other",
+          description: alert,
+          evidence_text: alert,
+          timestamp_start: nil,
+          timestamp_end: nil
+        }
+
+      alert when is_map(alert) ->
+        raw_type = alert["type"] || alert["alert_type"] || "other"
+        valid_type = if raw_type in @valid_alert_types, do: raw_type, else: "other"
+
+        %{
+          severity: alert["severity"] || "low",
+          alert_type: valid_type,
+          description: alert["description"],
+          evidence_text: alert["evidence"] || alert["evidence_text"],
+          timestamp_start: parse_float(alert["start"]),
+          timestamp_end: parse_float(alert["end"])
+        }
     end)
   end
 
@@ -123,6 +169,11 @@ defmodule Hellen.Workers.AnalysisJob do
 
   defp handle_failure(lesson, reason) do
     Lessons.update_lesson_status(lesson, "failed")
+
+    # Refund credit on failure (matching UI promise)
+    user = Hellen.Accounts.get_user!(lesson.user_id)
+    Hellen.Billing.refund_credit(user, lesson.id)
+
     broadcast_progress(lesson.id, "analysis_failed", %{error: inspect(reason)})
     {:error, reason}
   end

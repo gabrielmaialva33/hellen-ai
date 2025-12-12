@@ -261,7 +261,7 @@ defmodule Hellen.AI.NvidiaClient do
           response_format: %{type: "json_object"}
         },
         headers: nvidia_auth_headers(),
-        receive_timeout: 120_000
+        receive_timeout: 300_000
       )
 
     processing_time = System.monotonic_time(:millisecond) - start_time
@@ -804,7 +804,7 @@ defmodule Hellen.AI.NvidiaClient do
 
     Analise a transcrição da aula e forneça feedback estruturado em JSON com:
     1. overall_score: float de 0.0 a 1.0
-    2. bncc_matches: array de competências BNCC identificadas
+    2. bncc_matches: array das TOP 10 competências BNCC mais relevantes identificadas
     3. bullying_alerts: array de alertas de comportamento inadequado
     4. strengths: pontos fortes da aula
     5. improvements: oportunidades de melhoria
