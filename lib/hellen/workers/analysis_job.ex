@@ -8,6 +8,10 @@ defmodule Hellen.Workers.AnalysisJob do
     max_attempts: 3,
     unique: [period: 300, keys: [:lesson_id]]
 
+  # Called when all retries are exhausted
+  @impl Oban.Worker
+  def timeout(_job), do: :timer.minutes(10)
+
   alias Hellen.AI.AnalysisOrchestrator
   alias Hellen.Analysis
   alias Hellen.Lessons
@@ -16,22 +20,32 @@ defmodule Hellen.Workers.AnalysisJob do
   require Logger
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: %{"lesson_id" => lesson_id}}) do
-    Logger.info("Starting analysis for lesson #{lesson_id}")
+  def perform(%Oban.Job{args: %{"lesson_id" => lesson_id}, attempt: attempt, max_attempts: max_attempts} = job) do
+    Logger.info("Starting analysis for lesson #{lesson_id} (attempt #{attempt}/#{max_attempts})")
 
     lesson = Lessons.get_lesson_with_transcription!(lesson_id)
 
+    # Idempotency: Skip if lesson already completed or has analysis
+    if lesson.status == "completed" do
+      Logger.info("[Idempotency] Lesson #{lesson_id} already completed, skipping analysis")
+      :ok
+    else
+      do_perform(lesson, job)
+    end
+  end
+
+  defp do_perform(lesson, job) do
     case get_transcription(lesson) do
       {:ok, transcription} ->
         # 1. Quick Check (Fast Feedback)
         run_quick_check(lesson, transcription)
 
         # 2. Full Analysis (Deep Dive)
-        run_full_analysis(lesson, transcription)
+        run_full_analysis(lesson, transcription, job)
 
       {:error, reason} ->
-        Logger.error("Analysis failed to start for lesson #{lesson_id}: #{inspect(reason)}")
-        handle_failure(lesson, reason)
+        Logger.error("Analysis failed to start for lesson #{lesson.id}: #{inspect(reason)}")
+        handle_failure(lesson, reason, job)
     end
   end
 
@@ -51,7 +65,7 @@ defmodule Hellen.Workers.AnalysisJob do
     end
   end
 
-  defp run_full_analysis(lesson, transcription) do
+  defp run_full_analysis(lesson, transcription, job) do
     Logger.info("Running full analysis for lesson #{lesson.id}")
 
     with {:ok, result} <- analyze_transcription(lesson, transcription),
@@ -67,7 +81,7 @@ defmodule Hellen.Workers.AnalysisJob do
     else
       {:error, reason} ->
         Logger.error("Analysis failed for lesson #{lesson.id}: #{inspect(reason)}")
-        handle_failure(lesson, reason)
+        handle_failure(lesson, reason, job)
     end
   end
 
@@ -321,14 +335,24 @@ defmodule Hellen.Workers.AnalysisJob do
     Analysis.create_full_analysis(lesson.id, result)
   end
 
-  defp handle_failure(lesson, reason) do
-    Lessons.update_lesson_status(lesson, "failed")
+  defp handle_failure(lesson, reason, %Oban.Job{attempt: attempt, max_attempts: max_attempts}) do
+    is_last_attempt = attempt >= max_attempts
 
-    # Refund credit on failure (matching UI promise)
-    user = Hellen.Accounts.get_user!(lesson.user_id)
-    Hellen.Billing.refund_credit(user, lesson.id)
+    if is_last_attempt do
+      # Only mark as failed and refund after all retries exhausted
+      Logger.error("All #{max_attempts} attempts exhausted for lesson #{lesson.id}")
+      Lessons.update_lesson_status(lesson, "failed")
 
-    broadcast_progress(lesson.id, "analysis_failed", %{error: inspect(reason)})
+      # Refund credit on final failure (matching UI promise)
+      user = Hellen.Accounts.get_user!(lesson.user_id)
+      Hellen.Billing.refund_credit(user, lesson.id)
+
+      broadcast_progress(lesson.id, "analysis_failed", %{error: inspect(reason)})
+    else
+      # Will retry - don't update lesson status yet
+      Logger.warning("Attempt #{attempt}/#{max_attempts} failed for lesson #{lesson.id}, will retry")
+    end
+
     {:error, reason}
   end
 

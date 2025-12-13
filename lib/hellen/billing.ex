@@ -5,6 +5,8 @@ defmodule Hellen.Billing do
 
   import Ecto.Query, warn: false
 
+  require Logger
+
   alias Hellen.Accounts.User
   alias Hellen.Billing.CreditTransaction
   alias Hellen.Repo
@@ -168,9 +170,23 @@ defmodule Hellen.Billing do
 
   @doc """
   Refunds a credit for a failed analysis.
+  Idempotent: checks if a refund was already made for this lesson.
   """
   def refund_credit(%User{} = user, lesson_id) do
-    add_credits(user, 1, "refund", lesson_id)
+    # Check if we already refunded this lesson (idempotent)
+    already_refunded =
+      CreditTransaction
+      |> where([t], t.user_id == ^user.id)
+      |> where([t], t.lesson_id == ^lesson_id)
+      |> where([t], t.reason == "refund")
+      |> Repo.exists?()
+
+    if already_refunded do
+      Logger.info("[Billing] Refund already exists for lesson #{lesson_id}, skipping")
+      {:ok, user}
+    else
+      add_credits(user, 1, "refund", lesson_id)
+    end
   end
 
   @doc """

@@ -150,6 +150,7 @@ defmodule Hellen.AI.AnalysisOrchestrator do
       |> maybe_add_socioemotional_task_v3(transcription, config.include_socioemotional)
 
     # Run primary parallel batch (Core + Legal + Socioemotional)
+    # Timeout is 630s (30s more than HTTP timeout of 600s to allow proper error handling)
     results =
       tasks
       |> Task.async_stream(
@@ -160,10 +161,19 @@ defmodule Hellen.AI.AnalysisOrchestrator do
           Logger.info("[AnalysisOrchestrator] Task #{type} completed in #{duration}ms")
           {type, result}
         end,
-        timeout: 300_000,
-        max_concurrency: 3
+        timeout: 630_000,
+        max_concurrency: 3,
+        on_timeout: :kill_task
       )
-      |> Enum.into(%{}, fn {:ok, res} -> res end)
+      |> Enum.reduce(%{}, fn
+        {:ok, {type, result}}, acc -> Map.put(acc, type, result)
+        {:exit, :timeout}, acc ->
+          Logger.error("[AnalysisOrchestrator] Task timed out after 630s")
+          acc
+        {:exit, reason}, acc ->
+          Logger.error("[AnalysisOrchestrator] Task exited: #{inspect(reason)}")
+          acc
+      end)
 
     # Check if Core Analysis succeeded
     case Map.get(results, :core) do

@@ -34,6 +34,13 @@ if guardian_secret = System.get_env("GUARDIAN_SECRET_KEY") do
 end
 
 # NVIDIA API - for dev/test with .env (used for LLM analysis)
+# Support multiple keys (comma-separated) for load distribution
+if nvidia_keys = System.get_env("NVIDIA_API_KEYS") do
+  keys = String.split(nvidia_keys, ",") |> Enum.map(&String.trim/1) |> Enum.filter(&(&1 != ""))
+  config :hellen, :nvidia_api_keys, keys
+end
+
+# Fallback to single key (backward compatible)
 if nvidia_key = System.get_env("NVIDIA_API_KEY") do
   config :hellen, :nvidia_api_key, nvidia_key
 end

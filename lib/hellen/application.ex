@@ -10,6 +10,8 @@ defmodule Hellen.Application do
       Hellen.Repo,
       {DNSCluster, query: Application.get_env(:hellen, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Hellen.PubSub},
+      # Start NVIDIA API key pool (before Oban workers)
+      Hellen.AI.NvidiaKeyPool,
       # Start Oban
       {Oban, Application.fetch_env!(:hellen, Oban)},
       # Start Redis connection

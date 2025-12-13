@@ -205,72 +205,53 @@ defmodule Hellen.AI.BnccParser do
   # ============================================================================
 
   defp pdf_to_images(pdf_path, pages) do
-    # Usar pdftoppm ou convert para extrair páginas como PNG
-    # Por enquanto, retorna erro indicando necessidade de implementação
-    # ou usa as competências de fallback
-
     if File.exists?(pdf_path) do
       Logger.info("[BnccParser] PDF exists, attempting conversion for pages: #{inspect(pages)}")
-
-      # Tentar usar pdftoppm (poppler-utils)
       output_dir = Path.join(System.tmp_dir!(), "bncc_pages_#{:erlang.unique_integer([:positive])}")
       File.mkdir_p!(output_dir)
 
-      results =
-        Enum.map(pages, fn page ->
-          output_file = Path.join(output_dir, "page_#{page}")
-
-          case System.cmd("pdftoppm", [
-                 "-png",
-                 "-f",
-                 to_string(page),
-                 "-l",
-                 to_string(page),
-                 "-r",
-                 "150",
-                 pdf_path,
-                 output_file
-               ]) do
-            {_, 0} ->
-              # pdftoppm adiciona sufixo com número da página
-              png_file = "#{output_file}-#{page}.png"
-
-              if File.exists?(png_file) do
-                {:ok, %{page: page, path: png_file}}
-              else
-                # Tentar com formato diferente
-                alt_png = "#{output_file}-#{String.pad_leading(to_string(page), 2, "0")}.png"
-
-                if File.exists?(alt_png) do
-                  {:ok, %{page: page, path: alt_png}}
-                else
-                  {:error, {:file_not_found, page}}
-                end
-              end
-
-            {error, _code} ->
-              {:error, {:pdftoppm_failed, page, error}}
-          end
-        end)
-
-      errors = Enum.filter(results, &match?({:error, _}, &1))
-
-      if Enum.empty?(errors) do
-        images = Enum.map(results, fn {:ok, img} -> img end)
-        {:ok, images}
-      else
-        Logger.warning("[BnccParser] Some pages failed: #{inspect(errors)}")
-        # Retornar as que funcionaram
-        images = results |> Enum.filter(&match?({:ok, _}, &1)) |> Enum.map(fn {:ok, img} -> img end)
-
-        if Enum.empty?(images) do
-          {:error, :pdf_conversion_failed}
-        else
-          {:ok, images}
-        end
-      end
+      pages
+      |> Enum.map(&convert_page(pdf_path, output_dir, &1))
+      |> collect_results()
     else
       {:error, {:file_not_found, pdf_path}}
+    end
+  end
+
+  defp convert_page(pdf_path, output_dir, page) do
+    output_file = Path.join(output_dir, "page_#{page}")
+    args = ["-png", "-f", to_string(page), "-l", to_string(page), "-r", "150", pdf_path, output_file]
+
+    case System.cmd("pdftoppm", args) do
+      {_, 0} -> find_output_png(output_file, page)
+      {error, _code} -> {:error, {:pdftoppm_failed, page, error}}
+    end
+  end
+
+  defp find_output_png(output_file, page) do
+    png_file = "#{output_file}-#{page}.png"
+    alt_png = "#{output_file}-#{String.pad_leading(to_string(page), 2, "0")}.png"
+
+    cond do
+      File.exists?(png_file) -> {:ok, %{page: page, path: png_file}}
+      File.exists?(alt_png) -> {:ok, %{page: page, path: alt_png}}
+      true -> {:error, {:file_not_found, page}}
+    end
+  end
+
+  defp collect_results(results) do
+    {successes, errors} = Enum.split_with(results, &match?({:ok, _}, &1))
+
+    unless Enum.empty?(errors) do
+      Logger.warning("[BnccParser] Some pages failed: #{inspect(errors)}")
+    end
+
+    images = Enum.map(successes, fn {:ok, img} -> img end)
+
+    if Enum.empty?(images) do
+      {:error, :pdf_conversion_failed}
+    else
+      {:ok, images}
     end
   end
 
@@ -372,33 +353,37 @@ defmodule Hellen.AI.BnccParser do
   end
 
   defp extract_markdown_from_response(message) do
-    # Tentar extrair markdown do content ou tool_calls
     cond do
-      message["content"] && message["content"] != "" ->
-        message["content"]
-
-      message["tool_calls"] && message["tool_calls"] != [] ->
-        Enum.map_join(message["tool_calls"], "\n\n", fn tc ->
-          case tc["function"]["arguments"] do
-            args when is_binary(args) ->
-              case Jason.decode(args) do
-                {:ok, %{"text" => text}} -> text
-                {:ok, %{"markdown" => md}} -> md
-                _ -> args
-              end
-
-            args when is_map(args) ->
-              args["text"] || args["markdown"] || ""
-
-            _ ->
-              ""
-          end
-        end)
-
-      true ->
-        ""
+      has_content?(message) -> message["content"]
+      has_tool_calls?(message) -> extract_from_tool_calls(message["tool_calls"])
+      true -> ""
     end
   end
+
+  defp has_content?(message), do: message["content"] && message["content"] != ""
+  defp has_tool_calls?(message), do: message["tool_calls"] && message["tool_calls"] != []
+
+  defp extract_from_tool_calls(tool_calls) do
+    Enum.map_join(tool_calls, "\n\n", &extract_tool_call_text/1)
+  end
+
+  defp extract_tool_call_text(tc) do
+    tc |> get_in(["function", "arguments"]) |> parse_tool_arguments()
+  end
+
+  defp parse_tool_arguments(args) when is_binary(args) do
+    case Jason.decode(args) do
+      {:ok, %{"text" => text}} -> text
+      {:ok, %{"markdown" => md}} -> md
+      _ -> args
+    end
+  end
+
+  defp parse_tool_arguments(args) when is_map(args) do
+    args["text"] || args["markdown"] || ""
+  end
+
+  defp parse_tool_arguments(_), do: ""
 
   # ============================================================================
   # Private - Extract Competencies
@@ -409,7 +394,8 @@ defmodule Hellen.AI.BnccParser do
     full_text = Enum.map_join(markdown_results, "\n\n", & &1.markdown)
 
     # Regex para encontrar competências numeradas (1. NOME\nDescrição...)
-    competency_regex = ~r/(?:^|\n)(\d+)\.\s*([A-ZÁÉÍÓÚÂÊÔÀÃÕÇ][A-ZÁÉÍÓÚÂÊÔÀÃÕÇ\s,]+)\n((?:[^0-9\n].*?\n?)+)/u
+    competency_regex =
+      ~r/(?:^|\n)(\d+)\.\s*([A-ZÁÉÍÓÚÂÊÔÀÃÕÇ][A-ZÁÉÍÓÚÂÊÔÀÃÕÇ\s,]+)\n((?:[^0-9\n].*?\n?)+)/u
 
     competencies =
       Regex.scan(competency_regex, full_text)
@@ -469,72 +455,66 @@ defmodule Hellen.AI.BnccParser do
     |> Enum.take(5)
   end
 
+  @area_map %{
+    "LP" => "linguagens",
+    "AR" => "linguagens",
+    "EF" => "linguagens",
+    "LI" => "linguagens",
+    "MA" => "matematica",
+    "CI" => "ciencias_natureza",
+    "GE" => "ciencias_humanas",
+    "HI" => "ciencias_humanas",
+    "ER" => "ensino_religioso"
+  }
+
+  @component_map %{
+    "LP" => "lingua_portuguesa",
+    "AR" => "arte",
+    "EF" => "educacao_fisica",
+    "LI" => "lingua_inglesa",
+    "MA" => "matematica",
+    "CI" => "ciencias",
+    "GE" => "geografia",
+    "HI" => "historia",
+    "ER" => "ensino_religioso"
+  }
+
+  @grade_map %{
+    "01" => "1º ano",
+    "02" => "2º ano",
+    "03" => "3º ano",
+    "04" => "4º ano",
+    "05" => "5º ano",
+    "06" => "6º ano",
+    "07" => "7º ano",
+    "08" => "8º ano",
+    "09" => "9º ano",
+    "12" => "1º e 2º anos",
+    "15" => "1º ao 5º ano",
+    "35" => "3º ao 5º ano",
+    "67" => "6º e 7º anos",
+    "69" => "6º ao 9º ano",
+    "89" => "8º e 9º anos"
+  }
+
   defp infer_area_from_code(code) do
     case Regex.run(~r/EF\d{2}([A-Z]{2})/, code) do
-      [_, component_code] ->
-        case component_code do
-          "LP" -> "linguagens"
-          "AR" -> "linguagens"
-          "EF" -> "linguagens"
-          "LI" -> "linguagens"
-          "MA" -> "matematica"
-          "CI" -> "ciencias_natureza"
-          "GE" -> "ciencias_humanas"
-          "HI" -> "ciencias_humanas"
-          "ER" -> "ensino_religioso"
-          _ -> "outros"
-        end
-
-      _ ->
-        "outros"
+      [_, component_code] -> Map.get(@area_map, component_code, "outros")
+      _ -> "outros"
     end
   end
 
   defp infer_component_from_code(code) do
     case Regex.run(~r/EF\d{2}([A-Z]{2})/, code) do
-      [_, component_code] ->
-        case component_code do
-          "LP" -> "lingua_portuguesa"
-          "AR" -> "arte"
-          "EF" -> "educacao_fisica"
-          "LI" -> "lingua_inglesa"
-          "MA" -> "matematica"
-          "CI" -> "ciencias"
-          "GE" -> "geografia"
-          "HI" -> "historia"
-          "ER" -> "ensino_religioso"
-          _ -> "outros"
-        end
-
-      _ ->
-        "outros"
+      [_, component_code] -> Map.get(@component_map, component_code, "outros")
+      _ -> "outros"
     end
   end
 
   defp infer_grade_from_code(code) do
     case Regex.run(~r/EF(\d{2})/, code) do
-      [_, year_code] ->
-        case year_code do
-          "01" -> "1º ano"
-          "02" -> "2º ano"
-          "03" -> "3º ano"
-          "04" -> "4º ano"
-          "05" -> "5º ano"
-          "06" -> "6º ano"
-          "07" -> "7º ano"
-          "08" -> "8º ano"
-          "09" -> "9º ano"
-          "12" -> "1º e 2º anos"
-          "15" -> "1º ao 5º ano"
-          "35" -> "3º ao 5º ano"
-          "67" -> "6º e 7º anos"
-          "69" -> "6º ao 9º ano"
-          "89" -> "8º e 9º anos"
-          _ -> "#{year_code}º ano"
-        end
-
-      _ ->
-        "não especificado"
+      [_, year_code] -> Map.get(@grade_map, year_code, "#{year_code}º ano")
+      _ -> "não especificado"
     end
   end
 

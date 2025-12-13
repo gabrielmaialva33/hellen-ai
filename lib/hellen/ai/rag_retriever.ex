@@ -220,43 +220,32 @@ defmodule Hellen.AI.RagRetriever do
   """
   @spec build_agent_context(atom(), String.t(), map()) :: map()
   def build_agent_context(agent_type, transcription, context) do
-    subject = context[:subject]
-    grade_level = context[:grade_level]
     excerpt = String.slice(transcription, 0, 1000)
-
-    base_context = %{}
-
-    base_context =
-      case agent_type do
-        :compliance ->
-          # ComplianceAgent precisa de BNCC
-          case retrieve_bncc_context(subject, grade_level, excerpt) do
-            {:ok, bncc} -> Map.put(base_context, :bncc_context, bncc)
-            _ -> base_context
-          end
-
-        :scoring ->
-          # ScoringAgent pode usar templates de feedback
-          case retrieve_feedback_templates("scoring", excerpt) do
-            {:ok, templates} -> Map.put(base_context, :feedback_templates, templates)
-            _ -> base_context
-          end
-
-        :planning ->
-          # PlanningAgent pode usar lições similares
-          lesson_id = context[:lesson_id]
-
-          case retrieve_similar_lessons(excerpt, exclude: lesson_id) do
-            {:ok, lessons} -> Map.put(base_context, :similar_lessons, lessons)
-            _ -> base_context
-          end
-
-        _ ->
-          base_context
-      end
-
-    base_context
+    retrieve_context_for_agent(agent_type, excerpt, context)
   end
+
+  defp retrieve_context_for_agent(:compliance, excerpt, context) do
+    case retrieve_bncc_context(context[:subject], context[:grade_level], excerpt) do
+      {:ok, bncc} -> %{bncc_context: bncc}
+      _ -> %{}
+    end
+  end
+
+  defp retrieve_context_for_agent(:scoring, excerpt, _context) do
+    case retrieve_feedback_templates("scoring", excerpt) do
+      {:ok, templates} -> %{feedback_templates: templates}
+      _ -> %{}
+    end
+  end
+
+  defp retrieve_context_for_agent(:planning, excerpt, context) do
+    case retrieve_similar_lessons(excerpt, exclude: context[:lesson_id]) do
+      {:ok, lessons} -> %{similar_lessons: lessons}
+      _ -> %{}
+    end
+  end
+
+  defp retrieve_context_for_agent(_agent_type, _excerpt, _context), do: %{}
 
   # ============================================================================
   # Private Functions

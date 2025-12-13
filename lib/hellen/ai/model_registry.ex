@@ -154,7 +154,6 @@ defmodule Hellen.AI.ModelRegistry do
       timeout_ms: 120_000,
       temperature: 0.5
     },
-
     nemotron_ultra: %{
       id: "nvidia/llama-3.1-nemotron-ultra-253b-v1",
       name: "Nemotron Ultra 253B",
@@ -209,7 +208,6 @@ defmodule Hellen.AI.ModelRegistry do
       timeout_ms: 180_000,
       temperature: 0.3
     },
-
     deepseek_r1: %{
       id: "deepseek-ai/deepseek-r1",
       name: "DeepSeek R1",
@@ -225,7 +223,6 @@ defmodule Hellen.AI.ModelRegistry do
       timeout_ms: 180_000,
       temperature: 0.3
     },
-
     deepseek_r1_distill_32b: %{
       id: "deepseek-ai/deepseek-r1-distill-qwen-32b",
       name: "DeepSeek R1 Distill 32B",
@@ -241,7 +238,6 @@ defmodule Hellen.AI.ModelRegistry do
       timeout_ms: 120_000,
       temperature: 0.3
     },
-
     kimi_k2_thinking: %{
       id: "moonshotai/kimi-k2-thinking",
       name: "Kimi K2 Thinking",
@@ -257,7 +253,6 @@ defmodule Hellen.AI.ModelRegistry do
       timeout_ms: 180_000,
       temperature: 0.3
     },
-
     qwen_thinking: %{
       id: "qwen/qwen3-next-80b-a3b-thinking",
       name: "Qwen3 Next Thinking",
@@ -294,7 +289,6 @@ defmodule Hellen.AI.ModelRegistry do
       max_tokens: 8192,
       timeout_ms: 120_000
     },
-
     nemoretriever_ocr: %{
       id: "nvidia/nemoretriever-ocr-v1",
       name: "NemoRetriever OCR v1",
@@ -309,7 +303,6 @@ defmodule Hellen.AI.ModelRegistry do
       max_tokens: 4096,
       timeout_ms: 60_000
     },
-
     paddleocr: %{
       id: "baidu/paddleocr",
       name: "PaddleOCR",
@@ -324,7 +317,6 @@ defmodule Hellen.AI.ModelRegistry do
       max_tokens: 4096,
       timeout_ms: 60_000
     },
-
     nemoretriever_parse: %{
       id: "nvidia/nemoretriever-parse",
       name: "NemoRetriever Parse",
@@ -359,7 +351,6 @@ defmodule Hellen.AI.ModelRegistry do
       capabilities: [:asr, :multilingual, :streaming],
       languages: 25
     },
-
     parakeet_portuguese: %{
       id: "nvidia/parakeet-ctc-0.6b-asr",
       name: "Parakeet CTC 0.6B",
@@ -373,7 +364,6 @@ defmodule Hellen.AI.ModelRegistry do
       capabilities: [:asr, :streaming, :batch],
       languages: ["en", "pt"]
     },
-
     parakeet_spanish: %{
       id: "nvidia/parakeet-ctc-0.6b-es",
       name: "Parakeet Spanish 0.6B",
@@ -387,7 +377,6 @@ defmodule Hellen.AI.ModelRegistry do
       capabilities: [:asr, :streaming],
       languages: ["en", "es"]
     },
-
     whisper_large: %{
       id: "openai/whisper-large-v3",
       name: "Whisper Large v3",
@@ -401,7 +390,6 @@ defmodule Hellen.AI.ModelRegistry do
       capabilities: [:asr, :multilingual, :batch],
       languages: 100
     },
-
     canary: %{
       id: "nvidia/canary-1b-asr",
       name: "Canary 1B ASR",
@@ -435,7 +423,6 @@ defmodule Hellen.AI.ModelRegistry do
       capabilities: [:translation, :few_shot],
       languages: 12
     },
-
     riva_36lang: %{
       id: "nvidia/riva-translate-1.6b",
       name: "Riva Translate 1.6B",
@@ -449,7 +436,6 @@ defmodule Hellen.AI.ModelRegistry do
       capabilities: [:translation],
       languages: 36
     },
-
     megatron_nmt: %{
       id: "nvidia/megatron-1b-nmt",
       name: "Megatron NMT 1B",
@@ -482,7 +468,6 @@ defmodule Hellen.AI.ModelRegistry do
       cost_per_1k: 0.01,
       capabilities: [:content_safety, :moderation, :multilingual]
     },
-
     nemoguard_jailbreak: %{
       id: "nvidia/nemoguard-jailbreak-detect",
       name: "NemoGuard Jailbreak",
@@ -495,7 +480,6 @@ defmodule Hellen.AI.ModelRegistry do
       cost_per_1k: 0.005,
       capabilities: [:jailbreak_detection, :llm_security]
     },
-
     nemoguard_content: %{
       id: "nvidia/llama-3.1-nemoguard-8b-content-safety",
       name: "NemoGuard Content Safety",
@@ -508,7 +492,6 @@ defmodule Hellen.AI.ModelRegistry do
       cost_per_1k: 0.01,
       capabilities: [:content_safety, :moderation]
     },
-
     llama_guard: %{
       id: "meta/llama-guard-4-12b",
       name: "Llama Guard 4 12B",
@@ -540,7 +523,6 @@ defmodule Hellen.AI.ModelRegistry do
       cost_per_1k: 0.20,
       capabilities: [:coding, :reasoning, :long_context]
     },
-
     qwen_coder: %{
       id: "qwen/qwen3-coder-480b-a35b-instruct",
       name: "Qwen3 Coder 480B",
@@ -553,7 +535,6 @@ defmodule Hellen.AI.ModelRegistry do
       cost_per_1k: 0.25,
       capabilities: [:coding, :agentic, :browser_use]
     },
-
     qwen_coder_32b: %{
       id: "qwen/qwen2.5-coder-32b-instruct",
       name: "Qwen 2.5 Coder 32B",
@@ -566,7 +547,6 @@ defmodule Hellen.AI.ModelRegistry do
       cost_per_1k: 0.08,
       capabilities: [:coding, :completion, :generation]
     },
-
     mamba_codestral: %{
       id: "mistralai/mamba-codestral-7b-v0.1",
       name: "Mamba Codestral 7B",
@@ -599,7 +579,6 @@ defmodule Hellen.AI.ModelRegistry do
       capabilities: [:embedding, :multilingual, :rag],
       languages: 26
     },
-
     nv_embedqa: %{
       id: "nvidia/llama-3.2-nv-embedqa-1b-v2",
       name: "NV EmbedQA 1B",
@@ -612,7 +591,6 @@ defmodule Hellen.AI.ModelRegistry do
       cost_per_1k: 0.01,
       capabilities: [:embedding, :qa, :retrieval]
     },
-
     nv_embedcode: %{
       id: "nvidia/nv-embedcode-7b-v1",
       name: "NV EmbedCode 7B",
@@ -625,7 +603,6 @@ defmodule Hellen.AI.ModelRegistry do
       cost_per_1k: 0.02,
       capabilities: [:embedding, :code, :retrieval]
     },
-
     bge_m3: %{
       id: "baai/bge-m3",
       name: "BGE M3",
@@ -657,7 +634,6 @@ defmodule Hellen.AI.ModelRegistry do
       cost_per_1k: 0.30,
       capabilities: [:vision, :reasoning, :qa]
     },
-
     llama_vision_11b: %{
       id: "meta/llama-3.2-11b-vision-instruct",
       name: "Llama 3.2 11B Vision",
@@ -670,7 +646,6 @@ defmodule Hellen.AI.ModelRegistry do
       cost_per_1k: 0.05,
       capabilities: [:vision, :qa, :retrieval]
     },
-
     vila: %{
       id: "nvidia/vila",
       name: "VILA",
@@ -683,7 +658,6 @@ defmodule Hellen.AI.ModelRegistry do
       cost_per_1k: 0.08,
       capabilities: [:vision, :video, :multimodal]
     },
-
     gemma_vision: %{
       id: "google/gemma-3-27b-it",
       name: "Gemma 3 27B",
@@ -745,7 +719,17 @@ defmodule Hellen.AI.ModelRegistry do
   """
   @spec list_categories() :: [atom()]
   def list_categories do
-    [:analysis, :reasoning, :ocr, :transcription, :translation, :safety, :coding, :embedding, :vision]
+    [
+      :analysis,
+      :reasoning,
+      :ocr,
+      :transcription,
+      :translation,
+      :safety,
+      :coding,
+      :embedding,
+      :vision
+    ]
   end
 
   @doc """

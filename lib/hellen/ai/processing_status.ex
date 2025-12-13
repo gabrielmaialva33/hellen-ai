@@ -177,7 +177,11 @@ defmodule Hellen.AI.ProcessingStatus do
     }
 
     broadcast(lesson_id, "processing_step_complete", event)
-    Logger.info("[ProcessingStatus] #{lesson_id} - #{step}: completed in #{results[:duration_ms]}ms")
+
+    Logger.info(
+      "[ProcessingStatus] #{lesson_id} - #{step}: completed in #{results[:duration_ms]}ms"
+    )
+
     :ok
   end
 
@@ -227,6 +231,7 @@ defmodule Hellen.AI.ProcessingStatus do
   def get_steps do
     Enum.map(@steps, fn step ->
       info = Map.get(@step_descriptions, step, %{})
+
       %{
         key: step,
         name_pt: info[:pt] || to_string(step),
@@ -251,6 +256,7 @@ defmodule Hellen.AI.ProcessingStatus do
   defp initialize_steps do
     Enum.map(@steps, fn step ->
       info = Map.get(@step_descriptions, step, %{})
+
       %{
         key: step,
         status: :pending,

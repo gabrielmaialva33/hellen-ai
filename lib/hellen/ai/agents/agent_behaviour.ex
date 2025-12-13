@@ -231,27 +231,28 @@ defmodule Hellen.AI.Agents.AgentBase do
       def retrieve_context(_input, _context), do: %{}
 
       defp maybe_retrieve_rag_context(input, context) do
-        try do
-          rag_context = retrieve_context(input, context)
+        rag_context = retrieve_context(input, context)
 
-          if map_size(rag_context) > 0 do
-            Logger.debug("[#{__MODULE__}] Retrieved RAG context with #{map_size(rag_context)} keys")
-            Map.merge(context, rag_context)
-          else
-            context
-          end
-        rescue
-          e ->
-            Logger.warning(
-              "[#{__MODULE__}] RAG context retrieval failed: #{inspect(e)}, using original context"
-            )
+        if map_size(rag_context) > 0 do
+          Logger.debug(
+            "[#{__MODULE__}] Retrieved RAG context with #{map_size(rag_context)} keys"
+          )
 
-            context
+          Map.merge(context, rag_context)
+        else
+          context
         end
+      rescue
+        e ->
+          Logger.warning(
+            "[#{__MODULE__}] RAG context retrieval failed: #{inspect(e)}, using original context"
+          )
+
+          context
       end
 
       # Allow overriding in implementations
-      defoverridable [run: 3, do_process: 2, retrieve_context: 2]
+      defoverridable run: 3, do_process: 2, retrieve_context: 2
     end
   end
 end

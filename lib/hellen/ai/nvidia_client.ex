@@ -53,7 +53,7 @@ defmodule Hellen.AI.NvidiaClient do
 
   # Model tiers for intelligent selection (Quality > Speed strategy)
   # Standard: Best cost-benefit for most analyses
-  @model_standard "meta/llama-3.1-70b-instruct"
+  @model_standard "qwen/qwen3-coder-480b-a35b-instruct"
   # Deep: Maximum quality for critical/validation analyses
   @model_deep "meta/llama-3.1-405b-instruct"
   # Fast: Quick preliminary checks only
@@ -284,6 +284,7 @@ defmodule Hellen.AI.NvidiaClient do
         response_format: "verbose_json"
       ],
       headers: groq_auth_headers(),
+      connect_options: [timeout: 30_000],
       receive_timeout: 300_000
     )
     |> handle_transcription_response()
@@ -367,6 +368,7 @@ defmodule Hellen.AI.NvidiaClient do
           response_format: %{type: "json_object"}
         },
         headers: nvidia_auth_headers(),
+        connect_options: [timeout: 30_000],
         receive_timeout: 300_000
       )
 
@@ -679,7 +681,8 @@ defmodule Hellen.AI.NvidiaClient do
           response_format: %{type: "json_object"}
         },
         headers: nvidia_auth_headers(),
-        receive_timeout: 240_000
+        connect_options: [timeout: 30_000],
+        receive_timeout: 600_000
       )
 
     processing_time = System.monotonic_time(:millisecond) - start_time
@@ -890,7 +893,7 @@ defmodule Hellen.AI.NvidiaClient do
   # Private functions
 
   defp nvidia_auth_headers do
-    api_key = Application.get_env(:hellen, :nvidia_api_key)
+    api_key = Hellen.AI.NvidiaKeyPool.get_key()
 
     [
       {"Authorization", "Bearer #{api_key}"},

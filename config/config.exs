@@ -57,6 +57,9 @@ config :hellen, Oban,
   repo: Hellen.Repo,
   plugins: [
     Oban.Plugins.Pruner,
+    # Rescue orphaned jobs (stuck in "executing" after server crash/restart)
+    # Checks every 60s, rescues jobs stuck for more than 5 minutes
+    {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(5)},
     {Oban.Plugins.Cron,
      crontab: [
        # Cleanup old job records daily at 2 AM
