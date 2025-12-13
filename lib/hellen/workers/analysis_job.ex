@@ -227,15 +227,19 @@ defmodule Hellen.Workers.AnalysisJob do
   end
 
   defp parse_float(nil), do: nil
-  defp parse_float(value) when is_float(value), do: value
-  defp parse_float(value) when is_integer(value), do: value / 1.0
+  defp parse_float(value) when is_float(value), do: normalize_score(value)
+  defp parse_float(value) when is_integer(value), do: normalize_score(value / 1.0)
 
   defp parse_float(value) when is_binary(value) do
     case Float.parse(value) do
-      {float, _} -> float
+      {float, _} -> normalize_score(float)
       :error -> nil
     end
   end
+
+  # Normalize score to 0-1 range (AI sometimes returns 0-100 instead of 0-1)
+  defp normalize_score(score) when score > 1.0, do: score / 100.0
+  defp normalize_score(score), do: score
 
   defp save_analysis(lesson, result) do
     Analysis.create_full_analysis(lesson.id, result)
