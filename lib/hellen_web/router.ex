@@ -18,7 +18,6 @@ defmodule HellenWeb.Router do
 
   pipeline :stripe_webhook do
     plug :accepts, ["json"]
-    plug HellenWeb.Plugs.StripeWebhookPlug
   end
 
   # Stripe webhook (needs raw body for signature verification)

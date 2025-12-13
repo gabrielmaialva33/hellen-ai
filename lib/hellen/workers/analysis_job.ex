@@ -8,8 +8,7 @@ defmodule Hellen.Workers.AnalysisJob do
     max_attempts: 3,
     unique: [period: 300, keys: [:lesson_id]]
 
-  alias Hellen.AI.AnalysisValidator
-  alias Hellen.AI.NvidiaClient
+  alias Hellen.AI.AnalysisOrchestrator
   alias Hellen.Analysis
   alias Hellen.Lessons
   alias Hellen.Notifications
@@ -56,48 +55,89 @@ defmodule Hellen.Workers.AnalysisJob do
       planned_file_name: lesson.planned_file_name
     }
 
-    case NvidiaClient.analyze_pedagogy(transcription, context) do
-      {:ok, result} ->
-        # Enrich result with context and transcription for validation
-        enriched_result = Map.merge(result, %{transcription: transcription, context: context})
-        {:ok, build_analysis_result(enriched_result)}
+    # Use v3.0 Masterclass Orchestrator (includes BehaviorDetector and AnalysisValidator)
+    case AnalysisOrchestrator.run_full_analysis_v3(transcription, context) do
+      {:ok, orchestration_result} ->
+        log_score_comparison(orchestration_result, lesson.id)
+        {:ok, build_v3_analysis_result(orchestration_result)}
 
       {:error, _} = error ->
         error
     end
   end
 
-  defp build_analysis_result(nvidia_result) do
-    structured = nvidia_result.structured
+  defp log_score_comparison(result, lesson_id) do
+    rigorous = result[:rigorous_score] || result["rigorous_score"]
+    llm_score = extract_llm_score(result)
+
+    if rigorous && llm_score do
+      delta = abs(rigorous - llm_score)
+
+      if delta > 20 do
+        Logger.info(
+          "[ScoreComparison] Lesson #{lesson_id}: rigorous=#{rigorous}, llm=#{llm_score}, delta=#{delta}"
+        )
+      end
+    end
+  end
+
+  defp extract_llm_score(result) do
+    core = result[:core_analysis] || result["core_analysis"]
+
+    if core do
+      structured = core[:structured] || core["structured"]
+      get_in(structured, ["metadata", "conformidade_geral_percent"])
+    else
+      nil
+    end
+  end
+
+  defp build_v3_analysis_result(result) do
+    # Extract core analysis
+    core = result[:core_analysis] || result["core_analysis"]
+    structured = core[:structured] || core["structured"]
+
+    # Always use rigorous_score (normalized to 0-1), fallback to normalized LLM score
+    overall_score =
+      get_normalized_rigorous_score(result) || normalize_score(extract_score(structured))
+
+    # Get validation warning
+    validation_warning = result[:validation_warning] || result["validation_warning"]
+
+    # Get behavior analysis and validation report (always available from validator)
+    behavior_analysis = result[:behavior_analysis] || result["behavior_analysis"]
+    validation_report = result[:validation_report] || result["validation_report"]
+
+    # Always include validation data in structured result for frontend access
+    structured_updated =
+      structured
+      |> Map.put("validation_warning", validation_warning)
+      |> Map.put("behavior_analysis", behavior_analysis)
+      |> Map.put("validation_report", validation_report)
 
     %{
-      model: nvidia_result.model,
-      # Wrap raw string in a map to match the :map field type in Analysis schema
-      raw: %{"content" => nvidia_result.raw},
-      structured: structured,
-      overall_score: parse_float(structured["overall_score"]),
-      processing_time_ms: nvidia_result.processing_time_ms,
-      tokens_used: nvidia_result.tokens_used,
+      model: core[:model] || "qwen/qwen3-next-80b-instruct",
+      raw: %{"content" => core[:raw] || ""},
+      structured: structured_updated,
+      overall_score: parse_float(overall_score),
+      processing_time_ms: result[:processing_time_ms] || 0,
+      tokens_used: result[:total_tokens] || 0,
       bncc_matches: parse_bncc_matches(structured["bncc_matches"]),
       bullying_alerts: parse_bullying_alerts(structured["bullying_alerts"]),
       lesson_characters: parse_lesson_characters(structured["lesson_characters"]),
-      validation:
-        validate_result(
-          nvidia_result.structured,
-          nvidia_result.transcription
-        )
+      # For backward compatibility in response
+      validation: validation_warning
     }
   end
 
-  defp validate_result(structured_result, transcription) do
-    case AnalysisValidator.validate_analysis(
-           transcription,
-           structured_result
-         ) do
-      {:ok, updated_result} -> updated_result["validation_warning"]
-      _ -> nil
-    end
+  defp extract_score(structured) do
+    # Try different paths for score
+    get_in(structured, ["metadata", "conformidade_geral_percent"]) ||
+      structured["overall_score"] ||
+      0.0
   end
+
+  # Legacy validator caller removed as it is now integrated in Orchestrator
 
   defp parse_bncc_matches(nil), do: []
 
@@ -224,6 +264,23 @@ defmodule Hellen.Workers.AnalysisJob do
     case Float.parse(value) do
       {float, _} -> float
       :error -> nil
+    end
+  end
+
+  # Always use rigorous_score, normalized to 0-1
+  defp get_normalized_rigorous_score(result) do
+    score = result[:rigorous_score] || result["rigorous_score"]
+    normalize_score(score)
+  end
+
+  # Normalize score to 0-1 range
+  defp normalize_score(nil), do: nil
+
+  defp normalize_score(score) when is_number(score) do
+    if score > 1.0 do
+      score / 100.0
+    else
+      score
     end
   end
 

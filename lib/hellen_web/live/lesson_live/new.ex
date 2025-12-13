@@ -9,8 +9,7 @@ defmodule HellenWeb.LessonLive.New do
   @accepted_types ~w(.mp3 .mp4 .m4a .wav .webm .ogg .flac .mov .avi .mkv)
 
   @impl true
-  @impl true
-  @impl true
+
   def mount(_params, _session, socket) do
     {:ok,
      socket
@@ -43,6 +42,16 @@ defmodule HellenWeb.LessonLive.New do
   @impl true
   def handle_event("submit", params, socket) do
     handle_submit(socket.assigns.step, params, socket)
+  end
+
+  @impl true
+  def handle_event("cancel-upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :media, ref)}
+  end
+
+  @impl true
+  def handle_event("online", _params, socket) do
+    {:noreply, socket}
   end
 
   defp handle_submit(:upload, params, socket) do
@@ -161,16 +170,6 @@ defmodule HellenWeb.LessonLive.New do
 
   @impl true
   def handle_info(_msg, socket) do
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("cancel-upload", %{"ref" => ref}, socket) do
-    {:noreply, cancel_upload(socket, :media, ref)}
-  end
-
-  @impl true
-  def handle_event("online", _params, socket) do
     {:noreply, socket}
   end
 
@@ -478,9 +477,4 @@ defmodule HellenWeb.LessonLive.New do
   end
 
   defp format_filesize(_), do: "0 bytes"
-
-  defp error_message(:too_large), do: "Arquivo muito grande (máximo 500MB)"
-  defp error_message(:too_many_files), do: "Apenas um arquivo por vez"
-  defp error_message(:not_accepted), do: "Tipo de arquivo não suportado"
-  defp error_message(err), do: "Erro: #{inspect(err)}"
 end

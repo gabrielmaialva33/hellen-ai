@@ -7,6 +7,7 @@ defmodule HellenWeb.LessonLive.Show do
   alias Hellen.Analysis
   alias Hellen.BNCC
   alias Hellen.Lessons
+  alias Hellen.Lessons.DocxExtractor
   alias Hellen.Storage
 
   require Logger
@@ -384,22 +385,46 @@ defmodule HellenWeb.LessonLive.Show do
         file_name = entry.client_name
         key = "lessons/#{lesson.id}/planned/#{file_name}"
 
+        # Extract content from DOCX files before uploading
+        extracted_content =
+          if DocxExtractor.docx?(file_name) do
+            case DocxExtractor.extract(path) do
+              {:ok, content} ->
+                Logger.info("[PlannedFile] Extracted #{String.length(content)} chars from DOCX")
+                content
+
+              {:error, reason} ->
+                Logger.warning("[PlannedFile] DOCX extraction failed: #{inspect(reason)}")
+                nil
+            end
+          else
+            nil
+          end
+
         # Storage.upload_file expects (key, local_path, opts)
         case Storage.upload_file(key, path, content_type: entry.client_type) do
-          {:ok, url} -> {:ok, {url, file_name}}
+          {:ok, url} -> {:ok, {url, file_name, extracted_content}}
           {:error, reason} -> {:error, reason}
         end
       end)
 
     case uploaded_files do
-      [{url, file_name}] ->
-        case Lessons.update_planned_file(lesson, url, file_name) do
-          {:ok, updated_lesson} ->
-            {:noreply,
-             socket
-             |> assign(lesson: updated_lesson)
-             |> put_flash(:info, "Arquivo '#{file_name}' enviado com sucesso!")}
+      [{url, file_name, extracted_content}] ->
+        # Update file URL and name
+        with {:ok, updated_lesson} <- Lessons.update_planned_file(lesson, url, file_name),
+             # Also update extracted content if available
+             {:ok, final_lesson} <- maybe_update_extracted_content(updated_lesson, extracted_content) do
+          flash_msg =
+            if extracted_content,
+              do: "Arquivo '#{file_name}' enviado e conteudo extraido!",
+              else: "Arquivo '#{file_name}' enviado com sucesso!"
 
+          {:noreply,
+           socket
+           |> assign(lesson: final_lesson)
+           |> assign(planned_content: final_lesson.planned_content || "")
+           |> put_flash(:info, flash_msg)}
+        else
           {:error, _} ->
             {:noreply, put_flash(socket, :error, "Erro ao salvar arquivo")}
         end
@@ -410,6 +435,12 @@ defmodule HellenWeb.LessonLive.Show do
       {:error, reason} ->
         {:noreply, put_flash(socket, :error, "Erro no upload: #{inspect(reason)}")}
     end
+  end
+
+  defp maybe_update_extracted_content(lesson, nil), do: {:ok, lesson}
+
+  defp maybe_update_extracted_content(lesson, content) when is_binary(content) do
+    Lessons.update_planned_content(lesson, content)
   end
 
   @impl true

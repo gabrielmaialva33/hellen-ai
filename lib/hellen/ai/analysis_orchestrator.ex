@@ -14,7 +14,7 @@ defmodule Hellen.AI.AnalysisOrchestrator do
   ## Usage
 
       # Full v3.0 analysis with all outputs
-      {:ok, result} = AnalysisOrchestrator.run_full_analysis_v3(transcription, context)
+  alias Hellen.AI.AnalysisValidator
 
       # Full v2.0 analysis (legacy)
       {:ok, result} = AnalysisOrchestrator.run_full_analysis(transcription, context)
@@ -45,6 +45,7 @@ defmodule Hellen.AI.AnalysisOrchestrator do
   require Logger
 
   alias Hellen.AI.NvidiaClient
+  alias Hellen.AI.AnalysisValidator
 
   @doc """
   Runs the full analysis pipeline with parallel output generation.
@@ -182,15 +183,17 @@ defmodule Hellen.AI.AnalysisOrchestrator do
 
     Logger.info("[AnalysisOrchestrator] v3.0 pipeline completed in #{processing_time}ms")
 
-    {:ok,
-     build_v3_response(
-       core_analysis,
-       critical_dimensions,
-       results,
-       config,
-       processing_time,
-       total_tokens
-     )}
+    result =
+      build_v3_response(
+        core_analysis,
+        critical_dimensions,
+        results,
+        config,
+        processing_time,
+        total_tokens
+      )
+
+    AnalysisValidator.validate_analysis(transcription, result)
   end
 
   defp build_v3_parallel_tasks(transcription, context, core_analysis, critical_dimensions, config) do

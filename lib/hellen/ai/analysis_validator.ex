@@ -30,14 +30,10 @@ defmodule Hellen.AI.AnalysisValidator do
     rigorous_score = calculate_rigorous_score(behavior_report, context_report, compliance_report)
 
     # 3. Compare with current score
-    current_score =
-      Map.get(analysis_result, "overall_score") || Map.get(analysis_result, :overall_score) || 0.0
+    # 3. Get current score from orchestration result
+    current_score = extract_current_score(analysis_result)
 
-    # Normalize current score to 0-100 integer if it's 0-1.0 float
-    current_score_int =
-      if current_score <= 1.0, do: round(current_score * 100), else: round(current_score)
-
-    delta = current_score_int - rigorous_score
+    delta = current_score - rigorous_score
 
     # 4. Build comprehensive analysis details
     analysis_details =
@@ -52,7 +48,7 @@ defmodule Hellen.AI.AnalysisValidator do
       # 5. Flag significant discrepancy
       warning =
         build_discrepancy_warning(
-          current_score_int,
+          current_score,
           rigorous_score,
           delta,
           behavior_report,
@@ -60,26 +56,58 @@ defmodule Hellen.AI.AnalysisValidator do
           compliance_report
         )
 
+      # Build validation report for frontend
+      validation_report =
+        build_validation_report(
+          behavior_report,
+          context_report,
+          compliance_report,
+          rigorous_score
+        )
+
       # Adjust result to include warning and comprehensive analysis
       updated_result =
         analysis_result
         |> Map.put("validation_warning", warning)
         |> Map.put("rigorous_score", rigorous_score)
+        |> Map.put("rigorous_score_normalized", rigorous_score / 100.0)
         |> Map.put("behavior_analysis", analysis_details)
+        |> Map.put("validation_report", validation_report)
 
       {:ok, updated_result}
     else
+      # Build validation report for frontend
+      validation_report =
+        build_validation_report(
+          behavior_report,
+          context_report,
+          compliance_report,
+          rigorous_score
+        )
+
       # No significant discrepancy, but still include comprehensive analysis
       updated_result =
         analysis_result
         |> Map.put("rigorous_score", rigorous_score)
+        |> Map.put("rigorous_score_normalized", rigorous_score / 100.0)
         |> Map.put("behavior_analysis", analysis_details)
+        |> Map.put("validation_report", validation_report)
 
       {:ok, updated_result}
     end
   end
 
   def validate_analysis(_, result), do: {:ok, result}
+
+  defp extract_current_score(%{summary: %{conformidade_geral: score}}) when is_number(score),
+    do: round(score)
+
+  defp extract_current_score(%{
+         core_analysis: %{structured: %{"metadata" => %{"conformidade_geral_percent" => score}}}
+       })
+       when is_number(score), do: round(score)
+
+  defp extract_current_score(_), do: 0
 
   # --- Score Calculation ---
 
@@ -267,4 +295,46 @@ defmodule Hellen.AI.AnalysisValidator do
 
   defp format_recommendations([single]), do: single
   defp format_recommendations(multiple), do: "Priority actions: " <> Enum.join(multiple, "; ")
+
+  # --- Validation Report ---
+
+  defp build_validation_report(behavior_report, context_report, compliance_report, rigorous_score) do
+    %{
+      "behavior_score" => behavior_report.safety_score,
+      "context_score" => context_report.hypocrisy_score,
+      "legal_score" => compliance_report.combined_score,
+      "rigorous_score" => rigorous_score,
+      "rigorous_score_normalized" => rigorous_score / 100.0,
+      "score_breakdown" => %{
+        "behavior_component" => round(behavior_report.safety_score * 0.40),
+        "context_component" => round(context_report.hypocrisy_score * 0.30),
+        "legal_component" => round(compliance_report.combined_score * 0.30)
+      },
+      "detected_issues_count" =>
+        count_detected_issues(behavior_report, context_report, compliance_report)
+    }
+  end
+
+  defp count_detected_issues(behavior_report, context_report, compliance_report) do
+    behavior_count =
+      Enum.count(
+        [
+          behavior_report.sarcasm.detected,
+          behavior_report.disengagement.detected,
+          behavior_report.public_shame.detected,
+          behavior_report.exclusion.detected,
+          behavior_report.aggression.detected
+        ],
+        & &1
+      )
+
+    context_count =
+      if context_report.teaching_about_bullying and context_report.practicing_bullying,
+        do: 1,
+        else: 0
+
+    legal_count = if compliance_report.overall_risk in [:critical, :high], do: 1, else: 0
+
+    behavior_count + context_count + legal_count
+  end
 end
