@@ -42,6 +42,15 @@ defmodule Hellen.AI.Agents.AgentBehaviour do
 
   @doc "Returns the prompt template for this agent's task"
   @callback build_prompt(input :: any(), context :: map()) :: String.t()
+
+  @doc """
+  Optional callback to retrieve RAG context before building prompt.
+  Agents that implement this will have their context enriched with
+  relevant data from Qdrant before prompt construction.
+  """
+  @callback retrieve_context(input :: any(), context :: map()) :: map()
+
+  @optional_callbacks [retrieve_context: 2]
 end
 
 defmodule Hellen.AI.Agents.AgentBase do
@@ -129,9 +138,12 @@ defmodule Hellen.AI.Agents.AgentBase do
 
         Logger.info("[#{__MODULE__}] Starting #{task_name()} with model #{model()}")
 
+        # RAG: Enrich context if agent implements retrieve_context/2
+        enriched_context = maybe_retrieve_rag_context(input, context)
+
         # Build prompt and call API
-        prompt = build_prompt(input, context)
-        result = call_model(prompt, context)
+        prompt = build_prompt(input, enriched_context)
+        result = call_model(prompt, enriched_context)
 
         processing_time = System.monotonic_time(:millisecond) - start_time
 
@@ -211,8 +223,35 @@ defmodule Hellen.AI.Agents.AgentBase do
         end
       end
 
+      # ============================================================================
+      # RAG Context Retrieval
+      # ============================================================================
+
+      # Default implementation - agents can override this
+      def retrieve_context(_input, _context), do: %{}
+
+      defp maybe_retrieve_rag_context(input, context) do
+        try do
+          rag_context = retrieve_context(input, context)
+
+          if map_size(rag_context) > 0 do
+            Logger.debug("[#{__MODULE__}] Retrieved RAG context with #{map_size(rag_context)} keys")
+            Map.merge(context, rag_context)
+          else
+            context
+          end
+        rescue
+          e ->
+            Logger.warning(
+              "[#{__MODULE__}] RAG context retrieval failed: #{inspect(e)}, using original context"
+            )
+
+            context
+        end
+      end
+
       # Allow overriding in implementations
-      defoverridable [run: 3, do_process: 2]
+      defoverridable [run: 3, do_process: 2, retrieve_context: 2]
     end
   end
 end

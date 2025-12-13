@@ -94,9 +94,8 @@ defmodule Hellen.AI.BnccParser do
   """
   @spec parse_page_image(String.t()) :: {:ok, map()} | {:error, any()}
   def parse_page_image(image_path) do
-    with {:ok, base64} <- encode_image_base64(image_path),
-         {:ok, result} <- call_nemotron_parse(base64, get_mime_type(image_path)) do
-      {:ok, result}
+    with {:ok, base64} <- encode_image_base64(image_path) do
+      call_nemotron_parse(base64, get_mime_type(image_path))
     end
   end
 
@@ -378,9 +377,8 @@ defmodule Hellen.AI.BnccParser do
       message["content"] && message["content"] != "" ->
         message["content"]
 
-      message["tool_calls"] && length(message["tool_calls"]) > 0 ->
-        message["tool_calls"]
-        |> Enum.map(fn tc ->
+      message["tool_calls"] && message["tool_calls"] != [] ->
+        Enum.map_join(message["tool_calls"], "\n\n", fn tc ->
           case tc["function"]["arguments"] do
             args when is_binary(args) ->
               case Jason.decode(args) do
@@ -396,7 +394,6 @@ defmodule Hellen.AI.BnccParser do
               ""
           end
         end)
-        |> Enum.join("\n\n")
 
       true ->
         ""
@@ -409,10 +406,7 @@ defmodule Hellen.AI.BnccParser do
 
   defp extract_competencies_from_markdown(markdown_results) do
     # Combinar todos os markdowns
-    full_text =
-      markdown_results
-      |> Enum.map(& &1.markdown)
-      |> Enum.join("\n\n")
+    full_text = Enum.map_join(markdown_results, "\n\n", & &1.markdown)
 
     # Regex para encontrar competências numeradas (1. NOME\nDescrição...)
     competency_regex = ~r/(?:^|\n)(\d+)\.\s*([A-ZÁÉÍÓÚÂÊÔÀÃÕÇ][A-ZÁÉÍÓÚÂÊÔÀÃÕÇ\s,]+)\n((?:[^0-9\n].*?\n?)+)/u
@@ -442,10 +436,7 @@ defmodule Hellen.AI.BnccParser do
   end
 
   defp extract_skills_from_markdown(markdown_results, area, component) do
-    full_text =
-      markdown_results
-      |> Enum.map(& &1.markdown)
-      |> Enum.join("\n\n")
+    full_text = Enum.map_join(markdown_results, "\n\n", & &1.markdown)
 
     # Regex para códigos de habilidade (EF01LP01, EF07MA02, etc.)
     skill_regex = ~r/(EF\d{2}[A-Z]{2}\d{2})\s*[-–:]\s*(.*?)(?=EF\d{2}[A-Z]{2}\d{2}|$)/s
