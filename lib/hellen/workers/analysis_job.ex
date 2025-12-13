@@ -70,55 +70,32 @@ defmodule Hellen.Workers.AnalysisJob do
   defp build_analysis_result(nvidia_result) do
     structured = nvidia_result.structured
 
-    {validation_warning, behavior_analysis, rigorous_score} =
-      validate_and_extract(
-        nvidia_result.structured,
-        nvidia_result.transcription
-      )
-
-    # Use rigorous score from behavior detection, normalized to 0-1
-    # Falls back to LLM score if behavior detection fails
-    final_score =
-      if rigorous_score do
-        rigorous_score / 100.0
-      else
-        parse_float(structured["overall_score"])
-      end
-
-    # Merge behavior analysis into structured result for storage
-    enriched_structured =
-      if behavior_analysis do
-        Map.put(structured, "behavior_analysis", behavior_analysis)
-      else
-        structured
-      end
-
     %{
       model: nvidia_result.model,
       # Wrap raw string in a map to match the :map field type in Analysis schema
       raw: %{"content" => nvidia_result.raw},
-      structured: enriched_structured,
-      overall_score: final_score,
+      structured: structured,
+      overall_score: parse_float(structured["overall_score"]),
       processing_time_ms: nvidia_result.processing_time_ms,
       tokens_used: nvidia_result.tokens_used,
       bncc_matches: parse_bncc_matches(structured["bncc_matches"]),
       bullying_alerts: parse_bullying_alerts(structured["bullying_alerts"]),
       lesson_characters: parse_lesson_characters(structured["lesson_characters"]),
-      validation: validation_warning
+      validation:
+        validate_result(
+          nvidia_result.structured,
+          nvidia_result.transcription
+        )
     }
   end
 
-  defp validate_and_extract(structured_result, transcription) do
-    case AnalysisValidator.validate_analysis(transcription, structured_result) do
-      {:ok, updated_result} ->
-        {
-          updated_result["validation_warning"],
-          updated_result["behavior_analysis"],
-          updated_result["rigorous_score"]
-        }
-
-      _ ->
-        {nil, nil, nil}
+  defp validate_result(structured_result, transcription) do
+    case AnalysisValidator.validate_analysis(
+           transcription,
+           structured_result
+         ) do
+      {:ok, updated_result} -> updated_result["validation_warning"]
+      _ -> nil
     end
   end
 
@@ -240,19 +217,15 @@ defmodule Hellen.Workers.AnalysisJob do
   end
 
   defp parse_float(nil), do: nil
-  defp parse_float(value) when is_float(value), do: normalize_score(value)
-  defp parse_float(value) when is_integer(value), do: normalize_score(value / 1.0)
+  defp parse_float(value) when is_float(value), do: value
+  defp parse_float(value) when is_integer(value), do: value / 1.0
 
   defp parse_float(value) when is_binary(value) do
     case Float.parse(value) do
-      {float, _} -> normalize_score(float)
+      {float, _} -> float
       :error -> nil
     end
   end
-
-  # Normalize score to 0-1 range (AI sometimes returns 0-100 instead of 0-1)
-  defp normalize_score(score) when score > 1.0, do: score / 100.0
-  defp normalize_score(score), do: score
 
   defp save_analysis(lesson, result) do
     Analysis.create_full_analysis(lesson.id, result)

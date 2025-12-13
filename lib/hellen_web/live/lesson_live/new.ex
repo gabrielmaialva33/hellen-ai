@@ -9,6 +9,8 @@ defmodule HellenWeb.LessonLive.New do
   @accepted_types ~w(.mp3 .mp4 .m4a .wav .webm .ogg .flac .mov .avi .mkv)
 
   @impl true
+  @impl true
+  @impl true
   def mount(_params, _session, socket) do
     {:ok,
      socket
@@ -16,6 +18,9 @@ defmodule HellenWeb.LessonLive.New do
      |> assign(form: to_form(%{"title" => "", "subject" => ""}, as: :lesson))
      |> assign(uploading: false)
      |> assign(upload_state: :empty)
+     |> assign(step: :upload)
+     |> assign(lesson: nil)
+     |> assign(transcription_progress: 0)
      |> allow_upload(:media,
        accept: @accepted_types,
        max_entries: 1,
@@ -37,12 +42,14 @@ defmodule HellenWeb.LessonLive.New do
 
   @impl true
   def handle_event("submit", params, socket) do
+    handle_submit(socket.assigns.step, params, socket)
+  end
+
+  defp handle_submit(:upload, params, socket) do
     require Logger
-    Logger.info("Submit event received with params: #{inspect(params)}")
+    Logger.info("Submit upload step with params: #{inspect(params)}")
 
     user = socket.assigns.current_user
-    Logger.info("Current user: #{inspect(user && user.email)}")
-
     lesson_params = Map.get(params, "lesson", %{})
 
     # Start upload process
@@ -52,10 +59,39 @@ defmodule HellenWeb.LessonLive.New do
     try do
       case upload_and_create_lesson(socket, user, lesson_params) do
         {:ok, lesson} ->
-          {:noreply,
-           socket
-           |> put_flash(:info, "Aula criada com sucesso! O processamento começará em breve.")
-           |> push_navigate(to: ~p"/lessons/#{lesson.id}")}
+          # Start transcription background job immediately
+          case Lessons.start_processing(lesson, user) do
+            {:ok, updated_lesson} ->
+              if connected?(socket) do
+                Phoenix.PubSub.subscribe(Hellen.PubSub, "lesson:#{updated_lesson.id}")
+              end
+
+              {:noreply,
+               socket
+               |> assign(uploading: false)
+               # Use filename as default title if not provided yet
+               |> assign(
+                 form:
+                   to_form(%{"title" => lesson.title, "subject" => lesson.subject}, as: :lesson)
+               )
+               |> assign(lesson: updated_lesson)
+               |> assign(step: :details)
+               |> put_flash(:info, "Upload concluído! Preencha os detalhes enquanto processamos.")}
+
+            {:error, :insufficient_credits} ->
+              {:noreply,
+               socket
+               |> assign(uploading: false)
+               |> put_flash(:error, "Créditos insuficientes para processar a aula.")}
+
+            {:error, reason} ->
+              Logger.error("Processing start error: #{inspect(reason)}")
+
+              {:noreply,
+               socket
+               |> assign(uploading: false)
+               |> put_flash(:error, "Erro ao iniciar processamento: #{inspect(reason)}")}
+          end
 
         {:error, :insufficient_credits} ->
           {:noreply,
@@ -73,6 +109,12 @@ defmodule HellenWeb.LessonLive.New do
            socket
            |> assign(uploading: false)
            |> put_flash(:error, "Erro ao criar aula: #{inspect(reason)}")}
+
+        {:error, :no_file_uploaded} ->
+          {:noreply,
+           socket
+           |> assign(uploading: false)
+           |> put_flash(:error, "Selecione um arquivo para continuar.")}
       end
     rescue
       e ->
@@ -84,6 +126,42 @@ defmodule HellenWeb.LessonLive.New do
          |> assign(uploading: false)
          |> put_flash(:error, "Erro inesperado: #{inspect(e)}")}
     end
+  end
+
+  defp handle_submit(:details, %{"lesson" => lesson_params}, socket) do
+    # When submitting details, we assume the file is already processing.
+    # We update the metadata and redirect to show page.
+    case Lessons.update_lesson(socket.assigns.lesson, lesson_params) do
+      {:ok, lesson} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Aula configurada com sucesso!")
+         |> push_navigate(to: ~p"/lessons/#{lesson.id}")}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, form: to_form(changeset))}
+    end
+  end
+
+  @impl true
+  def handle_info({"transcription_progress", %{progress: progress}}, socket) do
+    {:noreply, assign(socket, transcription_progress: progress)}
+  end
+
+  @impl true
+  def handle_info({"transcription_complete", _payload}, socket) do
+    # You might want to auto-advance or just show 100%
+    {:noreply, assign(socket, transcription_progress: 100)}
+  end
+
+  @impl true
+  def handle_info({"transcription_failed", %{error: error}}, socket) do
+    {:noreply, put_flash(socket, :error, "Transcrição falhou: #{error}")}
+  end
+
+  @impl true
+  def handle_info(_msg, socket) do
+    {:noreply, socket}
   end
 
   @impl true
@@ -159,7 +237,7 @@ defmodule HellenWeb.LessonLive.New do
     ~H"""
     <div class="space-y-8 animate-fade-in">
       <div class="max-w-4xl mx-auto">
-        <%!-- Header com Design 2025 --%>
+        <%!-- Header --%>
         <div class="mb-10 text-center">
           <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-100/80 dark:bg-teal-900/30 mb-4">
             <span class="relative flex h-2 w-2">
@@ -167,30 +245,33 @@ defmodule HellenWeb.LessonLive.New do
               </span>
               <span class="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
             </span>
-            <span class="text-sm font-medium text-teal-700 dark:text-teal-300">Analise com IA</span>
+            <span class="text-sm font-medium text-teal-700 dark:text-teal-300">
+              <%= if @step == :upload, do: "Nova Aula", else: "Processando..." %>
+            </span>
           </div>
           <h1 class="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white tracking-tight mb-3">
-            Nova Aula
+            <%= if @step == :upload, do: "Envie sua gravação", else: "Detalhes da Aula" %>
           </h1>
           <p class="text-base sm:text-lg text-slate-500 dark:text-slate-400">
-            Envie sua gravacao e deixe a IA fazer o resto
+            <%= if @step == :upload,
+              do: "Comece enviando o arquivo para análise",
+              else: "Preencha as informações enquanto a IA analisa o áudio" %>
           </p>
         </div>
 
-        <%!-- Main Content Area --%>
-        <div class="relative">
+        <%!-- Step 1: Upload --%>
+        <div :if={@step == :upload} class="relative">
           <form phx-submit="submit" phx-change="validate" class="space-y-6">
-            <%!-- Hidden file input - must stay in DOM for upload to work --%>
+            <%!-- Hidden file input --%>
             <.live_file_input upload={@uploads.media} class="sr-only" />
 
-            <%!-- Estado 1: Empty State - Drop Zone --%>
+            <%!-- Drop Zone --%>
             <div
               :if={@uploads.media.entries == [] && !@uploading}
               class="upload-container relative w-full mb-8"
               phx-drop-target={@uploads.media.ref}
               id="upload-drop-zone"
             >
-              <%!-- Clickable overlay to trigger file input --%>
               <label
                 for={@uploads.media.ref}
                 class="absolute inset-0 w-full h-full cursor-pointer z-50"
@@ -198,9 +279,7 @@ defmodule HellenWeb.LessonLive.New do
               >
               </label>
 
-              <%!-- Card Visual (Background) --%>
               <div class="upload-card bg-white dark:bg-slate-800 rounded-2xl shadow-card border-2 border-dashed border-slate-300 dark:border-slate-600 p-10 sm:p-16 transition-all duration-300 hover:shadow-elevated hover:border-teal-400 dark:hover:border-teal-500 hover:bg-teal-50/30 dark:hover:bg-teal-900/10 relative z-10 pointer-events-none group">
-                <%!-- Icone Central com animacao --%>
                 <div class="flex justify-center mb-8">
                   <div class="relative">
                     <div class="absolute inset-0 bg-teal-500/20 rounded-full blur-2xl animate-pulse-glow">
@@ -211,7 +290,6 @@ defmodule HellenWeb.LessonLive.New do
                   </div>
                 </div>
 
-                <%!-- Texto Principal --%>
                 <div class="text-center space-y-3">
                   <h2 class="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-white">
                     Arraste seu arquivo aqui
@@ -224,239 +302,152 @@ defmodule HellenWeb.LessonLive.New do
                   </p>
                 </div>
 
-                <%!-- Info Cards --%>
                 <div class="mt-10 pt-8 border-t border-slate-200/50 dark:border-slate-700/50">
                   <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
                     <div class="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-100/50 dark:bg-slate-700/30">
-                      <div class="w-8 h-8 rounded-lg bg-teal-500/10 dark:bg-teal-500/20 flex items-center justify-center">
-                        <.icon
-                          name="hero-musical-note"
-                          class="h-4 w-4 text-teal-600 dark:text-teal-400"
-                        />
-                      </div>
-                      <span class="text-sm text-slate-600 dark:text-slate-400">
-                        MP4, MP3, WAV, M4A
-                      </span>
+                      <span class="text-sm text-slate-600 dark:text-slate-400">MP4, MP3, WAV...</span>
                     </div>
                     <div class="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-100/50 dark:bg-slate-700/30">
-                      <div class="w-8 h-8 rounded-lg bg-cyan-500/10 dark:bg-cyan-500/20 flex items-center justify-center">
-                        <.icon
-                          name="hero-arrow-up-tray"
-                          class="h-4 w-4 text-cyan-600 dark:text-cyan-400"
-                        />
-                      </div>
                       <span class="text-sm text-slate-600 dark:text-slate-400">Ate 500MB</span>
                     </div>
                   </div>
                 </div>
-
-                <%!-- Overlay de Drag --%>
-                <div class="upload-drag-overlay absolute inset-0 bg-gradient-to-br from-teal-500/10 to-cyan-500/10 dark:from-teal-500/20 dark:to-cyan-500/20 backdrop-blur-sm rounded-2xl opacity-0 transition-all duration-300 flex items-center justify-center border-2 border-teal-500 border-dashed z-30">
-                  <div class="text-center animate-bounce-subtle">
-                    <div class="w-20 h-20 mx-auto mb-4 rounded-2xl bg-teal-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
-                      <.icon name="hero-arrow-down-tray" class="h-10 w-10 text-white" />
-                    </div>
-                    <p class="text-xl font-semibold text-teal-700 dark:text-teal-300">Solte aqui</p>
-                  </div>
-                </div>
-              </div>
-
-              <%!-- Erros de Upload --%>
-              <div
-                :if={upload_errors(@uploads.media) != []}
-                class="mt-6 relative z-20 animate-fade-in"
-              >
-                <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-xl p-4">
-                  <.error :for={err <- upload_errors(@uploads.media)}>
-                    <div class="flex items-center gap-3 text-red-700 dark:text-red-400">
-                      <.icon name="hero-exclamation-circle" class="h-5 w-5" />
-                      <span><%= error_message(err) %></span>
-                    </div>
-                  </.error>
-                </div>
               </div>
             </div>
 
-            <%!-- Estado 2: File Selected + Form --%>
+            <%!-- File Selected Preview --%>
             <div
               :if={@uploads.media.entries != [] && !@uploading}
               class="space-y-6 animate-fade-in-up"
             >
-              <%!-- Preview do Arquivo --%>
               <div
                 :for={entry <- @uploads.media.entries}
-                class="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200/50 dark:border-slate-700/50 overflow-hidden"
+                class="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200/50 dark:border-slate-700/50 overflow-hidden p-6 sm:p-8"
               >
-                <div class="p-6 sm:p-8">
-                  <div class="flex items-start gap-4 sm:gap-6">
-                    <%!-- Icone do Arquivo --%>
-                    <div class="flex-shrink-0">
-                      <div class="relative">
-                        <div class="absolute inset-0 bg-teal-500/10 dark:bg-teal-500/20 rounded-xl blur">
-                        </div>
-                        <div class="relative bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-900/50 dark:to-cyan-900/50 rounded-xl p-4 sm:p-5 border border-teal-100 dark:border-teal-800">
-                          <.icon
-                            name="hero-film"
-                            class="h-8 w-8 sm:h-10 sm:w-10 text-teal-600 dark:text-teal-400"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <%!-- Info do Arquivo --%>
-                    <div class="flex-1 min-w-0">
-                      <h3 class="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white truncate mb-1">
-                        <%= entry.client_name %>
-                      </h3>
-                      <p class="text-sm sm:text-base text-slate-500 dark:text-slate-400">
-                        <%= format_filesize(entry.client_size) %>
-                      </p>
-
-                      <%!-- Progress Bar --%>
-                      <div :if={entry.progress > 0} class="mt-4 sm:mt-6">
-                        <div class="flex items-center justify-between mb-2">
-                          <span class={[
-                            "text-sm font-medium",
-                            entry.progress < 100 && "text-teal-600 dark:text-teal-400",
-                            entry.progress >= 100 && "text-emerald-600 dark:text-emerald-400"
-                          ]}>
-                            <%= if entry.progress < 100, do: "Enviando...", else: "Pronto!" %>
-                          </span>
-                          <span class="text-sm font-bold text-slate-700 dark:text-slate-300 tabular-nums">
-                            <%= entry.progress %>%
-                          </span>
-                        </div>
-                        <div class="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                          <div
-                            class={[
-                              "h-full rounded-full transition-all duration-500 ease-out",
-                              entry.progress < 100 && "bg-gradient-to-r from-teal-500 to-cyan-500",
-                              entry.progress >= 100 && "bg-gradient-to-r from-emerald-500 to-teal-500"
-                            ]}
-                            style={"width: #{entry.progress}%"}
-                          >
-                          </div>
-                        </div>
-                      </div>
-
-                      <%!-- Erros do Entry --%>
-                      <div :if={upload_errors(@uploads.media, entry) != []} class="mt-4">
-                        <.error :for={err <- upload_errors(@uploads.media, entry)}>
-                          <div class="flex items-center gap-2 text-red-600 dark:text-red-400">
-                            <.icon name="hero-exclamation-circle" class="h-4 w-4" />
-                            <span class="text-sm"><%= error_message(err) %></span>
-                          </div>
-                        </.error>
-                      </div>
-                    </div>
-
-                    <%!-- Botao Remover --%>
-                    <button
-                      type="button"
-                      phx-click="cancel-upload"
-                      phx-value-ref={entry.ref}
-                      class="flex-shrink-0 p-2.5 sm:p-3 text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all duration-200"
-                      aria-label="Remover arquivo"
-                    >
-                      <.icon name="hero-x-mark" class="h-5 w-5 sm:h-6 sm:w-6" />
-                    </button>
+                <div class="flex items-start gap-4 sm:gap-6">
+                  <div class="flex-shrink-0">
+                    <.icon name="hero-film" class="h-10 w-10 text-teal-600 dark:text-teal-400" />
                   </div>
+                  <div class="flex-1 min-w-0">
+                    <h3 class="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white truncate">
+                      <%= entry.client_name %>
+                    </h3>
+                    <p class="text-sm text-slate-500"><%= format_filesize(entry.client_size) %></p>
+                    <%!-- Progress --%>
+                    <div :if={entry.progress > 0} class="mt-4">
+                      <div class="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div
+                          class="h-full bg-teal-500 transition-all duration-300"
+                          style={"width: #{entry.progress}%"}
+                        >
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    phx-click="cancel-upload"
+                    phx-value-ref={entry.ref}
+                    class="text-slate-400 hover:text-red-500"
+                  >
+                    <.icon name="hero-x-mark" class="h-6 w-6" />
+                  </button>
                 </div>
               </div>
 
-              <%!-- Formulario de Metadados --%>
-              <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200/50 dark:border-slate-700/50 p-6 sm:p-8">
-                <div class="flex items-center gap-3 mb-6">
-                  <div class="w-10 h-10 rounded-xl bg-teal-500/10 dark:bg-teal-500/20 flex items-center justify-center">
-                    <.icon name="hero-document-text" class="h-5 w-5 text-teal-600 dark:text-teal-400" />
-                  </div>
-                  <h3 class="text-lg font-semibold text-slate-900 dark:text-white">
-                    Detalhes da Aula
-                  </h3>
-                </div>
-
-                <div class="space-y-5">
-                  <%!-- Titulo --%>
-                  <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Titulo <span class="text-slate-400">(opcional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="lesson[title]"
-                      value={@form[:title].value}
-                      placeholder="Ex: Aula de Matematica - Fracoes"
-                      class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all duration-200 text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
-                    />
-                  </div>
-
-                  <%!-- Disciplina --%>
-                  <div>
-                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                      Disciplina
-                    </label>
-                    <div class="relative">
-                      <select
-                        name="lesson[subject]"
-                        class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all duration-200 text-base text-slate-900 dark:text-white appearance-none cursor-pointer pr-10"
-                      >
-                        <option value="">Selecione uma disciplina</option>
-                        <%= for {label, value} <- subject_options() do %>
-                          <option value={value} selected={@form[:subject].value == value}>
-                            <%= label %>
-                          </option>
-                        <% end %>
-                      </select>
-                      <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <.icon name="hero-chevron-down" class="h-5 w-5 text-slate-400" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <%!-- Actions --%>
-              <div class="flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
-                <.link
-                  navigate={~p"/dashboard"}
-                  class="w-full sm:w-auto text-center px-6 py-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium transition-colors duration-200"
-                >
-                  Cancelar
-                </.link>
-
+              <%!-- Start Button --%>
+              <div class="flex justify-center">
                 <button
                   type="submit"
-                  disabled={@uploading || @uploads.media.entries == []}
-                  class="w-full sm:w-auto group relative px-8 py-4 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-semibold rounded-xl shadow-lg shadow-teal-500/30 hover:shadow-xl hover:shadow-teal-500/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg transition-all duration-300 hover:scale-[1.02] disabled:hover:scale-100"
+                  disabled={@uploading}
+                  class="group relative px-8 py-4 bg-gradient-to-r from-teal-600 to-cyan-600 text-white font-semibold rounded-xl shadow-lg shadow-teal-500/30 hover:shadow-xl hover:shadow-teal-500/40 transition-all duration-300 hover:scale-[1.02]"
                 >
                   <span class="flex items-center justify-center gap-2">
                     <%= if @uploading do %>
                       <.spinner size="sm" />
                       <span>Enviando...</span>
                     <% else %>
-                      <.icon name="hero-sparkles" class="h-5 w-5" />
-                      <span>Processar Aula</span>
+                      <.icon name="hero-play" class="h-5 w-5" />
+                      <span>Começar Análise</span>
                     <% end %>
                   </span>
                 </button>
               </div>
             </div>
           </form>
+        </div>
 
-          <%!-- Estado 3: Uploading --%>
-          <div :if={@uploading} class="animate-fade-in">
-            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200/50 dark:border-slate-700/50 p-10 sm:p-16 text-center">
-              <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center animate-pulse">
-                <.icon name="hero-arrow-path" class="h-10 w-10 text-white animate-spin" />
+        <%!-- Step 2: Details --%>
+        <div :if={@step == :details} class="animate-fade-in">
+          <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200/50 dark:border-slate-700/50 p-6 sm:p-8 mb-6">
+            <div class="flex items-center gap-4 mb-4">
+              <div class="flex-1">
+                <h3 class="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex justify-between">
+                  <span>Progresso da Transcrição</span>
+                  <span><%= @transcription_progress %>%</span>
+                </h3>
+                <div class="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    class="h-full bg-teal-500 transition-all duration-500 ease-out"
+                    style={"width: #{@transcription_progress}%"}
+                  >
+                  </div>
+                </div>
               </div>
-              <h3 class="text-xl font-semibold text-slate-900 dark:text-white mb-2">
-                Processando sua aula...
-              </h3>
-              <p class="text-slate-500 dark:text-slate-400">
-                Aguarde enquanto preparamos tudo
-              </p>
             </div>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+              Sua aula já está sendo processada. Aproveite para preencher os detalhes abaixo.
+            </p>
           </div>
+
+          <form phx-submit="submit" phx-change="validate" class="space-y-6">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-card border border-slate-200/50 dark:border-slate-700/50 p-6 sm:p-8">
+              <div class="space-y-5">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Titulo
+                  </label>
+                  <input
+                    type="text"
+                    name="lesson[title]"
+                    value={@form[:title].value}
+                    class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Disciplina
+                  </label>
+                  <div class="relative">
+                    <select
+                      name="lesson[subject]"
+                      class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl appearance-none pr-10 text-slate-900 dark:text-white"
+                    >
+                      <option value="">Selecione...</option>
+                      <%= for {label, value} <- subject_options() do %>
+                        <option value={value} selected={@form[:subject].value == value}>
+                          <%= label %>
+                        </option>
+                      <% end %>
+                    </select>
+                    <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <.icon name="hero-chevron-down" class="h-5 w-5 text-slate-400" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex justify-end">
+              <button
+                type="submit"
+                class="px-8 py-4 bg-teal-600 text-white font-semibold rounded-xl shadow-lg hover:bg-teal-700 transition-colors"
+              >
+                Salvar e Visualizar Aula
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
