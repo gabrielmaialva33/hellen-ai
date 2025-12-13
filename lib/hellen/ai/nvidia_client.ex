@@ -610,6 +610,7 @@ defmodule Hellen.AI.NvidiaClient do
   @doc """
   Quick legal compliance check against Lei 13.185 and Lei 13.718.
   Returns conformity scores and risk assessment.
+  Uses lighter model (#{@fast_analysis_model}) for faster response.
   """
   def check_legal_compliance(transcription) do
     system_prompt = Prompts.legal_compliance_system_prompt()
@@ -617,13 +618,13 @@ defmodule Hellen.AI.NvidiaClient do
     temperature = Prompts.temperature(:legal_compliance)
     max_tokens = Prompts.max_tokens(:legal_compliance)
 
-    Logger.info("[NvidiaClient] Starting legal compliance check")
+    Logger.info("[NvidiaClient] Starting legal compliance check (Model: #{@fast_analysis_model})")
     start_time = System.monotonic_time(:millisecond)
 
     result =
       Req.post("#{@analysis_base_url}/chat/completions",
         json: %{
-          model: @analysis_model,
+          model: @fast_analysis_model,
           messages: [
             %{role: "system", content: system_prompt},
             %{role: "user", content: user_prompt}
@@ -633,7 +634,7 @@ defmodule Hellen.AI.NvidiaClient do
           response_format: %{type: "json_object"}
         },
         headers: nvidia_auth_headers(),
-        receive_timeout: 90_000
+        receive_timeout: 60_000
       )
 
     processing_time = System.monotonic_time(:millisecond) - start_time
@@ -650,6 +651,7 @@ defmodule Hellen.AI.NvidiaClient do
            raw: message,
            structured: parse_analysis_response(message),
            type: :legal_compliance,
+           model: @fast_analysis_model,
            tokens_used: (usage["prompt_tokens"] || 0) + (usage["completion_tokens"] || 0),
            processing_time_ms: processing_time
          }}
@@ -664,6 +666,7 @@ defmodule Hellen.AI.NvidiaClient do
 
   @doc """
   Analyzes socioemotional competencies based on OCDE 5 pillars.
+  Uses lighter model (#{@fast_analysis_model}) for faster response.
 
   Returns scores for:
   - Desempenho (Performance)
@@ -685,13 +688,13 @@ defmodule Hellen.AI.NvidiaClient do
     temperature = Prompts.temperature(:core_analysis)
     max_tokens = Prompts.max_tokens(:quick_check)
 
-    Logger.info("[NvidiaClient] Starting socioemotional analysis")
+    Logger.info("[NvidiaClient] Starting socioemotional analysis (Model: #{@fast_analysis_model})")
     start_time = System.monotonic_time(:millisecond)
 
     result =
       Req.post("#{@analysis_base_url}/chat/completions",
         json: %{
-          model: @analysis_model,
+          model: @fast_analysis_model,
           messages: [
             %{role: "system", content: system_prompt},
             %{role: "user", content: user_prompt}
@@ -701,7 +704,7 @@ defmodule Hellen.AI.NvidiaClient do
           response_format: %{type: "json_object"}
         },
         headers: nvidia_auth_headers(),
-        receive_timeout: 90_000
+        receive_timeout: 60_000
       )
 
     processing_time = System.monotonic_time(:millisecond) - start_time
@@ -711,11 +714,14 @@ defmodule Hellen.AI.NvidiaClient do
         message = get_in(body, ["choices", Access.at(0), "message", "content"])
         usage = body["usage"]
 
+        Logger.info("[NvidiaClient] Socioemotional analysis completed in #{processing_time}ms")
+
         {:ok,
          %{
            raw: message,
            structured: parse_analysis_response(message),
            type: :socioemotional,
+           model: @fast_analysis_model,
            tokens_used: (usage["prompt_tokens"] || 0) + (usage["completion_tokens"] || 0),
            processing_time_ms: processing_time
          }}
