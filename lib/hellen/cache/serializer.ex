@@ -142,10 +142,10 @@ defmodule Hellen.Cache.Serializer do
   @atom_keys ~w(
     id user_id lesson_id analysis_id institution_id
     status type name title subject email
-    inserted_at updated_at created_at
+    inserted_at updated_at created_at date
     score overall_score confidence_score
     total completed processing pending failed
-    credits balance
+    credits balance lesson_title
   )
 
   defp restore_atoms(map) when is_map(map) do

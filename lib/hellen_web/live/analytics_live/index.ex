@@ -246,7 +246,7 @@ defmodule HellenWeb.AnalyticsLive.Index do
                     class="hover:bg-gray-50 dark:hover:bg-slate-700/50"
                   >
                     <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                      <%= Calendar.strftime(item.date, "%d/%m/%Y") %>
+                      <%= format_date(item.date) %>
                     </td>
                     <td class="px-4 py-3">
                       <.link

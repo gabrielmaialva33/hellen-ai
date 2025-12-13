@@ -103,9 +103,18 @@ defmodule HellenWeb.UIComponents do
   def status_label(_), do: "Desconhecido"
 
   @doc false
-  def format_date(datetime) do
+  def format_date(%DateTime{} = datetime) do
     Calendar.strftime(datetime, "%d/%m/%Y")
   end
+
+  def format_date(str) when is_binary(str) do
+    case DateTime.from_iso8601(str) do
+      {:ok, dt, _} -> Calendar.strftime(dt, "%d/%m/%Y")
+      _ -> str
+    end
+  end
+
+  def format_date(nil), do: "-"
 
   @doc false
   def format_datetime(datetime) do
