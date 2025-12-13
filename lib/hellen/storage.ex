@@ -28,9 +28,7 @@ defmodule Hellen.Storage do
     # Note: R2 doesn't support x-amz-acl headers (public-read, etc.)
     # Public access is configured at the bucket level in Cloudflare dashboard
     request =
-      ExAws.S3.put_object(bucket, key, binary,
-        content_type: content_type
-      )
+      ExAws.S3.put_object(bucket, key, binary, content_type: content_type)
 
     case ExAws.request(request) do
       {:ok, _response} ->

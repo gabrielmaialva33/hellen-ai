@@ -70,42 +70,55 @@ defmodule Hellen.Workers.AnalysisJob do
   defp build_analysis_result(nvidia_result) do
     structured = nvidia_result.structured
 
-    validation_result =
-      validate_result(
+    {validation_warning, behavior_analysis, rigorous_score} =
+      validate_and_extract(
         nvidia_result.structured,
         nvidia_result.transcription
       )
 
-    # Use rigorous score if available from validation, otherwise default to LLM score
+    # Use rigorous score from behavior detection, normalized to 0-1
+    # Falls back to LLM score if behavior detection fails
     final_score =
-      if validation_result && validation_result["rigorous_score"] do
-        validation_result["rigorous_score"]
+      if rigorous_score do
+        rigorous_score / 100.0
       else
         parse_float(structured["overall_score"])
+      end
+
+    # Merge behavior analysis into structured result for storage
+    enriched_structured =
+      if behavior_analysis do
+        Map.put(structured, "behavior_analysis", behavior_analysis)
+      else
+        structured
       end
 
     %{
       model: nvidia_result.model,
       # Wrap raw string in a map to match the :map field type in Analysis schema
       raw: %{"content" => nvidia_result.raw},
-      structured: structured,
+      structured: enriched_structured,
       overall_score: final_score,
       processing_time_ms: nvidia_result.processing_time_ms,
       tokens_used: nvidia_result.tokens_used,
       bncc_matches: parse_bncc_matches(structured["bncc_matches"]),
       bullying_alerts: parse_bullying_alerts(structured["bullying_alerts"]),
       lesson_characters: parse_lesson_characters(structured["lesson_characters"]),
-      validation: validation_result
+      validation: validation_warning
     }
   end
 
-  defp validate_result(structured_result, transcription) do
-    case AnalysisValidator.validate_analysis(
-           transcription,
-           structured_result
-         ) do
-      {:ok, updated_result} -> updated_result["validation_warning"]
-      _ -> nil
+  defp validate_and_extract(structured_result, transcription) do
+    case AnalysisValidator.validate_analysis(transcription, structured_result) do
+      {:ok, updated_result} ->
+        {
+          updated_result["validation_warning"],
+          updated_result["behavior_analysis"],
+          updated_result["rigorous_score"]
+        }
+
+      _ ->
+        {nil, nil, nil}
     end
   end
 
