@@ -795,6 +795,14 @@ defmodule Hellen.AI.NvidiaClient do
   end
 
   defp build_pedagogical_prompt(context) do
+    planned_section = build_planned_section(context)
+
+    planned_alignment_item =
+      if planned_section != "",
+        do:
+          "\n    9. planned_alignment: análise de aderência ao conteúdo planejado (se fornecido)",
+        else: ""
+
     """
     Você é um especialista em pedagogia e análise de aulas, com profundo conhecimento em:
     - BNCC (Base Nacional Comum Curricular)
@@ -810,11 +818,44 @@ defmodule Hellen.AI.NvidiaClient do
     5. improvements: oportunidades de melhoria
     6. time_management: análise da gestão do tempo
     7. engagement: nível de engajamento dos alunos
+    8. lesson_characters: array de personagens/participantes identificados na aula#{planned_alignment_item}
+
+    Para lesson_characters, identifique cada participante distinto (professor(a), alunos) e forneça:
+    {
+      "identifier": "Nome inferido ou 'Professor(a)', 'Aluno 1', etc.",
+      "role": "teacher" | "student" | "assistant" | "guest" | "other",
+      "speech_count": número estimado de falas,
+      "word_count": número estimado de palavras,
+      "characteristics": ["participativo", "questionador", "atento", etc.],
+      "speech_patterns": "Descrição breve do padrão de fala (ex: 'Usa linguagem clara e pausada')",
+      "key_quotes": ["citação representativa 1", "citação representativa 2"],
+      "sentiment": "positive" | "neutral" | "negative" | "mixed",
+      "engagement_level": "high" | "medium" | "low"
+    }
 
     Contexto da aula:
     - Disciplina: #{context[:subject] || "Não especificada"}
     - Nível: #{context[:grade_level] || "Não especificado"}
+    #{planned_section}
+
+    #{if planned_section != "", do: "IMPORTANTE: Compare a transcrição com o conteúdo planejado. Identifique:\n- O que foi coberto conforme planejado\n- O que ficou faltando do planejamento\n- Conteúdos abordados fora do planejamento\n- Sugestões de alinhamento para próximas aulas", else: ""}
     """
+  end
+
+  defp build_planned_section(context) do
+    planned_content = context[:planned_content]
+    planned_file_name = context[:planned_file_name]
+
+    cond do
+      planned_content && String.trim(planned_content) != "" ->
+        "- Material Planejado: #{planned_content}"
+
+      planned_file_name ->
+        "- Arquivo de Planejamento: #{planned_file_name} (conteúdo a ser considerado na análise)"
+
+      true ->
+        ""
+    end
   end
 
   defp build_feedback_prompt(context) do
@@ -858,13 +899,35 @@ defmodule Hellen.AI.NvidiaClient do
     """
   end
 
-  defp build_analysis_request(transcription, _context) do
-    """
+  defp build_analysis_request(transcription, context) do
+    planned_content = context[:planned_content]
+
+    base_request = """
     Analise a seguinte transcrição de aula e forneça seu feedback pedagógico:
 
     TRANSCRIÇÃO:
     #{transcription}
+    """
 
+    planned_section =
+      if planned_content && String.trim(to_string(planned_content)) != "" do
+        """
+
+        CONTEÚDO PLANEJADO PARA ESTA AULA:
+        #{planned_content}
+
+        Compare a transcrição com o conteúdo planejado acima e inclua na sua análise:
+        - Percentual de aderência ao planejamento
+        - Tópicos cobertos vs não cobertos
+        - Recomendações de alinhamento
+        """
+      else
+        ""
+      end
+
+    """
+    #{base_request}
+    #{planned_section}
     Responda APENAS em formato JSON válido.
     """
   end

@@ -190,7 +190,7 @@ defmodule Hellen.Notifications do
       "analysis_id" => analysis.id,
       "lesson_id" => lesson.id,
       "lesson_title" => lesson.title,
-      "score" => analysis.score,
+      "score" => analysis.overall_score,
       "analysis_url" => Keyword.get(opts, :base_url, "") <> "/lessons/#{lesson.id}/analysis"
     }
 
@@ -199,7 +199,7 @@ defmodule Hellen.Notifications do
         type: "analysis_complete",
         title: "Analise Concluida",
         message:
-          "A analise da aula \"#{lesson.title}\" foi concluida com score #{analysis.score}.",
+          "A analise da aula \"#{lesson.title}\" foi concluida com score #{analysis.overall_score}.",
         data: notification_data,
         institution_id: institution_id
       })

@@ -48,16 +48,14 @@ defmodule HellenWeb do
 
       # Handle Ecto.NoResultsError gracefully
       def action(conn, _opts) do
-        try do
-          apply(__MODULE__, action_name(conn), [conn, conn.params])
-        rescue
-          Ecto.NoResultsError ->
-            conn
-            |> put_status(:not_found)
-            |> put_view(json: HellenWeb.ErrorJSON)
-            |> Phoenix.Controller.render(:"404")
-            |> halt()
-        end
+        apply(__MODULE__, action_name(conn), [conn, conn.params])
+      rescue
+        Ecto.NoResultsError ->
+          conn
+          |> put_status(:not_found)
+          |> put_view(json: HellenWeb.ErrorJSON)
+          |> Phoenix.Controller.render(:"404")
+          |> halt()
       end
     end
   end

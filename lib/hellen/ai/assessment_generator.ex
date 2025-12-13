@@ -116,13 +116,11 @@ defmodule Hellen.AI.AssessmentGenerator do
   # ============================================================================
 
   defp get_planning(planning_id) do
-    try do
-      planning = Plannings.get_planning!(planning_id)
-      {:ok, planning}
-    rescue
-      Ecto.NoResultsError ->
-        {:error, :planning_not_found}
-    end
+    planning = Plannings.get_planning!(planning_id)
+    {:ok, planning}
+  rescue
+    Ecto.NoResultsError ->
+      {:error, :planning_not_found}
   end
 
   defp find_bncc_matches(text) do

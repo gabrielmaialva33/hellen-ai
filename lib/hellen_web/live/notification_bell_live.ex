@@ -190,14 +190,24 @@ defmodule HellenWeb.NotificationBellLive do
 
   defp relative_time(datetime) do
     now = DateTime.utc_now()
-    diff = DateTime.diff(now, datetime, :second)
+    # Convert NaiveDateTime to DateTime if needed
+    dt = ensure_datetime(datetime)
+    diff = DateTime.diff(now, dt, :second)
 
     cond do
       diff < 60 -> "agora"
       diff < 3600 -> "ha #{div(diff, 60)} min"
       diff < 86_400 -> "ha #{div(diff, 3600)} h"
       diff < 604_800 -> "ha #{div(diff, 86_400)} d"
-      true -> Calendar.strftime(datetime, "%d/%m")
+      true -> Calendar.strftime(dt, "%d/%m")
     end
   end
+
+  defp ensure_datetime(%DateTime{} = dt), do: dt
+
+  defp ensure_datetime(%NaiveDateTime{} = ndt) do
+    DateTime.from_naive!(ndt, "Etc/UTC")
+  end
+
+  defp ensure_datetime(other), do: other
 end

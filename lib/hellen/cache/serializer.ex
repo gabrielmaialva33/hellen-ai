@@ -84,13 +84,11 @@ defmodule Hellen.Cache.Serializer do
   end
 
   def decode(@term_prefix <> binary) do
-    try do
-      :erlang.binary_to_term(binary, [:safe])
-    rescue
-      ArgumentError ->
-        Logger.warning("[Cache.Serializer] Failed to decode term, returning raw binary")
-        binary
-    end
+    :erlang.binary_to_term(binary, [:safe])
+  rescue
+    ArgumentError ->
+      Logger.warning("[Cache.Serializer] Failed to decode term, returning raw binary")
+      binary
   end
 
   # Fallback for unrecognized format (legacy or raw values)

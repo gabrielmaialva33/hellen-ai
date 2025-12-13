@@ -17,18 +17,24 @@ defmodule HellenWeb.LessonLive.Show do
     user = socket.assigns.current_user
     lesson = Lessons.get_lesson_with_transcription!(id, user.institution_id)
     analyses = Analysis.list_analyses_by_lesson(id, user.institution_id)
+    annotations = Lessons.list_annotations_by_lesson(id)
 
     Logger.info(
       "Found lesson: #{lesson.id}, Status: #{lesson.status}, Analysis count: #{length(analyses)}"
     )
 
-    # latest_analysis = List.first(analyses) |> maybe_parse_raw_analysis()
-    # Temporary fix: disabling raw parsing to debug loop
-    latest_analysis = List.first(analyses)
+    latest_analysis =
+      try do
+        List.first(analyses) |> maybe_parse_raw_analysis()
+      rescue
+        e ->
+          Logger.error("Failed to parse analysis: #{inspect(e)}")
+          List.first(analyses)
+      end
 
-    Logger.info(
-      "Refetched latest_analysis (raw parsing disabled): #{inspect(latest_analysis != nil)}"
-    )
+    lesson = Lessons.ensure_lesson_status(lesson, latest_analysis)
+
+    Logger.info("Refetched latest_analysis: #{inspect(latest_analysis != nil)}")
 
     # Subscribe to real-time updates
     if connected?(socket) do
@@ -48,13 +54,16 @@ defmodule HellenWeb.LessonLive.Show do
      |> assign(editing_planned: false)
      |> assign(generating_suggestions: false)
      |> assign(uploading_file: false)
+     |> assign(annotations: annotations)
+     |> assign(annotation_modal_open: false)
+     |> assign(selected_text: nil)
      |> allow_upload(:planned_file,
        accept: ~w(.pdf .docx .doc .md .txt),
        max_entries: 1,
        max_file_size: 10_000_000,
        auto_upload: true
      )
-     # |> load_analytics_async(user, lesson)
+     |> load_analytics_async(user, lesson)
      |> assign(score_history: [])
      |> assign(trend: :stable)
      |> assign(trend_change: 0.0)
@@ -375,7 +384,8 @@ defmodule HellenWeb.LessonLive.Show do
         file_name = entry.client_name
         key = "lessons/#{lesson.id}/planned/#{file_name}"
 
-        case Storage.upload_file(path, key, content_type: entry.client_type) do
+        # Storage.upload_file expects (key, local_path, opts)
+        case Storage.upload_file(key, path, content_type: entry.client_type) do
           {:ok, url} -> {:ok, {url, file_name}}
           {:error, reason} -> {:error, reason}
         end
@@ -435,6 +445,91 @@ defmodule HellenWeb.LessonLive.Show do
     end
   end
 
+  # Annotation event handlers
+  @impl true
+  def handle_event(
+        "open_annotation_modal",
+        %{"start" => start, "end" => end_pos, "text" => text},
+        socket
+      ) do
+    {:noreply,
+     socket
+     |> assign(annotation_modal_open: true)
+     |> assign(selected_text: %{start: start, end: end_pos, text: text})}
+  end
+
+  @impl true
+  def handle_event("close_annotation_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(annotation_modal_open: false)
+     |> assign(selected_text: nil)}
+  end
+
+  @impl true
+  def handle_event("save_annotation", %{"content" => content}, socket) do
+    case socket.assigns.selected_text do
+      nil ->
+        {:noreply, put_flash(socket, :error, "Nenhum texto selecionado")}
+
+      selected ->
+        user = socket.assigns.current_user
+        lesson = socket.assigns.lesson
+
+        attrs = %{
+          "lesson_id" => lesson.id,
+          "user_id" => user.id,
+          "selection_start" => selected.start,
+          "selection_end" => selected.end,
+          "selection_text" => selected.text,
+          "content" => content
+        }
+
+        case Lessons.create_transcription_annotation(attrs) do
+          {:ok, annotation} ->
+            annotations = socket.assigns.annotations ++ [annotation]
+
+            {:noreply,
+             socket
+             |> assign(annotations: annotations)
+             |> assign(annotation_modal_open: false)
+             |> assign(selected_text: nil)
+             |> put_flash(:info, "Anotação salva!")}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Erro ao salvar anotação")}
+        end
+    end
+  end
+
+  @impl true
+  def handle_event("delete_annotation", %{"id" => id}, socket) do
+    annotation = Lessons.get_transcription_annotation!(id)
+
+    case Lessons.delete_transcription_annotation(annotation) do
+      {:ok, _} ->
+        annotations = Enum.reject(socket.assigns.annotations, &(&1.id == id))
+        {:noreply, assign(socket, annotations: annotations)}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Erro ao excluir anotação")}
+    end
+  end
+
+  @impl true
+  def handle_event("show_annotation", %{"id" => id}, socket) do
+    # Could open a detail view or scroll to the annotation
+    Logger.info("Show annotation: #{id}")
+    {:noreply, socket}
+  end
+
+  # NotebookLM-style citation: scroll to evidence in transcript
+  @impl true
+  def handle_event("scroll_to_evidence", %{"text" => text}, socket) do
+    # Push event to JS hook to scroll and highlight the evidence text
+    {:noreply, push_event(socket, "scroll-to-evidence", %{text: text})}
+  end
+
   defp generate_ai_suggestions(lesson) do
     # For now, return mock suggestions - later integrate with AI
     transcription_text =
@@ -484,11 +579,34 @@ defmodule HellenWeb.LessonLive.Show do
     |> length()
   end
 
-  defp get_bncc_code(bncc) when is_map(bncc),
-    do: Map.get(bncc, "code") || Map.get(bncc, :code, "")
+  defp get_bncc_code(bncc) when is_map(bncc) do
+    Map.get(bncc, "code") || Map.get(bncc, :code) ||
+      Map.get(bncc, "competencia_code") || Map.get(bncc, :competencia_code, "")
+  end
 
   defp get_bncc_code(bncc) when is_binary(bncc), do: bncc
   defp get_bncc_code(_), do: ""
+
+  defp get_bncc_name(bncc) when is_map(bncc) do
+    Map.get(bncc, "name") || Map.get(bncc, :name) ||
+      Map.get(bncc, "competencia_name") || Map.get(bncc, :competencia_name)
+  end
+
+  defp get_bncc_name(_), do: nil
+
+  defp get_bncc_score(bncc) when is_map(bncc) do
+    Map.get(bncc, "score") || Map.get(bncc, :score) ||
+      Map.get(bncc, "match_score") || Map.get(bncc, :match_score)
+  end
+
+  defp get_bncc_score(_), do: nil
+
+  defp get_bncc_evidence(bncc) when is_map(bncc) do
+    Map.get(bncc, "evidence_text") || Map.get(bncc, :evidence_text) ||
+      Map.get(bncc, "evidence") || Map.get(bncc, :evidence)
+  end
+
+  defp get_bncc_evidence(_), do: nil
 
   defp get_alert_description(alert) when is_map(alert) do
     Map.get(alert, "description") || Map.get(alert, :description, "Alerta detectado")
@@ -496,6 +614,19 @@ defmodule HellenWeb.LessonLive.Show do
 
   defp get_alert_description(alert) when is_binary(alert), do: alert
   defp get_alert_description(_), do: "Alerta detectado"
+
+  defp get_alert_severity(alert) when is_map(alert) do
+    Map.get(alert, "severity") || Map.get(alert, :severity)
+  end
+
+  defp get_alert_severity(_), do: nil
+
+  defp get_alert_evidence(alert) when is_map(alert) do
+    Map.get(alert, "evidence_text") || Map.get(alert, :evidence_text) ||
+      Map.get(alert, "evidence") || Map.get(alert, :evidence)
+  end
+
+  defp get_alert_evidence(_), do: nil
 
   # Check if bncc_matches are available (from association or recovered from raw)
   defp bncc_matches_loaded?(%{bncc_matches: matches}) when is_list(matches), do: true
@@ -527,6 +658,85 @@ defmodule HellenWeb.LessonLive.Show do
 
   defp get_bullying_alerts(_), do: []
 
+  # Check if lesson_characters are available
+  defp characters_loaded?(%{lesson_characters: chars}) when is_list(chars), do: true
+
+  defp characters_loaded?(%{result: %{"lesson_characters" => chars}}) when is_list(chars),
+    do: true
+
+  defp characters_loaded?(_), do: false
+
+  # Get lesson characters safely
+  defp get_characters(%{lesson_characters: chars}) when is_list(chars), do: chars
+
+  defp get_characters(%{result: %{"lesson_characters" => chars}}) when is_list(chars),
+    do: Enum.map(chars, &normalize_character/1)
+
+  defp get_characters(_), do: []
+
+  # Normalize character map keys from strings to atoms for template access
+  defp normalize_character(char) when is_map(char) do
+    %{
+      identifier: get_char_field(char, "identifier", "Participante"),
+      role: get_char_field(char, "role", "other"),
+      speech_count: get_char_field(char, "speech_count"),
+      word_count: get_char_field(char, "word_count"),
+      characteristics: get_char_field(char, "characteristics", []),
+      speech_patterns: get_char_field(char, "speech_patterns"),
+      key_quotes: get_char_field(char, "key_quotes", []),
+      sentiment: get_char_field(char, "sentiment"),
+      engagement_level: get_char_field(char, "engagement_level")
+    }
+  end
+
+  defp get_char_field(char, key, default \\ nil) do
+    char[key] || char[String.to_existing_atom(key)] || default
+  rescue
+    ArgumentError -> char[key] || default
+  end
+
+  # Character role badge styling
+  defp role_badge_class("teacher"),
+    do: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300"
+
+  defp role_badge_class("student"),
+    do: "bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300"
+
+  defp role_badge_class("assistant"),
+    do: "bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+
+  defp role_badge_class("guest"),
+    do: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300"
+
+  defp role_badge_class(_),
+    do: "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+
+  # Character role labels in Portuguese
+  defp role_label("teacher"), do: "Professor(a)"
+  defp role_label("student"), do: "Aluno(a)"
+  defp role_label("assistant"), do: "Assistente"
+  defp role_label("guest"), do: "Convidado"
+  defp role_label(_), do: "Participante"
+
+  # Engagement level badge styling
+  defp engagement_badge_class("high"),
+    do: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
+
+  defp engagement_badge_class("medium"),
+    do: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300"
+
+  defp engagement_badge_class("low"),
+    do: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+
+  defp engagement_badge_class(_),
+    do: "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+
+  # Engagement level labels in Portuguese
+  defp engagement_label("high"), do: "Alto"
+  defp engagement_label("medium"), do: "Medio"
+  defp engagement_label("low"), do: "Baixo"
+  defp engagement_label(_), do: "N/A"
+
   # Convert upload errors to human-readable strings
   defp error_to_string(:too_large), do: "Arquivo muito grande (max. 10MB)"
   defp error_to_string(:too_many_files), do: "Apenas um arquivo permitido"
@@ -535,6 +745,52 @@ defmodule HellenWeb.LessonLive.Show do
     do: "Tipo de arquivo nao aceito (PDF, DOCX, DOC, MD ou TXT)"
 
   defp error_to_string(err), do: "Erro: #{inspect(err)}"
+
+  # Render text with highlighted annotations
+  defp render_highlighted_text(nil, _annotations), do: ""
+  defp render_highlighted_text(_text, nil), do: ""
+
+  defp render_highlighted_text(text, []) when is_binary(text) do
+    Phoenix.HTML.raw(text |> String.replace("\n", "<br>"))
+  end
+
+  defp render_highlighted_text(text, annotations) when is_binary(text) and is_list(annotations) do
+    sorted = Enum.sort_by(annotations, & &1.selection_start)
+
+    {parts, last_pos} =
+      Enum.reduce(sorted, {[], 0}, fn ann, {acc, offset} ->
+        start = ann.selection_start
+        end_pos = ann.selection_end
+
+        # Skip invalid ranges
+        if start < offset or start > String.length(text) or end_pos > String.length(text) do
+          {acc, offset}
+        else
+          before_text = String.slice(text, offset, start - offset)
+          highlighted_text = String.slice(text, start, end_pos - start)
+
+          mark_open =
+            "<mark class=\"bg-amber-200 dark:bg-amber-700/50 px-0.5 rounded cursor-pointer transition-colors hover:bg-amber-300 dark:hover:bg-amber-600/50\" data-annotation-id=\"#{ann.id}\">"
+
+          mark_close = "</mark>"
+
+          {acc ++ [escape_html(before_text), mark_open, escape_html(highlighted_text), mark_close],
+           end_pos}
+        end
+      end)
+
+    remaining = String.slice(text, last_pos, String.length(text))
+    full_html = Enum.join(parts ++ [escape_html(remaining)])
+    Phoenix.HTML.raw(full_html |> String.replace("\n", "<br>"))
+  end
+
+  defp escape_html(text) do
+    text
+    |> String.replace("&", "&amp;")
+    |> String.replace("<", "&lt;")
+    |> String.replace(">", "&gt;")
+    |> String.replace("\"", "&quot;")
+  end
 
   @impl true
   def render(assigns) do
@@ -706,6 +962,22 @@ defmodule HellenWeb.LessonLive.Show do
               <div :if={assigns[:trend] && @lesson.status == "completed"}>
                 <.trend_indicator trend={@trend} change={@trend_change} />
               </div>
+              <!-- Reanalyze Button -->
+              <div
+                :if={@lesson.status == "completed" && @lesson.transcription}
+                class="pt-3 border-t border-slate-200 dark:border-slate-700"
+              >
+                <button
+                  phx-click="reanalyze"
+                  data-confirm="Deseja reanalisar esta aula? Isso consumira 1 credito."
+                  class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white text-sm font-medium rounded-xl shadow-sm hover:shadow-md transition-all"
+                >
+                  <.icon name="hero-arrow-path" class="h-4 w-4" /> Reanalisar Aula
+                </button>
+                <p class="text-xs text-slate-400 dark:text-slate-500 text-center mt-2">
+                  Consome 1 credito
+                </p>
+              </div>
             </div>
           </aside>
           <!-- CENTER PANEL - Transcript -->
@@ -757,16 +1029,48 @@ defmodule HellenWeb.LessonLive.Show do
             </div>
             <!-- Tab Content -->
             <div class="flex-1 overflow-y-auto">
-              <!-- Transcription Tab -->
-              <div :if={@active_tab == "transcription"} class="p-4">
+              <!-- Transcription Tab - Smart Editor -->
+              <div
+                :if={@active_tab == "transcription"}
+                id="transcript-editor"
+                phx-hook="TranscriptEditor"
+                data-annotations={
+                  Jason.encode!(
+                    Enum.map(
+                      @annotations,
+                      &Map.take(&1, [:id, :content, :selection_start, :selection_end, :selection_text])
+                    )
+                  )
+                }
+                class="p-4 relative"
+              >
+                <!-- Floating Tooltip for text selection -->
+                <div
+                  data-annotation-tooltip
+                  class="hidden fixed z-50 bg-white dark:bg-slate-800 shadow-xl rounded-lg p-1.5 border border-slate-200 dark:border-slate-700"
+                  style="display: none;"
+                >
+                  <button
+                    data-add-comment
+                    type="button"
+                    class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded-md transition-colors"
+                  >
+                    <.icon name="hero-chat-bubble-left" class="w-4 h-4" /> Adicionar Comentario
+                  </button>
+                </div>
+                <!-- Transcript Text Container -->
                 <div
                   :if={@lesson.transcription}
-                  class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700"
+                  class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-6 border border-slate-200 dark:border-slate-700"
                 >
-                  <p class="text-sm leading-relaxed text-slate-600 dark:text-slate-400 whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
-                    <%= @lesson.transcription.full_text %>
-                  </p>
+                  <div
+                    data-transcript-text
+                    class="prose prose-slate dark:prose-invert max-w-none text-base leading-relaxed max-h-[55vh] overflow-y-auto selection:bg-teal-200 dark:selection:bg-teal-800"
+                  >
+                    <%= render_highlighted_text(@lesson.transcription.full_text, @annotations) %>
+                  </div>
                 </div>
+                <!-- No transcription state -->
                 <div :if={!@lesson.transcription} class="text-center py-12">
                   <.icon
                     name="hero-document-text"
@@ -775,6 +1079,40 @@ defmodule HellenWeb.LessonLive.Show do
                   <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">
                     Transcricao nao disponivel
                   </p>
+                </div>
+                <!-- Annotations List -->
+                <div :if={@annotations != []} class="mt-6 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                      <.icon name="hero-chat-bubble-left-right" class="w-4 h-4 inline mr-1" />
+                      Anotacoes (<%= length(@annotations) %>)
+                    </h4>
+                  </div>
+                  <div class="space-y-2">
+                    <div
+                      :for={annotation <- @annotations}
+                      class="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800/50 group"
+                    >
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="flex-1 min-w-0">
+                          <p class="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1 line-clamp-1">
+                            "<%= annotation.selection_text %>"
+                          </p>
+                          <p class="text-sm text-slate-700 dark:text-slate-300">
+                            <%= annotation.content %>
+                          </p>
+                        </div>
+                        <button
+                          phx-click="delete_annotation"
+                          phx-value-id={annotation.id}
+                          class="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-all"
+                          title="Excluir anotacao"
+                        >
+                          <.icon name="hero-trash" class="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
               <!-- Planned Material Tab -->
@@ -1046,15 +1384,15 @@ defmodule HellenWeb.LessonLive.Show do
                   />
                 </div>
               </div>
-              <!-- BNCC Competencies as Chips -->
+              <!-- BNCC Competencies with Evidence (NotebookLM-style) -->
               <div
                 :if={
                   @latest_analysis && bncc_matches_loaded?(@latest_analysis) &&
                     length(get_bncc_matches(@latest_analysis)) > 0
                 }
-                class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200/50 dark:border-slate-700/50"
+                class="space-y-3"
               >
-                <div class="flex items-center gap-2 mb-3">
+                <div class="flex items-center gap-2">
                   <.icon
                     name="hero-academic-cap"
                     class="h-4 w-4 text-violet-600 dark:text-violet-400"
@@ -1063,24 +1401,68 @@ defmodule HellenWeb.LessonLive.Show do
                     Competencias BNCC
                   </h3>
                 </div>
-                <div class="flex flex-wrap gap-2">
-                  <span
+
+                <div class="space-y-2">
+                  <div
                     :for={bncc <- get_bncc_matches(@latest_analysis)}
-                    class="group relative inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 cursor-help transition-all hover:bg-violet-200 dark:hover:bg-violet-800/50 hover:scale-105"
+                    class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200/50 dark:border-slate-700/50"
                   >
-                    <%= get_bncc_code(bncc) %>
-                    <!-- Tooltip -->
-                    <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 dark:bg-slate-700 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-lg max-w-xs">
-                      <span class="font-semibold"><%= get_bncc_code(bncc) %></span>
-                      <br />
-                      <span class="text-slate-300">
-                        <%= BNCC.get_description(get_bncc_code(bncc)) %>
-                      </span>
-                      <!-- Arrow -->
-                      <span class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900 dark:border-t-slate-700">
-                      </span>
-                    </span>
-                  </span>
+                    <div class="flex items-start justify-between gap-2">
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-violet-700 dark:text-violet-400">
+                          <%= get_bncc_code(bncc) %>
+                        </p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
+                          <%= get_bncc_name(bncc) || BNCC.get_description(get_bncc_code(bncc)) %>
+                        </p>
+                      </div>
+                      <div
+                        :if={get_bncc_score(bncc)}
+                        class="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300"
+                      >
+                        <%= round((get_bncc_score(bncc) || 0) * 100) %>%
+                      </div>
+                    </div>
+                    <!-- Clickable Evidence (NotebookLM citation style) -->
+                    <div
+                      :if={get_bncc_evidence(bncc)}
+                      class="mt-3 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg cursor-pointer hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors group"
+                      phx-click="scroll_to_evidence"
+                      phx-value-text={get_bncc_evidence(bncc)}
+                    >
+                      <div class="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 mb-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                          />
+                        </svg>
+                        <span>Evidencia na transcricao</span>
+                      </div>
+                      <p class="text-sm text-slate-600 dark:text-slate-300 italic line-clamp-2">
+                        "<%= get_bncc_evidence(bncc) %>"
+                      </p>
+                      <p class="text-xs text-violet-600 dark:text-violet-400 mt-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
+                        Clique para ver no contexto
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
               <!-- User BNCC Coverage -->
@@ -1097,17 +1479,17 @@ defmodule HellenWeb.LessonLive.Show do
                 <div class="space-y-2">
                   <div :for={comp <- Enum.take(@bncc_coverage, 5)} class="flex items-center gap-2">
                     <span class="text-xs font-mono text-teal-600 dark:text-teal-400 w-20 truncate">
-                      <%= comp.code %>
+                      <%= Map.get(comp, :code) || Map.get(comp, "code") %>
                     </span>
                     <div class="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                       <div
                         class="h-full bg-gradient-to-r from-teal-500 to-sage-500 rounded-full"
-                        style={"width: #{round((comp.avg_score || 0) * 100)}%"}
+                        style={"width: #{round((Map.get(comp, :avg_score) || Map.get(comp, "avg_score") || 0) * 100)}%"}
                       >
                       </div>
                     </div>
                     <span class="text-xs text-slate-500 dark:text-slate-400 w-8 text-right">
-                      <%= comp.count %>x
+                      <%= Map.get(comp, :count) || Map.get(comp, "count") %>x
                     </span>
                   </div>
                 </div>
@@ -1186,15 +1568,15 @@ defmodule HellenWeb.LessonLive.Show do
                   </li>
                 </ul>
               </div>
-              <!-- Bullying Alerts -->
+              <!-- Bullying Alerts with Evidence (NotebookLM-style) -->
               <div
                 :if={
                   @latest_analysis && bullying_alerts_loaded?(@latest_analysis) &&
                     length(get_bullying_alerts(@latest_analysis)) > 0
                 }
-                class="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 border border-red-200/50 dark:border-red-800/50"
+                class="space-y-3"
               >
-                <div class="flex items-center gap-2 mb-3">
+                <div class="flex items-center gap-2">
                   <.icon
                     name="hero-exclamation-triangle"
                     class="h-4 w-4 text-red-600 dark:text-red-400"
@@ -1203,18 +1585,167 @@ defmodule HellenWeb.LessonLive.Show do
                     Alertas (Lei 13.185)
                   </h3>
                 </div>
-                <ul class="space-y-2">
-                  <li
+
+                <div class="space-y-2">
+                  <div
                     :for={alert <- get_bullying_alerts(@latest_analysis)}
-                    class="flex items-start gap-2 text-sm text-red-700 dark:text-red-300"
+                    class="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 border border-red-200/50 dark:border-red-800/50"
                   >
-                    <.icon
-                      name="hero-exclamation-circle-mini"
-                      class="h-4 w-4 mt-0.5 flex-shrink-0 text-red-500"
-                    />
-                    <span><%= get_alert_description(alert) %></span>
-                  </li>
-                </ul>
+                    <div class="flex items-start gap-2">
+                      <.icon
+                        name="hero-exclamation-circle"
+                        class="h-5 w-5 mt-0.5 flex-shrink-0 text-red-500"
+                      />
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-red-800 dark:text-red-200">
+                          <%= get_alert_description(alert) %>
+                        </p>
+                        <p
+                          :if={get_alert_severity(alert)}
+                          class="text-xs text-red-600 dark:text-red-400 mt-0.5"
+                        >
+                          Severidade: <%= get_alert_severity(alert) %>
+                        </p>
+                      </div>
+                    </div>
+                    <!-- Clickable Evidence (NotebookLM citation style) -->
+                    <div
+                      :if={get_alert_evidence(alert)}
+                      class="mt-3 p-3 bg-red-100/50 dark:bg-red-900/30 rounded-lg cursor-pointer hover:bg-red-200/50 dark:hover:bg-red-800/30 transition-colors group"
+                      phx-click="scroll_to_evidence"
+                      phx-value-text={get_alert_evidence(alert)}
+                    >
+                      <div class="flex items-center gap-2 text-xs text-red-500 dark:text-red-400 mb-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                          />
+                        </svg>
+                        <span>Trecho detectado</span>
+                      </div>
+                      <p class="text-sm text-red-700 dark:text-red-300 italic line-clamp-2">
+                        "<%= get_alert_evidence(alert) %>"
+                      </p>
+                      <p class="text-xs text-red-600 dark:text-red-400 mt-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
+                        Clique para ver no contexto
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Lesson Characters (Personas da Aula) -->
+              <div
+                :if={
+                  @latest_analysis && characters_loaded?(@latest_analysis) &&
+                    length(get_characters(@latest_analysis)) > 0
+                }
+                class="space-y-3"
+              >
+                <div class="flex items-center gap-2">
+                  <.icon name="hero-user-group" class="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  <h3 class="text-sm font-semibold text-slate-900 dark:text-white">
+                    Personagens da Aula
+                  </h3>
+                </div>
+
+                <div class="space-y-2">
+                  <div
+                    :for={character <- get_characters(@latest_analysis)}
+                    class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200/50 dark:border-slate-700/50"
+                  >
+                    <div class="flex items-start gap-3">
+                      <!-- Avatar -->
+                      <div class={"w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 #{if character.role == "teacher", do: "bg-indigo-100 dark:bg-indigo-900/30", else: "bg-slate-100 dark:bg-slate-700"}"}>
+                        <.icon
+                          name={
+                            if character.role == "teacher", do: "hero-academic-cap", else: "hero-user"
+                          }
+                          class={"h-5 w-5 #{if character.role == "teacher", do: "text-indigo-600 dark:text-indigo-400", else: "text-slate-500 dark:text-slate-400"}"}
+                        />
+                      </div>
+                      <!-- Info -->
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                          <p class="text-sm font-semibold text-slate-900 dark:text-white">
+                            <%= character.identifier %>
+                          </p>
+                          <span class={"px-1.5 py-0.5 text-xs font-medium rounded #{role_badge_class(character.role)}"}>
+                            <%= role_label(character.role) %>
+                          </span>
+                        </div>
+                        <!-- Stats -->
+                        <div class="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          <span :if={character.speech_count}>
+                            <.icon name="hero-chat-bubble-left" class="h-3 w-3 inline" />
+                            <%= character.speech_count %> falas
+                          </span>
+                          <span :if={character.word_count}>
+                            <.icon name="hero-document-text" class="h-3 w-3 inline" />
+                            <%= character.word_count %> palavras
+                          </span>
+                        </div>
+                        <!-- Engagement Badge -->
+                        <div :if={character.engagement_level} class="mt-2">
+                          <span class={"inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full #{engagement_badge_class(character.engagement_level)}"}>
+                            <.icon name="hero-bolt" class="h-3 w-3" />
+                            Engajamento <%= engagement_label(character.engagement_level) %>
+                          </span>
+                        </div>
+                        <!-- Characteristics -->
+                        <div
+                          :if={character.characteristics && character.characteristics != []}
+                          class="mt-2 flex flex-wrap gap-1"
+                        >
+                          <span
+                            :for={trait <- Enum.take(character.characteristics, 3)}
+                            class="px-2 py-0.5 text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded"
+                          >
+                            <%= trait %>
+                          </span>
+                        </div>
+                        <!-- Speech Patterns -->
+                        <p
+                          :if={character.speech_patterns}
+                          class="mt-2 text-xs text-slate-500 dark:text-slate-400 italic"
+                        >
+                          "<%= character.speech_patterns %>"
+                        </p>
+                        <!-- Key Quote (Clickable like BNCC evidence) -->
+                        <div
+                          :if={character.key_quotes && character.key_quotes != []}
+                          class="mt-2 p-2 bg-slate-50 dark:bg-slate-900/50 rounded-lg cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors group"
+                          phx-click="scroll_to_evidence"
+                          phx-value-text={List.first(character.key_quotes)}
+                        >
+                          <div class="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500 mb-1">
+                            <.icon name="hero-chat-bubble-bottom-center-text" class="h-3 w-3" />
+                            <span>Citacao representativa</span>
+                          </div>
+                          <p class="text-xs text-slate-600 dark:text-slate-300 italic line-clamp-2">
+                            "<%= List.first(character.key_quotes) %>"
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
               <!-- Score Evolution Chart (collapsible) -->
               <div
@@ -1242,6 +1773,95 @@ defmodule HellenWeb.LessonLive.Show do
                   class="h-40"
                 >
                 </div>
+              </div>
+              <!-- Studio Section (NotebookLM-style output generation) -->
+              <div
+                :if={@latest_analysis}
+                class="bg-gradient-to-br from-slate-50 to-teal-50/30 dark:from-slate-800 dark:to-teal-900/20 rounded-xl p-5 border border-slate-200 dark:border-slate-700"
+              >
+                <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                  <svg
+                    class="w-4 h-4 text-teal-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+                    />
+                  </svg>
+                  Studio
+                </h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-4">
+                  Gere materiais com base nesta analise
+                </p>
+
+                <div class="grid grid-cols-2 gap-2">
+                  <button class="flex items-center gap-2 px-3 py-2 text-xs font-medium bg-white dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600 hover:border-teal-300 dark:hover:border-teal-600 hover:shadow-sm transition-all text-slate-600 dark:text-slate-300">
+                    <svg class="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                    </svg>
+                    Relatorio PDF
+                  </button>
+
+                  <button class="flex items-center gap-2 px-3 py-2 text-xs font-medium bg-white dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600 hover:border-teal-300 dark:hover:border-teal-600 hover:shadow-sm transition-all text-slate-600 dark:text-slate-300">
+                    <svg
+                      class="w-4 h-4 text-blue-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                      />
+                    </svg>
+                    Plano de Acao
+                  </button>
+
+                  <button class="flex items-center gap-2 px-3 py-2 text-xs font-medium bg-white dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600 hover:border-teal-300 dark:hover:border-teal-600 hover:shadow-sm transition-all text-slate-600 dark:text-slate-300">
+                    <svg
+                      class="w-4 h-4 text-amber-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    Resumo
+                  </button>
+
+                  <button class="flex items-center gap-2 px-3 py-2 text-xs font-medium bg-white dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600 hover:border-teal-300 dark:hover:border-teal-600 hover:shadow-sm transition-all text-slate-600 dark:text-slate-300">
+                    <svg
+                      class="w-4 h-4 text-green-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                      />
+                    </svg>
+                    Guia BNCC
+                  </button>
+                </div>
+
+                <p class="text-xs text-slate-400 dark:text-slate-500 mt-3 text-center">
+                  Em breve
+                </p>
               </div>
               <!-- No Analysis or Failed Parse State -->
               <div
@@ -1289,6 +1909,63 @@ defmodule HellenWeb.LessonLive.Show do
         </div>
       </div>
     </div>
+    <!-- Annotation Modal -->
+    <.modal
+      :if={@annotation_modal_open}
+      id="annotation-modal"
+      show
+      on_cancel={JS.push("close_annotation_modal")}
+    >
+      <h3 class="text-lg font-semibold text-slate-900 dark:text-white flex items-center">
+        <.icon name="hero-chat-bubble-left" class="w-5 h-5 mr-2 text-teal-600" /> Adicionar Anotação
+      </h3>
+
+      <div class="mt-4">
+        <div class="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800/50 mb-4">
+          <p class="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1">
+            Texto selecionado:
+          </p>
+          <p class="text-sm text-slate-700 dark:text-slate-300 italic">
+            "<%= if @selected_text, do: @selected_text.text, else: "" %>"
+          </p>
+        </div>
+
+        <form phx-submit="save_annotation" class="space-y-4">
+          <div>
+            <label
+              for="annotation-content"
+              class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1"
+            >
+              Seu comentario
+            </label>
+            <textarea
+              id="annotation-content"
+              name="content"
+              rows="4"
+              required
+              class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
+              placeholder="Escreva sua observacao sobre este trecho..."
+            ></textarea>
+          </div>
+
+          <div class="flex justify-end gap-3">
+            <button
+              type="button"
+              phx-click="close_annotation_modal"
+              class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg transition-colors"
+            >
+              Salvar Anotacao
+            </button>
+          </div>
+        </form>
+      </div>
+    </.modal>
     """
   end
 

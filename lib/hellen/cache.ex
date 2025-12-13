@@ -543,23 +543,21 @@ defmodule Hellen.Cache do
   defp maybe_add_xx(args, _), do: args
 
   defp compute_and_cache(key, compute_fn, opts) do
-    try do
-      value = compute_fn.()
-      ttl = Keyword.get(opts, :ttl, @default_ttl)
+    value = compute_fn.()
+    ttl = Keyword.get(opts, :ttl, @default_ttl)
 
-      case set(key, value, ttl: ttl) do
-        {:ok, _} ->
-          {:ok, value}
+    case set(key, value, ttl: ttl) do
+      {:ok, _} ->
+        {:ok, value}
 
-        {:error, reason} ->
-          Logger.warning("[Cache] Failed to cache #{key}: #{inspect(reason)}")
-          {:ok, value}
-      end
-    rescue
-      e ->
-        Logger.error("[Cache] Compute function failed for #{key}: #{inspect(e)}")
-        {:error, e}
+      {:error, reason} ->
+        Logger.warning("[Cache] Failed to cache #{key}: #{inspect(reason)}")
+        {:ok, value}
     end
+  rescue
+    e ->
+      Logger.error("[Cache] Compute function failed for #{key}: #{inspect(e)}")
+      {:error, e}
   end
 
   defp maybe_refresh_stale(key, compute_fn, opts) do

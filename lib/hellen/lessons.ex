@@ -99,6 +99,24 @@ defmodule Hellen.Lessons do
   defp maybe_filter_by_user(query, nil), do: query
   defp maybe_filter_by_user(query, user_id), do: where(query, [l], l.user_id == ^user_id)
 
+  @doc """
+  Checks if a lesson status is consistent with its latest analysis.
+  If status is 'analyzing' but a complete analysis exists, updates status to 'completed'.
+  Returns the (potentially updated) lesson.
+  """
+  def ensure_lesson_status(lesson, nil), do: lesson
+
+  def ensure_lesson_status(%{status: "analyzing"} = lesson, analysis) do
+    if analysis.result && (analysis.overall_score || analysis.result["overall_score"]) do
+      {:ok, updated_lesson} = update_lesson(lesson, %{status: "completed"})
+      updated_lesson
+    else
+      lesson
+    end
+  end
+
+  def ensure_lesson_status(lesson, _analysis), do: lesson
+
   def create_lesson(user, attrs \\ %{}) do
     # Check credits first
     case Billing.check_credits(user) do
@@ -243,5 +261,123 @@ defmodule Hellen.Lessons do
     |> select([l], l.subject)
     |> order_by([l], l.subject)
     |> Repo.all()
+  end
+
+  alias Hellen.Lessons.TranscriptionAnnotation
+
+  @doc """
+  Returns the list of transcription_annotations.
+
+  ## Examples
+
+      iex> list_transcription_annotations()
+      [%TranscriptionAnnotation{}, ...]
+
+  """
+  def list_transcription_annotations do
+    Repo.all(TranscriptionAnnotation)
+  end
+
+  @doc """
+  Returns annotations for a specific lesson, ordered by selection position.
+
+  ## Examples
+
+      iex> list_annotations_by_lesson("lesson-uuid")
+      [%TranscriptionAnnotation{}, ...]
+
+  """
+  def list_annotations_by_lesson(lesson_id) do
+    TranscriptionAnnotation
+    |> where([a], a.lesson_id == ^lesson_id)
+    |> order_by([a], asc: a.selection_start)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single transcription_annotation.
+
+  Raises `Ecto.NoResultsError` if the Transcription annotation does not exist.
+
+  ## Examples
+
+      iex> get_transcription_annotation!(123)
+      %TranscriptionAnnotation{}
+
+      iex> get_transcription_annotation!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  def get_transcription_annotation!(id), do: Repo.get!(TranscriptionAnnotation, id)
+
+  @doc """
+  Creates a transcription_annotation.
+
+  ## Examples
+
+      iex> create_transcription_annotation(%{field: value})
+      {:ok, %TranscriptionAnnotation{}}
+
+      iex> create_transcription_annotation(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def create_transcription_annotation(attrs \\ %{}) do
+    %TranscriptionAnnotation{}
+    |> TranscriptionAnnotation.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a transcription_annotation.
+
+  ## Examples
+
+      iex> update_transcription_annotation(transcription_annotation, %{field: new_value})
+      {:ok, %TranscriptionAnnotation{}}
+
+      iex> update_transcription_annotation(transcription_annotation, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def update_transcription_annotation(
+        %TranscriptionAnnotation{} = transcription_annotation,
+        attrs
+      ) do
+    transcription_annotation
+    |> TranscriptionAnnotation.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a transcription_annotation.
+
+  ## Examples
+
+      iex> delete_transcription_annotation(transcription_annotation)
+      {:ok, %TranscriptionAnnotation{}}
+
+      iex> delete_transcription_annotation(transcription_annotation)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  def delete_transcription_annotation(%TranscriptionAnnotation{} = transcription_annotation) do
+    Repo.delete(transcription_annotation)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking transcription_annotation changes.
+
+  ## Examples
+
+      iex> change_transcription_annotation(transcription_annotation)
+      %Ecto.Changeset{data: %TranscriptionAnnotation{}}
+
+  """
+  def change_transcription_annotation(
+        %TranscriptionAnnotation{} = transcription_annotation,
+        attrs \\ %{}
+      ) do
+    TranscriptionAnnotation.changeset(transcription_annotation, attrs)
   end
 end

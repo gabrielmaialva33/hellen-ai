@@ -156,19 +156,17 @@ defmodule Hellen.AI.PlanningGenerator do
   # ============================================================================
 
   defp get_lesson_with_transcription(lesson_id) do
-    try do
-      lesson = Lessons.get_lesson!(lesson_id)
-      lesson = Hellen.Repo.preload(lesson, :transcription)
+    lesson = Lessons.get_lesson!(lesson_id)
+    lesson = Hellen.Repo.preload(lesson, :transcription)
 
-      if lesson.transcription && lesson.transcription.text do
-        {:ok, lesson}
-      else
-        {:error, :no_transcription}
-      end
-    rescue
-      Ecto.NoResultsError ->
-        {:error, :lesson_not_found}
+    if lesson.transcription && lesson.transcription.text do
+      {:ok, lesson}
+    else
+      {:error, :no_transcription}
     end
+  rescue
+    Ecto.NoResultsError ->
+      {:error, :lesson_not_found}
   end
 
   defp find_bncc_matches(text) do

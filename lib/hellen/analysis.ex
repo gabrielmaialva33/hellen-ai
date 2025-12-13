@@ -5,7 +5,7 @@ defmodule Hellen.Analysis do
 
   import Ecto.Query, warn: false
 
-  alias Hellen.Analysis.{Analysis, BnccMatch, BullyingAlert}
+  alias Hellen.Analysis.{Analysis, BnccMatch, BullyingAlert, LessonCharacter}
   alias Hellen.Cache.AnalysisCache
   alias Hellen.Repo
 
@@ -34,14 +34,14 @@ defmodule Hellen.Analysis do
     Analysis
     |> where([a], a.id == ^id)
     |> Repo.one!()
-    |> Repo.preload([:bncc_matches, :bullying_alerts])
+    |> Repo.preload([:bncc_matches, :bullying_alerts, :lesson_characters])
   end
 
   def get_analysis_with_details!(id, institution_id) do
     Analysis
     |> where([a], a.id == ^id and a.institution_id == ^institution_id)
     |> Repo.one!()
-    |> Repo.preload([:bncc_matches, :bullying_alerts])
+    |> Repo.preload([:bncc_matches, :bullying_alerts, :lesson_characters])
   end
 
   @doc """
@@ -84,6 +84,9 @@ defmodule Hellen.Analysis do
     end)
     |> Ecto.Multi.run(:bullying_alerts, fn _repo, %{analysis: analysis} ->
       insert_bullying_alerts(analysis, analysis_result.bullying_alerts || [])
+    end)
+    |> Ecto.Multi.run(:lesson_characters, fn _repo, %{analysis: analysis} ->
+      insert_lesson_characters(analysis, Map.get(analysis_result, :lesson_characters, []))
     end)
     |> Repo.transaction()
     |> case do
@@ -148,6 +151,20 @@ defmodule Hellen.Analysis do
     end
   end
 
+  defp insert_lesson_characters(analysis, characters) do
+    results =
+      Enum.map(characters, fn character ->
+        %LessonCharacter{}
+        |> LessonCharacter.changeset(Map.put(character, :analysis_id, analysis.id))
+        |> Repo.insert()
+      end)
+
+    case Enum.find(results, &match?({:error, _}, &1)) do
+      nil -> {:ok, Enum.map(results, fn {:ok, c} -> c end)}
+      {:error, changeset} -> {:error, changeset}
+    end
+  end
+
   def create_feedback_analysis(lesson_id, analysis_result) do
     create_analysis(%{
       lesson_id: lesson_id,
@@ -206,6 +223,46 @@ defmodule Hellen.Analysis do
     |> limit(^limit)
     |> preload(analysis: :lesson)
     |> Repo.all()
+  end
+
+  ## Lesson Characters
+
+  @doc """
+  Lists characters identified in a lesson transcription, ordered by speech count.
+  """
+  def list_characters_by_analysis(analysis_id) do
+    LessonCharacter
+    |> where([c], c.analysis_id == ^analysis_id)
+    |> order_by([c], desc: c.speech_count)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets character statistics for an analysis.
+  """
+  def get_character_stats(analysis_id) do
+    characters = list_characters_by_analysis(analysis_id)
+
+    teachers = Enum.filter(characters, &(&1.role == "teacher"))
+    students = Enum.filter(characters, &(&1.role == "student"))
+
+    total_speeches = Enum.reduce(characters, 0, fn c, acc -> acc + (c.speech_count || 0) end)
+    total_words = Enum.reduce(characters, 0, fn c, acc -> acc + (c.word_count || 0) end)
+
+    %{
+      total_characters: length(characters),
+      teacher_count: length(teachers),
+      student_count: length(students),
+      total_speeches: total_speeches,
+      total_words: total_words,
+      teacher_word_ratio:
+        if total_words > 0 do
+          teacher_words = Enum.reduce(teachers, 0, fn c, acc -> acc + (c.word_count || 0) end)
+          Float.round(teacher_words / total_words * 100, 1)
+        else
+          0.0
+        end
+    }
   end
 
   ## Statistics & History
@@ -638,7 +695,7 @@ defmodule Hellen.Analysis do
     |> where([a, l], l.user_id == ^user_id)
     |> where([a], a.inserted_at >= ^since)
     |> order_by([a], desc: a.inserted_at)
-    |> preload([:bncc_matches, :bullying_alerts, :lesson])
+    |> preload([:bncc_matches, :bullying_alerts, :lesson_characters, :lesson])
     |> Repo.all()
   end
 end

@@ -53,6 +53,10 @@ Hooks.Ripple = Ripple
 import { LessonChannel } from "./hooks/lesson_channel"
 Hooks.LessonChannel = LessonChannel
 
+// Transcript Editor hook (text selection and annotation)
+import { TranscriptEditor } from "./hooks/transcript_editor"
+Hooks.TranscriptEditor = TranscriptEditor
+
 // Import socket module (exposes window.HellenSocket for API/mobile use)
 import "./socket"
 

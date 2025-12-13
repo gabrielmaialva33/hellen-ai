@@ -21,6 +21,7 @@ defmodule Hellen.Analysis.Analysis do
     belongs_to :institution, Hellen.Accounts.Institution
     has_many :bncc_matches, Hellen.Analysis.BnccMatch
     has_many :bullying_alerts, Hellen.Analysis.BullyingAlert
+    has_many :lesson_characters, Hellen.Analysis.LessonCharacter
 
     timestamps(type: :utc_datetime, updated_at: false)
   end

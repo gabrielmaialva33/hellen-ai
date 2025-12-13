@@ -27,6 +27,7 @@ defmodule Hellen.Lessons.Lesson do
     belongs_to :institution, Hellen.Accounts.Institution
     has_one :transcription, Hellen.Lessons.Transcription
     has_many :analyses, Hellen.Analysis.Analysis
+    has_many :transcription_annotations, Hellen.Lessons.TranscriptionAnnotation
 
     timestamps(type: :utc_datetime)
   end
