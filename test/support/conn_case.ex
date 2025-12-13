@@ -16,6 +16,8 @@ defmodule HellenWeb.ConnCase do
   """
 
   use ExUnit.CaseTemplate
+  alias Hellen.Auth.Guardian
+  alias Hellen.DataCase
 
   using do
     quote do
@@ -29,6 +31,7 @@ defmodule HellenWeb.ConnCase do
       import Phoenix.ConnTest
       import HellenWeb.ConnCase
       import Hellen.Factory
+      import Hellen.MoxHelpers
       import Mox
 
       setup :verify_on_exit!
@@ -36,7 +39,7 @@ defmodule HellenWeb.ConnCase do
   end
 
   setup tags do
-    Hellen.DataCase.setup_sandbox(tags)
+    DataCase.setup_sandbox(tags)
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
 
@@ -59,7 +62,7 @@ defmodule HellenWeb.ConnCase do
   It returns an updated `conn`.
   """
   def log_in_user(conn, user) do
-    {:ok, token, _claims} = Hellen.Auth.Guardian.encode_and_sign(user)
+    {:ok, token, _claims} = Guardian.encode_and_sign(user)
 
     conn
     |> Plug.Conn.put_req_header("authorization", "Bearer #{token}")
@@ -71,5 +74,64 @@ defmodule HellenWeb.ConnCase do
   def authenticated_conn(conn, attrs \\ %{}) do
     user = Hellen.Factory.insert(:user, attrs)
     {log_in_user(conn, user), user}
+  end
+
+  @doc """
+  Standard setup with institution and user.
+
+  Usage:
+
+      setup :standard_test_setup
+
+  Returns `%{conn: conn, institution: institution, user: user}`
+  """
+  def standard_test_setup(%{conn: conn}) do
+    institution = Hellen.Factory.insert(:institution)
+    user = Hellen.Factory.insert(:user, institution: institution)
+    {:ok, conn: log_in_user(conn, user), institution: institution, user: user}
+  end
+
+  @doc """
+  Setup with coordinator role.
+
+  Usage:
+
+      setup :coordinator_test_setup
+
+  Returns `%{conn: conn, institution: institution, user: coordinator}`
+  """
+  def coordinator_test_setup(%{conn: conn}) do
+    institution = Hellen.Factory.insert(:institution)
+    coordinator = Hellen.Factory.insert(:coordinator, institution: institution)
+    {:ok, conn: log_in_user(conn, coordinator), institution: institution, user: coordinator}
+  end
+
+  @doc """
+  Setup with admin role.
+
+  Usage:
+
+      setup :admin_test_setup
+
+  Returns `%{conn: conn, user: admin}`
+  """
+  def admin_test_setup(%{conn: conn}) do
+    admin = Hellen.Factory.insert(:admin)
+    {:ok, conn: log_in_user(conn, admin), user: admin}
+  end
+
+  @doc """
+  Setup with user having zero credits.
+
+  Usage:
+
+      setup :no_credits_test_setup
+
+  Returns `%{conn: conn, institution: institution, user: user}`
+  """
+  def no_credits_test_setup(%{conn: conn}) do
+    institution = Hellen.Factory.insert(:institution)
+    user = Hellen.Factory.insert(:user, institution: institution, credits: 0)
+    {:ok, conn: log_in_user(conn, user), institution: institution, user: user}
   end
 end

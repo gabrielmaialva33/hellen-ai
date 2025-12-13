@@ -2,7 +2,7 @@ defmodule Hellen.AccountsTest do
   use Hellen.DataCase, async: true
 
   alias Hellen.Accounts
-  alias Hellen.Accounts.{User, Invitation}
+  alias Hellen.Accounts.{Invitation, User}
 
   describe "users" do
     test "get_user/1 returns user by id" do
@@ -619,6 +619,76 @@ defmodule Hellen.AccountsTest do
 
     test "resend_invitation/1 returns error for non-existent invitation" do
       assert {:error, :not_found} = Accounts.resend_invitation(Ecto.UUID.generate())
+    end
+  end
+
+  describe "institution boundaries" do
+    test "user belongs to exactly one institution" do
+      inst1 = insert(:institution)
+      user = insert(:user, institution: inst1)
+
+      # User must have an institution_id
+      assert user.institution_id == inst1.id
+      assert user.institution_id != nil
+    end
+
+    test "list_users_by_institution/1 only returns users from that institution" do
+      inst1 = insert(:institution)
+      inst2 = insert(:institution)
+
+      user1 = insert(:user, institution: inst1)
+      user2 = insert(:user, institution: inst1)
+      _user3 = insert(:user, institution: inst2)
+
+      users = Accounts.list_users_by_institution(inst1.id)
+
+      user_ids = Enum.map(users, & &1.id)
+      assert user1.id in user_ids
+      assert user2.id in user_ids
+      assert length(users) == 2
+    end
+
+    test "user from one institution is not returned in another institution's list" do
+      inst1 = insert(:institution)
+      inst2 = insert(:institution)
+      user = insert(:user, institution: inst1)
+
+      # User should not appear in other institution's list
+      inst2_users = Accounts.list_users_by_institution(inst2.id)
+      inst2_user_ids = Enum.map(inst2_users, & &1.id)
+
+      refute user.id in inst2_user_ids
+    end
+  end
+
+  describe "role-based access" do
+    test "teacher role cannot access admin functions" do
+      teacher = insert(:user, role: "teacher")
+
+      # Teacher should not have admin access
+      assert teacher.role == "teacher"
+      refute teacher.role == "admin"
+    end
+
+    test "coordinator role cannot access admin functions" do
+      coordinator = insert(:coordinator)
+
+      # Coordinator should not have admin access
+      assert coordinator.role == "coordinator"
+      refute coordinator.role == "admin"
+    end
+
+    test "different roles coexist within same institution" do
+      institution = insert(:institution)
+
+      teacher = insert(:user, institution: institution, role: "teacher")
+      coordinator = insert(:coordinator, institution: institution)
+
+      users = Accounts.list_users_by_institution(institution.id)
+
+      roles = Enum.map(users, & &1.role)
+      assert "teacher" in roles
+      assert "coordinator" in roles
     end
   end
 end

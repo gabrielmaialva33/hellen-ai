@@ -1,5 +1,6 @@
 defmodule HellenWeb.API.AuthControllerTest do
   use HellenWeb.ConnCase, async: true
+  alias Hellen.Auth.Guardian
 
   describe "POST /api/auth/register" do
     test "creates user with valid data", %{conn: conn} do
@@ -112,7 +113,7 @@ defmodule HellenWeb.API.AuthControllerTest do
   describe "POST /api/auth/refresh" do
     test "returns new access token with valid refresh token", %{conn: conn} do
       user = insert(:user)
-      {:ok, tokens} = Hellen.Auth.Guardian.generate_tokens(user)
+      {:ok, tokens} = Guardian.generate_tokens(user)
 
       params = %{"refresh_token" => tokens.refresh_token}
       conn = post(conn, ~p"/api/auth/refresh", params)

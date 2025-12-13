@@ -36,12 +36,14 @@ defmodule Hellen.NotificationsTest do
 
     test "list_user_notifications/2 orders by inserted_at desc" do
       user = insert(:user)
-      insert(:notification, user: user, title: "First")
-      # Need to sleep at least 1 second since inserted_at is truncated to seconds
-      :timer.sleep(1100)
-      insert(:notification, user: user, title: "Second")
+      [older_ts, newer_ts] = sequential_timestamps(2)
+
+      # Insert notifications with explicit timestamps
+      insert(:notification, user: user, title: "First", inserted_at: older_ts)
+      insert(:notification, user: user, title: "Second", inserted_at: newer_ts)
 
       [first, second] = Notifications.list_user_notifications(user.id)
+      # Most recent first (DESC order)
       assert first.title == "Second"
       assert second.title == "First"
     end

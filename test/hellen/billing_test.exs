@@ -103,13 +103,25 @@ defmodule Hellen.BillingTest do
 
     test "list_transactions/2 orders by inserted_at desc" do
       user = insert(:user, credits: 20)
-      Billing.add_credits(user, 5, "gift")
-      # Sleep 1+ second since inserted_at is truncated to seconds
-      :timer.sleep(1100)
-      Billing.add_credits(user, 10, "purchase")
+      [older_ts, newer_ts] = sequential_timestamps(2)
+
+      # Insert transactions directly with explicit timestamps
+      insert(:credit_transaction,
+        user: user,
+        amount: 5,
+        reason: "gift",
+        inserted_at: older_ts
+      )
+
+      insert(:credit_transaction,
+        user: user,
+        amount: 10,
+        reason: "purchase",
+        inserted_at: newer_ts
+      )
 
       [first, second] = Billing.list_transactions(user.id)
-      # Most recent
+      # Most recent first (DESC order)
       assert first.amount == 10
       assert second.amount == 5
     end

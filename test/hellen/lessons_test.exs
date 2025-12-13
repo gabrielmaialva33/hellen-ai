@@ -253,4 +253,118 @@ defmodule Hellen.LessonsTest do
       assert "Portugues" in subjects
     end
   end
+
+  describe "transcription_annotations" do
+    alias Hellen.Lessons.TranscriptionAnnotation
+
+    @invalid_attrs %{content: nil, selection_start: nil, selection_end: nil, selection_text: nil}
+
+    test "list_transcription_annotations/0 returns all transcription_annotations" do
+      transcription_annotation = insert(:transcription_annotation)
+      assert Lessons.list_transcription_annotations() == [transcription_annotation]
+    end
+
+    test "get_transcription_annotation!/1 returns the transcription_annotation with given id" do
+      transcription_annotation = insert(:transcription_annotation)
+
+      assert Lessons.get_transcription_annotation!(transcription_annotation.id) ==
+               transcription_annotation
+    end
+
+    test "create_transcription_annotation/1 with valid data creates a transcription_annotation" do
+      valid_attrs = %{
+        content: "some content",
+        selection_start: 42,
+        selection_end: 42,
+        selection_text: "some selection_text"
+      }
+
+      assert {:ok, %TranscriptionAnnotation{} = transcription_annotation} =
+               Lessons.create_transcription_annotation(valid_attrs)
+
+      assert transcription_annotation.content == "some content"
+      assert transcription_annotation.selection_start == 42
+      assert transcription_annotation.selection_end == 42
+      assert transcription_annotation.selection_text == "some selection_text"
+    end
+
+    test "create_transcription_annotation/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = Lessons.create_transcription_annotation(@invalid_attrs)
+    end
+
+    test "update_transcription_annotation/2 with valid data updates the transcription_annotation" do
+      transcription_annotation = insert(:transcription_annotation)
+
+      update_attrs = %{
+        content: "some updated content",
+        selection_start: 43,
+        selection_end: 43,
+        selection_text: "some updated selection_text"
+      }
+
+      assert {:ok, %TranscriptionAnnotation{} = transcription_annotation} =
+               Lessons.update_transcription_annotation(transcription_annotation, update_attrs)
+
+      assert transcription_annotation.content == "some updated content"
+      assert transcription_annotation.selection_start == 43
+      assert transcription_annotation.selection_end == 43
+      assert transcription_annotation.selection_text == "some updated selection_text"
+    end
+
+    test "update_transcription_annotation/2 with invalid data returns error changeset" do
+      transcription_annotation = insert(:transcription_annotation)
+
+      assert {:error, %Ecto.Changeset{}} =
+               Lessons.update_transcription_annotation(transcription_annotation, @invalid_attrs)
+
+      assert transcription_annotation ==
+               Lessons.get_transcription_annotation!(transcription_annotation.id)
+    end
+
+    test "delete_transcription_annotation/1 deletes the transcription_annotation" do
+      transcription_annotation = insert(:transcription_annotation)
+
+      assert {:ok, %TranscriptionAnnotation{}} =
+               Lessons.delete_transcription_annotation(transcription_annotation)
+
+      assert_raise Ecto.NoResultsError, fn ->
+        Lessons.get_transcription_annotation!(transcription_annotation.id)
+      end
+    end
+
+    test "change_transcription_annotation/1 returns a transcription_annotation changeset" do
+      transcription_annotation = insert(:transcription_annotation)
+      assert %Ecto.Changeset{} = Lessons.change_transcription_annotation(transcription_annotation)
+    end
+  end
+
+  describe "cascade deletes" do
+    test "delete_lesson/1 cascades to transcription" do
+      lesson = insert(:lesson)
+      insert(:transcription, lesson: lesson)
+
+      # Verify transcription exists
+      assert Repo.get(Hellen.Lessons.Transcription, lesson.id) ||
+               Repo.one(from t in Hellen.Lessons.Transcription, where: t.lesson_id == ^lesson.id)
+
+      {:ok, _} = Lessons.delete_lesson(lesson)
+
+      # Verify transcription was deleted
+      assert Repo.one(from t in Hellen.Lessons.Transcription, where: t.lesson_id == ^lesson.id) ==
+               nil
+    end
+
+    test "lesson deletion is scoped to user" do
+      user1 = insert(:user)
+      user2 = insert(:user)
+
+      lesson1 = insert(:lesson, user: user1, institution: user1.institution)
+      lesson2 = insert(:lesson, user: user2, institution: user2.institution)
+
+      {:ok, _} = Lessons.delete_lesson(lesson1)
+
+      # lesson2 should still exist
+      assert Lessons.get_lesson!(lesson2.id) != nil
+    end
+  end
 end

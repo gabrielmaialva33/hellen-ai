@@ -23,3 +23,7 @@ config :phoenix, :plug_init_mode, :runtime
 
 # Disable Oban in tests
 config :hellen, Oban, testing: :inline
+
+# Configure mock modules for external services
+config :hellen, :ai_client, Hellen.AI.ClientMock
+config :hellen, :storage, Hellen.Storage.Mock

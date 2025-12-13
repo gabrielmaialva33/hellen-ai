@@ -403,4 +403,78 @@ defmodule Hellen.AnalysisTest do
       assert length(exported.bncc_matches) >= 0
     end
   end
+
+  describe "cascade deletes" do
+    alias Hellen.Lessons
+
+    test "delete_lesson/1 cascades to analysis and related records" do
+      institution = insert(:institution)
+      user = insert(:user, institution: institution)
+      lesson = insert(:lesson, user: user, institution: institution)
+      analysis = insert(:analysis, lesson: lesson, institution: institution)
+      insert(:bncc_match, analysis: analysis)
+      insert(:bullying_alert, analysis: analysis)
+
+      # Verify records exist before deletion
+      assert Repo.get(Hellen.Analysis.Analysis, analysis.id)
+
+      {:ok, _} = Lessons.delete_lesson(lesson)
+
+      # Verify analysis and related records were deleted
+      assert Repo.one(from a in Hellen.Analysis.Analysis, where: a.lesson_id == ^lesson.id) == nil
+
+      assert Repo.one(from b in Hellen.Analysis.BnccMatch, where: b.analysis_id == ^analysis.id) ==
+               nil
+
+      assert Repo.one(
+               from b in Hellen.Analysis.BullyingAlert, where: b.analysis_id == ^analysis.id
+             ) ==
+               nil
+    end
+
+    test "deleting analysis cascades to bncc_matches" do
+      analysis = insert(:analysis)
+      bncc1 = insert(:bncc_match, analysis: analysis)
+      bncc2 = insert(:bncc_match, analysis: analysis)
+
+      # Verify matches exist
+      assert Repo.get(Hellen.Analysis.BnccMatch, bncc1.id)
+      assert Repo.get(Hellen.Analysis.BnccMatch, bncc2.id)
+
+      Repo.delete!(analysis)
+
+      # Verify matches were cascade deleted
+      assert Repo.get(Hellen.Analysis.BnccMatch, bncc1.id) == nil
+      assert Repo.get(Hellen.Analysis.BnccMatch, bncc2.id) == nil
+    end
+
+    test "deleting analysis cascades to bullying_alerts" do
+      analysis = insert(:analysis)
+      alert1 = insert(:bullying_alert, analysis: analysis, severity: "low")
+      alert2 = insert(:bullying_alert, analysis: analysis, severity: "high")
+
+      # Verify alerts exist
+      assert Repo.get(Hellen.Analysis.BullyingAlert, alert1.id)
+      assert Repo.get(Hellen.Analysis.BullyingAlert, alert2.id)
+
+      Repo.delete!(analysis)
+
+      # Verify alerts were cascade deleted
+      assert Repo.get(Hellen.Analysis.BullyingAlert, alert1.id) == nil
+      assert Repo.get(Hellen.Analysis.BullyingAlert, alert2.id) == nil
+    end
+
+    test "deleting analysis cascades to lesson_characters" do
+      analysis = insert(:analysis)
+      character = insert(:lesson_character, analysis: analysis)
+
+      # Verify character exists
+      assert Repo.get(Hellen.Analysis.LessonCharacter, character.id)
+
+      Repo.delete!(analysis)
+
+      # Verify character was cascade deleted
+      assert Repo.get(Hellen.Analysis.LessonCharacter, character.id) == nil
+    end
+  end
 end
