@@ -681,8 +681,8 @@ defmodule Hellen.AccountsTest do
     test "different roles coexist within same institution" do
       institution = insert(:institution)
 
-      teacher = insert(:user, institution: institution, role: "teacher")
-      coordinator = insert(:coordinator, institution: institution)
+      _teacher = insert(:user, institution: institution, role: "teacher")
+      _coordinator = insert(:coordinator, institution: institution)
 
       users = Accounts.list_users_by_institution(institution.id)
 
