@@ -41,6 +41,7 @@ defmodule Hellen.AI.NvidiaClient do
   # NVIDIA for LLM analysis
   @analysis_base_url "https://integrate.api.nvidia.com/v1"
   @analysis_model "qwen/qwen3-next-80b-a3b-instruct"
+  @fast_analysis_model "meta/llama-3.1-8b-instruct"
 
   # Video extensions that need audio extraction
   @video_extensions ~w(.mp4 .mkv .avi .mov .webm .flv .wmv .m4v)
@@ -366,6 +367,7 @@ defmodule Hellen.AI.NvidiaClient do
   @doc """
   Quick 10-point compliance check for fast feedback.
   Returns conformity percentage and urgency level.
+  Uses lighter model for speed (#{@fast_analysis_model}).
   """
   def quick_compliance_check(transcription) do
     system_prompt = Prompts.quick_check_system_prompt()
@@ -373,13 +375,13 @@ defmodule Hellen.AI.NvidiaClient do
     temperature = Prompts.temperature(:quick_check)
     max_tokens = Prompts.max_tokens(:quick_check)
 
-    Logger.info("[NvidiaClient] Starting quick compliance check")
+    Logger.info("[NvidiaClient] Starting quick compliance check (Model: #{@fast_analysis_model})")
     start_time = System.monotonic_time(:millisecond)
 
     result =
       Req.post("#{@analysis_base_url}/chat/completions",
         json: %{
-          model: @analysis_model,
+          model: @fast_analysis_model,
           messages: [
             %{role: "system", content: system_prompt},
             %{role: "user", content: user_prompt}
@@ -406,6 +408,7 @@ defmodule Hellen.AI.NvidiaClient do
            raw: message,
            structured: parse_analysis_response(message),
            type: :quick_check,
+           model: @fast_analysis_model,
            tokens_used: (usage["prompt_tokens"] || 0) + (usage["completion_tokens"] || 0),
            processing_time_ms: processing_time
          }}
