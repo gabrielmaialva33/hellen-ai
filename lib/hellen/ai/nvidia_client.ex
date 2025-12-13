@@ -33,6 +33,7 @@ defmodule Hellen.AI.NvidiaClient do
 
   alias Hellen.AI.AudioExtractor
   alias Hellen.AI.Prompts
+  alias Hellen.AI.SemanticCache
 
   # Groq for transcription (OpenAI-compatible REST API)
   @transcription_base_url "https://api.groq.com/openai/v1"
@@ -550,58 +551,64 @@ defmodule Hellen.AI.NvidiaClient do
   - `:school_type` - "Pública" or "Particular"
   """
   def analyze_v3(transcription, context \\ %{}) do
-    system_prompt = Prompts.core_analysis_system_prompt(context)
-    user_prompt = Prompts.core_analysis_user_prompt(transcription)
-    temperature = Prompts.temperature(:core_analysis)
-    max_tokens = Prompts.max_tokens(:core_analysis)
+    # Generate a unique query signature for semantic caching
+    # We prefix to differentiate from other types of analysis on the same text
+    query_text = "v3_analysis:" <> transcription
 
-    Logger.info("[NvidiaClient] Starting v3.0 MASTERCLASS analysis, temp=#{temperature}")
-    start_time = System.monotonic_time(:millisecond)
+    SemanticCache.fetch_or_compute(query_text, fn ->
+      system_prompt = Prompts.core_analysis_system_prompt(context)
+      user_prompt = Prompts.core_analysis_user_prompt(transcription)
+      temperature = Prompts.temperature(:core_analysis)
+      max_tokens = Prompts.max_tokens(:core_analysis)
 
-    result =
-      Req.post("#{@analysis_base_url}/chat/completions",
-        json: %{
-          model: @analysis_model,
-          messages: [
-            %{role: "system", content: system_prompt},
-            %{role: "user", content: user_prompt}
-          ],
-          temperature: temperature,
-          max_tokens: max_tokens,
-          response_format: %{type: "json_object"}
-        },
-        headers: nvidia_auth_headers(),
-        receive_timeout: 240_000
-      )
+      Logger.info("[NvidiaClient] Starting v3.0 MASTERCLASS analysis, temp=#{temperature}")
+      start_time = System.monotonic_time(:millisecond)
 
-    processing_time = System.monotonic_time(:millisecond) - start_time
+      result =
+        Req.post("#{@analysis_base_url}/chat/completions",
+          json: %{
+            model: @analysis_model,
+            messages: [
+              %{role: "system", content: system_prompt},
+              %{role: "user", content: user_prompt}
+            ],
+            temperature: temperature,
+            max_tokens: max_tokens,
+            response_format: %{type: "json_object"}
+          },
+          headers: nvidia_auth_headers(),
+          receive_timeout: 240_000
+        )
 
-    case result do
-      {:ok, %{status: 200, body: body}} ->
-        message = get_in(body, ["choices", Access.at(0), "message", "content"])
-        usage = body["usage"]
+      processing_time = System.monotonic_time(:millisecond) - start_time
 
-        Logger.info("[NvidiaClient] v3.0 analysis completed in #{processing_time}ms")
+      case result do
+        {:ok, %{status: 200, body: body}} ->
+          message = get_in(body, ["choices", Access.at(0), "message", "content"])
+          usage = body["usage"]
 
-        {:ok,
-         %{
-           raw: message,
-           structured: parse_analysis_response(message),
-           model: @analysis_model,
-           version: "3.0",
-           technique: "CoT+FewShot+LegalCompliance",
-           tokens_used: (usage["prompt_tokens"] || 0) + (usage["completion_tokens"] || 0),
-           processing_time_ms: processing_time
-         }}
+          Logger.info("[NvidiaClient] v3.0 analysis completed in #{processing_time}ms")
 
-      {:ok, %{status: status, body: body}} ->
-        Logger.error("[NvidiaClient] v3.0 analysis failed: #{status}")
-        {:error, %{status: status, message: body["error"] || "Unknown error"}}
+          {:ok,
+           %{
+             raw: message,
+             structured: parse_analysis_response(message),
+             model: @analysis_model,
+             version: "3.0",
+             technique: "CoT+FewShot+LegalCompliance",
+             tokens_used: (usage["prompt_tokens"] || 0) + (usage["completion_tokens"] || 0),
+             processing_time_ms: processing_time
+           }}
 
-      {:error, reason} ->
-        Logger.error("[NvidiaClient] v3.0 analysis error: #{inspect(reason)}")
-        {:error, reason}
-    end
+        {:ok, %{status: status, body: body}} ->
+          Logger.error("[NvidiaClient] v3.0 analysis failed: #{status}")
+          {:error, %{status: status, message: body["error"] || "Unknown error"}}
+
+        {:error, reason} ->
+          Logger.error("[NvidiaClient] v3.0 analysis error: #{inspect(reason)}")
+          {:error, reason}
+      end
+    end)
   end
 
   @doc """
