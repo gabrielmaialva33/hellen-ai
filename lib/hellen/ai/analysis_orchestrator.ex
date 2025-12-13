@@ -44,8 +44,8 @@ defmodule Hellen.AI.AnalysisOrchestrator do
 
   require Logger
 
-  alias Hellen.AI.NvidiaClient
   alias Hellen.AI.AnalysisValidator
+  alias Hellen.AI.NvidiaClient
 
   @doc """
   Runs the full analysis pipeline with parallel output generation.
