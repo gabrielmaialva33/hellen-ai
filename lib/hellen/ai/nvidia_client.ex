@@ -1,20 +1,28 @@
 defmodule Hellen.AI.NvidiaClient do
   @moduledoc """
-  Client for AI APIs.
-  - Transcription: Groq Whisper (fast, OpenAI-compatible REST API)
-  - Analysis: NVIDIA NIM Qwen3 (pedagogical feedback)
+  Client for AI APIs with intelligent model selection (Quality > Speed strategy).
 
-  Uses optimized audio extraction for video files (10x faster with FFmpeg stream copy).
+  - Transcription: Groq Whisper (fast, OpenAI-compatible REST API)
+  - Analysis: NVIDIA NIM with tiered model selection
+
+  ## Model Tiers (Quality > Speed)
+
+  | Type        | Model              | Use Case                      | Cost   |
+  |-------------|--------------------|-------------------------------|--------|
+  | `:standard` | Llama 3.1 70B      | Default analysis (best value) | $0.05  |
+  | `:deep`     | Llama 3.1 405B     | Validation/critical reviews   | $0.50  |
+  | `:fast`     | Llama 3.1 8B       | Quick preliminary checks      | $0.01  |
+  | `:brazilian`| Qwen3 235B         | Portuguese/Lei 13.185 context | $0.40  |
+
+  Use `get_model/1`, `get_temperature/1`, `get_max_tokens/1`, `get_timeout/1`
+  for intelligent configuration.
 
   ## Analysis Methods (v3.0 MASTERCLASS)
 
   - `analyze_v3/2` - Full 13-dimension analysis with legal compliance
-  - `analyze_v2/2` - Legacy 13-dimension analysis with Chain-of-Thought
   - `check_legal_compliance/1` - Lei 13.185 + Lei 13.718 verification
   - `analyze_socioemotional/1` - OCDE 5 pillars analysis
-  - `quick_compliance_check/1` - Fast 10-point compliance verification
-  - `generate_practical_examples/3` - Before/after improvement examples
-  - `generate_coaching_email/1` - Personalized coaching email
+  - `quick_compliance_check/1` - Fast 10-point compliance verification (8B)
 
   ## Legal Compliance (v3.0)
 
@@ -42,11 +50,106 @@ defmodule Hellen.AI.NvidiaClient do
 
   # NVIDIA for LLM analysis
   @analysis_base_url "https://integrate.api.nvidia.com/v1"
-  @analysis_model "qwen/qwen3-next-80b-a3b-instruct"
-  @fast_analysis_model "meta/llama-3.1-8b-instruct"
+
+  # Model tiers for intelligent selection (Quality > Speed strategy)
+  # Standard: Best cost-benefit for most analyses
+  @model_standard "meta/llama-3.1-70b-instruct"
+  # Deep: Maximum quality for critical/validation analyses
+  @model_deep "meta/llama-3.1-405b-instruct"
+  # Fast: Quick preliminary checks only
+  @model_fast "meta/llama-3.1-8b-instruct"
+  # Brazilian: Specialized for Portuguese context
+  @model_brazilian "qwen/qwen3-235b-a22b"
+
+  # Legacy aliases for backward compatibility
+  @analysis_model @model_standard
+  @fast_analysis_model @model_fast
 
   # Video extensions that need audio extraction
   @video_extensions ~w(.mp4 .mkv .avi .mov .webm .flv .wmv .m4v)
+
+  # ============================================================================
+  # Model Selection API (Quality > Speed Strategy)
+  # ============================================================================
+
+  @doc """
+  Returns the appropriate model for the given analysis type.
+
+  ## Types
+  - `:standard` - Best cost-benefit (Llama 70B) - default for most analyses
+  - `:deep` - Maximum quality (Llama 405B) - for validation/critical
+  - `:fast` - Quick checks only (Llama 8B) - preliminary scans
+  - `:brazilian` - Portuguese specialized (Qwen 235B) - Lei 13.185 context
+  - `:consensus` - Multiple reasoning (Llama 70B) - voting scenarios
+  - `:validation` - Critical review (Llama 405B) - score validation
+
+  ## Examples
+      iex> NvidiaClient.get_model(:standard)
+      "meta/llama-3.1-70b-instruct"
+
+      iex> NvidiaClient.get_model(:deep)
+      "meta/llama-3.1-405b-instruct"
+  """
+  @spec get_model(atom()) :: String.t()
+  def get_model(:standard), do: @model_standard
+  def get_model(:deep), do: @model_deep
+  def get_model(:fast), do: @model_fast
+  def get_model(:brazilian), do: @model_brazilian
+  def get_model(:consensus), do: @model_standard
+  def get_model(:validation), do: @model_deep
+  def get_model(_), do: @model_standard
+
+  @doc """
+  Returns recommended temperature for analysis type.
+
+  Lower temperature = more deterministic/rigorous
+  Higher temperature = more creative/diverse
+  """
+  @spec get_temperature(atom()) :: float()
+  def get_temperature(:standard), do: 0.5
+  def get_temperature(:deep), do: 0.45
+  def get_temperature(:fast), do: 0.7
+  def get_temperature(:consensus), do: 0.6
+  def get_temperature(:validation), do: 0.3
+  def get_temperature(_), do: 0.5
+
+  @doc """
+  Returns recommended max tokens for analysis type.
+  """
+  @spec get_max_tokens(atom()) :: integer()
+  def get_max_tokens(:standard), do: 4096
+  def get_max_tokens(:deep), do: 6144
+  def get_max_tokens(:fast), do: 1024
+  def get_max_tokens(:consensus), do: 4096
+  def get_max_tokens(:validation), do: 6144
+  def get_max_tokens(_), do: 4096
+
+  @doc """
+  Returns recommended timeout (ms) for analysis type.
+  """
+  @spec get_timeout(atom()) :: integer()
+  def get_timeout(:standard), do: 120_000
+  def get_timeout(:deep), do: 300_000
+  def get_timeout(:fast), do: 60_000
+  def get_timeout(:consensus), do: 180_000
+  def get_timeout(:validation), do: 300_000
+  def get_timeout(_), do: 120_000
+
+  @doc """
+  Estimates cost per analysis (USD) for planning purposes.
+  """
+  @spec estimate_cost(atom()) :: float()
+  def estimate_cost(:standard), do: 0.05
+  def estimate_cost(:deep), do: 0.50
+  def estimate_cost(:fast), do: 0.01
+  def estimate_cost(:brazilian), do: 0.40
+  def estimate_cost(:consensus), do: 0.15
+  def estimate_cost(:validation), do: 0.50
+  def estimate_cost(_), do: 0.05
+
+  # ============================================================================
+  # Transcription API
+  # ============================================================================
 
   @doc """
   Transcribes audio using Groq Whisper.
