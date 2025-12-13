@@ -60,86 +60,22 @@ defmodule HellenWeb.LessonLive.New do
 
     user = socket.assigns.current_user
     lesson_params = Map.get(params, "lesson", %{})
-
-    # Start upload process
     socket = assign(socket, uploading: true)
 
-    # Upload files to R2 and create lesson
     try do
-      case upload_and_create_lesson(socket, user, lesson_params) do
-        {:ok, lesson} ->
-          # Start transcription background job immediately
-          case Lessons.start_processing(lesson, user) do
-            {:ok, updated_lesson} ->
-              if connected?(socket) do
-                Phoenix.PubSub.subscribe(Hellen.PubSub, "lesson:#{updated_lesson.id}")
-              end
-
-              {:noreply,
-               socket
-               |> assign(uploading: false)
-               # Use filename as default title if not provided yet
-               |> assign(
-                 form:
-                   to_form(%{"title" => lesson.title, "subject" => lesson.subject}, as: :lesson)
-               )
-               |> assign(lesson: updated_lesson)
-               |> assign(step: :details)
-               |> put_flash(:info, "Upload concluído! Preencha os detalhes enquanto processamos.")}
-
-            {:error, :insufficient_credits} ->
-              {:noreply,
-               socket
-               |> assign(uploading: false)
-               |> put_flash(:error, "Créditos insuficientes para processar a aula.")}
-
-            {:error, reason} ->
-              Logger.error("Processing start error: #{inspect(reason)}")
-
-              {:noreply,
-               socket
-               |> assign(uploading: false)
-               |> put_flash(:error, "Erro ao iniciar processamento: #{inspect(reason)}")}
-          end
-
-        {:error, :insufficient_credits} ->
-          {:noreply,
-           socket
-           |> assign(uploading: false)
-           |> put_flash(
-             :error,
-             "Você não tem créditos suficientes. Adquira mais créditos para continuar."
-           )}
-
-        {:error, reason} ->
-          Logger.error("Upload error: #{inspect(reason)}")
-
-          {:noreply,
-           socket
-           |> assign(uploading: false)
-           |> put_flash(:error, "Erro ao criar aula: #{inspect(reason)}")}
-
-        {:error, :no_file_uploaded} ->
-          {:noreply,
-           socket
-           |> assign(uploading: false)
-           |> put_flash(:error, "Selecione um arquivo para continuar.")}
-      end
+      result = upload_and_create_lesson(socket, user, lesson_params)
+      handle_upload_result(result, user, socket)
     rescue
       e ->
         Logger.error("Exception in submit: #{inspect(e)}")
         Logger.error("Stacktrace: #{Exception.format_stacktrace(__STACKTRACE__)}")
 
         {:noreply,
-         socket
-         |> assign(uploading: false)
-         |> put_flash(:error, "Erro inesperado: #{inspect(e)}")}
+         socket |> assign(uploading: false) |> put_flash(:error, "Erro inesperado: #{inspect(e)}")}
     end
   end
 
   defp handle_submit(:details, %{"lesson" => lesson_params}, socket) do
-    # When submitting details, we assume the file is already processing.
-    # We update the metadata and redirect to show page.
     case Lessons.update_lesson(socket.assigns.lesson, lesson_params) do
       {:ok, lesson} ->
         {:noreply,
@@ -150,6 +86,71 @@ defmodule HellenWeb.LessonLive.New do
       {:error, changeset} ->
         {:noreply, assign(socket, form: to_form(changeset))}
     end
+  end
+
+  defp handle_upload_result({:ok, lesson}, user, socket) do
+    require Logger
+
+    case Lessons.start_processing(lesson, user) do
+      {:ok, updated_lesson} ->
+        if connected?(socket),
+          do: Phoenix.PubSub.subscribe(Hellen.PubSub, "lesson:#{updated_lesson.id}")
+
+        finish_upload_success(socket, lesson, updated_lesson)
+
+      {:error, :insufficient_credits} ->
+        {:noreply,
+         socket
+         |> assign(uploading: false)
+         |> put_flash(:error, "Créditos insuficientes para processar a aula.")}
+
+      {:error, reason} ->
+        Logger.error("Processing start error: #{inspect(reason)}")
+
+        {:noreply,
+         socket
+         |> assign(uploading: false)
+         |> put_flash(:error, "Erro ao iniciar processamento: #{inspect(reason)}")}
+    end
+  end
+
+  defp handle_upload_result({:error, :insufficient_credits}, _user, socket) do
+    {:noreply,
+     socket
+     |> assign(uploading: false)
+     |> put_flash(
+       :error,
+       "Você não tem créditos suficientes. Adquira mais créditos para continuar."
+     )}
+  end
+
+  defp handle_upload_result({:error, :no_file_uploaded}, _user, socket) do
+    {:noreply,
+     socket
+     |> assign(uploading: false)
+     |> put_flash(:error, "Selecione um arquivo para continuar.")}
+  end
+
+  defp handle_upload_result({:error, reason}, _user, socket) do
+    require Logger
+    Logger.error("Upload error: #{inspect(reason)}")
+
+    {:noreply,
+     socket
+     |> assign(uploading: false)
+     |> put_flash(:error, "Erro ao criar aula: #{inspect(reason)}")}
+  end
+
+  defp finish_upload_success(socket, lesson, updated_lesson) do
+    {:noreply,
+     socket
+     |> assign(uploading: false)
+     |> assign(
+       form: to_form(%{"title" => lesson.title, "subject" => lesson.subject}, as: :lesson)
+     )
+     |> assign(lesson: updated_lesson)
+     |> assign(step: :details)
+     |> put_flash(:info, "Upload concluído! Preencha os detalhes enquanto processamos.")}
   end
 
   @impl true
@@ -166,6 +167,22 @@ defmodule HellenWeb.LessonLive.New do
   @impl true
   def handle_info({"transcription_failed", %{error: error}}, socket) do
     {:noreply, put_flash(socket, :error, "Transcrição falhou: #{error}")}
+  end
+
+  @impl true
+  def handle_info({"analysis_quick_update", payload}, socket) do
+    urgency = payload.urgency || "BAIXA"
+
+    message =
+      case urgency do
+        "ALTA" -> "⚠️ Atenção! Detectamos pontos de urgência. Finalizando análise..."
+        _ -> "✅ Análise preliminar positiva! Gerando relatório completo..."
+      end
+
+    {:noreply,
+     socket
+     |> put_flash(:info, message)
+     |> assign(transcription_progress: 100)}
   end
 
   @impl true

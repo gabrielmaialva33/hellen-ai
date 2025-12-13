@@ -136,11 +136,55 @@ defmodule Hellen.AI.AnalysisOrchestrator do
   def run_full_analysis_v3(transcription, context \\ %{}, opts \\ []) do
     config = parse_v3_options(opts)
 
-    Logger.info("[AnalysisOrchestrator] Starting v3.0 MASTERCLASS pipeline")
+    Logger.info("[AnalysisOrchestrator] Starting v3.0 MASTERCLASS pipeline (Optimized)")
     start_time = System.monotonic_time(:millisecond)
 
-    core_result = run_core_analysis_v3(transcription, context, config)
-    process_v3_pipeline(core_result, transcription, context, config, start_time)
+    # Define independent tasks to run in parallel
+    tasks = [
+      {:core, fn -> run_core_analysis_v3(transcription, context, config) end}
+    ]
+
+    tasks =
+      tasks
+      |> maybe_add_legal_task_v3(transcription, config.include_legal)
+      |> maybe_add_socioemotional_task_v3(transcription, config.include_socioemotional)
+
+    # Run primary parallel batch (Core + Legal + Socioemotional)
+    results =
+      tasks
+      |> Task.async_stream(
+        fn {type, fun} ->
+          start_task = System.monotonic_time(:millisecond)
+          result = fun.()
+          duration = System.monotonic_time(:millisecond) - start_task
+          Logger.info("[AnalysisOrchestrator] Task #{type} completed in #{duration}ms")
+          {type, result}
+        end,
+        timeout: 300_000,
+        max_concurrency: 3
+      )
+      |> Enum.into(%{}, fn {:ok, res} -> res end)
+
+    # Check if Core Analysis succeeded
+    case Map.get(results, :core) do
+      {:ok, core_analysis} ->
+        # Run dependent tasks (Examples, Email) based on Core result
+        process_dependent_tasks(
+          transcription,
+          context,
+          core_analysis,
+          results,
+          config,
+          start_time
+        )
+
+      {:error, reason} ->
+        Logger.error("[AnalysisOrchestrator] Core analysis failed: #{inspect(reason)}")
+        {:error, reason}
+
+      nil ->
+        {:error, :core_analysis_missing}
+    end
   end
 
   defp parse_v3_options(opts) do
@@ -154,6 +198,18 @@ defmodule Hellen.AI.AnalysisOrchestrator do
     }
   end
 
+  defp maybe_add_legal_task_v3(tasks, transcription, true) do
+    [{:legal, fn -> NvidiaClient.check_legal_compliance(transcription) end} | tasks]
+  end
+
+  defp maybe_add_legal_task_v3(tasks, _transcription, false), do: tasks
+
+  defp maybe_add_socioemotional_task_v3(tasks, transcription, true) do
+    [{:socioemotional, fn -> NvidiaClient.analyze_socioemotional(transcription) end} | tasks]
+  end
+
+  defp maybe_add_socioemotional_task_v3(tasks, _transcription, false), do: tasks
+
   defp run_core_analysis_v3(transcription, context, %{
          use_self_consistency: true,
          samples: samples
@@ -165,29 +221,45 @@ defmodule Hellen.AI.AnalysisOrchestrator do
     NvidiaClient.analyze_v3(transcription, context)
   end
 
-  defp process_v3_pipeline({:error, reason}, _transcription, _context, _config, _start_time) do
-    Logger.error("[AnalysisOrchestrator] v3.0 core analysis failed: #{inspect(reason)}")
-    {:error, reason}
-  end
-
-  defp process_v3_pipeline({:ok, core_analysis}, transcription, context, config, start_time) do
+  defp process_dependent_tasks(
+         transcription,
+         context,
+         core_analysis,
+         primary_results,
+         config,
+         start_time
+       ) do
     critical_dimensions = extract_critical_dimensions(core_analysis)
 
-    parallel_tasks =
-      build_v3_parallel_tasks(transcription, context, core_analysis, critical_dimensions, config)
+    # Build tasks dependent on Core Analysis
+    dependent_tasks =
+      build_v3_dependent_tasks(
+        transcription,
+        context,
+        core_analysis,
+        critical_dimensions,
+        config
+      )
 
-    results = run_parallel_tasks_v3(parallel_tasks)
+    # Run dependent tasks in parallel
+    secondary_results = run_parallel_tasks_v3(dependent_tasks)
 
     processing_time = System.monotonic_time(:millisecond) - start_time
-    total_tokens = calculate_total_tokens_v3(core_analysis, results)
+    total_tokens = calculate_total_tokens_v3(core_analysis, primary_results, secondary_results)
 
     Logger.info("[AnalysisOrchestrator] v3.0 pipeline completed in #{processing_time}ms")
+
+    # Combine all results
+    combined_results =
+      secondary_results
+      |> Map.put(:legal, get_result_content(primary_results, :legal))
+      |> Map.put(:socioemotional, get_result_content(primary_results, :socioemotional))
 
     result =
       build_v3_response(
         core_analysis,
         critical_dimensions,
-        results,
+        combined_results,
         config,
         processing_time,
         total_tokens
@@ -196,27 +268,26 @@ defmodule Hellen.AI.AnalysisOrchestrator do
     AnalysisValidator.validate_analysis(transcription, result)
   end
 
-  defp build_v3_parallel_tasks(transcription, context, core_analysis, critical_dimensions, config) do
+  defp get_result_content(results, key) do
+    case Map.get(results, key) do
+      {:ok, data} -> data.structured
+      _ -> nil
+    end
+  end
+
+  defp build_v3_dependent_tasks(
+         transcription,
+         context,
+         core_analysis,
+         critical_dimensions,
+         config
+       ) do
     []
-    |> maybe_add_legal_task(transcription, config.include_legal)
-    |> maybe_add_socioemotional_task(transcription, config.include_socioemotional)
     |> maybe_add_example_tasks(transcription, critical_dimensions, config.generate_examples)
     |> maybe_add_email_task(core_analysis, context, config.generate_email)
   end
 
-  # Pipeline helper functions for building parallel tasks
-  defp maybe_add_legal_task(tasks, _transcription, false), do: tasks
-
-  defp maybe_add_legal_task(tasks, transcription, true) do
-    [{:legal, nil, fn -> NvidiaClient.check_legal_compliance(transcription) end} | tasks]
-  end
-
-  defp maybe_add_socioemotional_task(tasks, _transcription, false), do: tasks
-
-  defp maybe_add_socioemotional_task(tasks, transcription, true) do
-    [{:socioemotional, nil, fn -> NvidiaClient.analyze_socioemotional(transcription) end} | tasks]
-  end
-
+  # Pipeline helper functions for building dependent tasks
   defp maybe_add_example_tasks(tasks, _transcription, _critical_dimensions, false), do: tasks
   defp maybe_add_example_tasks(tasks, _transcription, [], _generate), do: tasks
 
@@ -254,7 +325,7 @@ defmodule Hellen.AI.AnalysisOrchestrator do
       summary: build_summary_v3(core_analysis, critical_dimensions, results),
       metadata: %{
         version: "3.0",
-        technique: "MASTERCLASS",
+        technique: "MASTERCLASS (Optimized)",
         self_consistency: config.use_self_consistency,
         confidence: Map.get(core_analysis, :confidence),
         samples_used: Map.get(core_analysis, :sample_count, 1),
@@ -620,28 +691,30 @@ defmodule Hellen.AI.AnalysisOrchestrator do
     }
   end
 
-  defp calculate_total_tokens_v3(core_analysis, parallel_results) do
+  defp calculate_total_tokens_v3(core_analysis, primary_results, secondary_results) do
     core_tokens = Map.get(core_analysis, :tokens_used, 0)
 
-    example_tokens =
-      parallel_results
-      |> Map.get(:practical_examples, [])
-      |> Enum.reduce(0, fn ex, acc -> acc + Map.get(ex, :tokens_used, 0) end)
-
+    # Primary results (Legal, Socioemotional)
     legal_tokens =
-      case Map.get(parallel_results, :legal) do
-        %{tokens_used: t} -> t
+      case Map.get(primary_results, :legal) do
+        {:ok, %{tokens_used: t}} -> t
         _ -> 0
       end
 
     socioemotional_tokens =
-      case Map.get(parallel_results, :socioemotional) do
-        %{tokens_used: t} -> t
+      case Map.get(primary_results, :socioemotional) do
+        {:ok, %{tokens_used: t}} -> t
         _ -> 0
       end
 
+    # Secondary results (Examples, Email)
+    example_tokens =
+      secondary_results
+      |> Map.get(:practical_examples, [])
+      |> Enum.reduce(0, fn ex, acc -> acc + Map.get(ex, :tokens_used, 0) end)
+
     email_tokens =
-      case Map.get(parallel_results, :coaching_email) do
+      case Map.get(secondary_results, :coaching_email) do
         %{tokens_used: t} -> t
         _ -> 0
       end

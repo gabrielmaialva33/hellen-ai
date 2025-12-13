@@ -21,12 +21,44 @@ defmodule Hellen.Workers.AnalysisJob do
 
     lesson = Lessons.get_lesson_with_transcription!(lesson_id)
 
-    with {:ok, transcription} <- get_transcription(lesson),
-         {:ok, result} <- analyze_transcription(lesson, transcription),
+    case get_transcription(lesson) do
+      {:ok, transcription} ->
+        # 1. Quick Check (Fast Feedback)
+        run_quick_check(lesson, transcription)
+
+        # 2. Full Analysis (Deep Dive)
+        run_full_analysis(lesson, transcription)
+
+      {:error, reason} ->
+        Logger.error("Analysis failed to start for lesson #{lesson_id}: #{inspect(reason)}")
+        handle_failure(lesson, reason)
+    end
+  end
+
+  defp run_quick_check(lesson, transcription) do
+    Logger.info("Running quick check for lesson #{lesson.id}")
+
+    case AnalysisOrchestrator.run_quick_analysis(transcription) do
+      {:ok, result} ->
+        broadcast_progress(lesson.id, "analysis_quick_update", %{
+          quick_check: result.quick_check,
+          urgency: result.urgency,
+          message: "Análise preliminar concluída. Aprofundando..."
+        })
+
+      {:error, reason} ->
+        Logger.warning("Quick check failed: #{inspect(reason)}")
+    end
+  end
+
+  defp run_full_analysis(lesson, transcription) do
+    Logger.info("Running full analysis for lesson #{lesson.id}")
+
+    with {:ok, result} <- analyze_transcription(lesson, transcription),
          {:ok, analysis} <- save_analysis(lesson, result),
          {:ok, _lesson} <- Lessons.update_lesson_status(lesson, "completed") do
-      Logger.info("Analysis completed for lesson #{lesson_id}")
-      broadcast_progress(lesson_id, "analysis_complete", %{analysis: analysis})
+      Logger.info("Analysis completed for lesson #{lesson.id}")
+      broadcast_progress(lesson.id, "analysis_complete", %{analysis: analysis})
 
       # Send notifications asynchronously
       send_notifications(analysis)
@@ -34,7 +66,7 @@ defmodule Hellen.Workers.AnalysisJob do
       :ok
     else
       {:error, reason} ->
-        Logger.error("Analysis failed for lesson #{lesson_id}: #{inspect(reason)}")
+        Logger.error("Analysis failed for lesson #{lesson.id}: #{inspect(reason)}")
         handle_failure(lesson, reason)
     end
   end
@@ -93,27 +125,14 @@ defmodule Hellen.Workers.AnalysisJob do
   end
 
   defp build_v3_analysis_result(result) do
-    # Extract core analysis
     core = result[:core_analysis] || result["core_analysis"]
     structured = core[:structured] || core["structured"]
+    validation_data = extract_validation_data(result)
 
-    # Always use rigorous_score (normalized to 0-1), fallback to normalized LLM score
     overall_score =
       get_normalized_rigorous_score(result) || normalize_score(extract_score(structured))
 
-    # Get validation warning
-    validation_warning = result[:validation_warning] || result["validation_warning"]
-
-    # Get behavior analysis and validation report (always available from validator)
-    behavior_analysis = result[:behavior_analysis] || result["behavior_analysis"]
-    validation_report = result[:validation_report] || result["validation_report"]
-
-    # Always include validation data in structured result for frontend access
-    structured_updated =
-      structured
-      |> Map.put("validation_warning", validation_warning)
-      |> Map.put("behavior_analysis", behavior_analysis)
-      |> Map.put("validation_report", validation_report)
+    structured_updated = build_structured_with_validation(structured, validation_data)
 
     %{
       model: core[:model] || "qwen/qwen3-next-80b-instruct",
@@ -125,9 +144,23 @@ defmodule Hellen.Workers.AnalysisJob do
       bncc_matches: parse_bncc_matches(structured["bncc_matches"]),
       bullying_alerts: parse_bullying_alerts(structured["bullying_alerts"]),
       lesson_characters: parse_lesson_characters(structured["lesson_characters"]),
-      # For backward compatibility in response
-      validation: validation_warning
+      validation: validation_data.warning
     }
+  end
+
+  defp extract_validation_data(result) do
+    %{
+      warning: result[:validation_warning] || result["validation_warning"],
+      behavior_analysis: result[:behavior_analysis] || result["behavior_analysis"],
+      report: result[:validation_report] || result["validation_report"]
+    }
+  end
+
+  defp build_structured_with_validation(structured, validation_data) do
+    structured
+    |> Map.put("validation_warning", validation_data.warning)
+    |> Map.put("behavior_analysis", validation_data.behavior_analysis)
+    |> Map.put("validation_report", validation_data.report)
   end
 
   defp extract_score(structured) do

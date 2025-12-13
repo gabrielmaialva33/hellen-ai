@@ -33,7 +33,10 @@ defmodule Hellen.Lessons.DocxExtractor do
         {:ok, cleaned}
       else
         # Fallback: document might be image-only, use OCR
-        Logger.info("[DocxExtractor] Limited text found (#{String.length(cleaned)} chars), trying OCR")
+        Logger.info(
+          "[DocxExtractor] Limited text found (#{String.length(cleaned)} chars), trying OCR"
+        )
+
         extract_with_ocr(path)
       end
     end
@@ -80,15 +83,13 @@ defmodule Hellen.Lessons.DocxExtractor do
     # Strategy 1: Extract from <w:t> tags (most common)
     text_from_wt =
       Regex.scan(~r/<w:t[^>]*>([^<]*)<\/w:t>/s, xml_str)
-      |> Enum.map(fn [_, content] -> content end)
-      |> Enum.join(" ")
+      |> Enum.map_join(" ", fn [_, content] -> content end)
 
     # Strategy 2: Extract from <t> tags without namespace
     text_from_t =
-      if String.length(text_from_wt) == 0 do
+      if text_from_wt == "" do
         Regex.scan(~r/<t[^>]*>([^<]*)<\/t>/s, xml_str)
-        |> Enum.map(fn [_, content] -> content end)
-        |> Enum.join(" ")
+        |> Enum.map_join(" ", fn [_, content] -> content end)
       else
         ""
       end
@@ -103,12 +104,12 @@ defmodule Hellen.Lessons.DocxExtractor do
 
   defp extract_with_ocr(path) do
     case extract_images_from_docx(path) do
-      {:ok, images} when length(images) > 0 ->
-        Logger.info("[DocxExtractor] Found #{length(images)} images, running OCR...")
-        NemotronOCR.extract_from_images(images)
-
       {:ok, []} ->
         {:error, :no_images_found}
+
+      {:ok, images} ->
+        Logger.info("[DocxExtractor] Found #{length(images)} images, running OCR...")
+        NemotronOCR.extract_from_images(images)
 
       {:error, reason} ->
         {:error, reason}
@@ -122,10 +123,11 @@ defmodule Hellen.Lessons.DocxExtractor do
           files
           |> Enum.filter(fn {name, _} ->
             name_str = to_string(name)
+
             String.starts_with?(name_str, "word/media/") and
               (String.ends_with?(name_str, ".png") or
-               String.ends_with?(name_str, ".jpg") or
-               String.ends_with?(name_str, ".jpeg"))
+                 String.ends_with?(name_str, ".jpg") or
+                 String.ends_with?(name_str, ".jpeg"))
           end)
           |> Enum.sort_by(fn {name, _} -> to_string(name) end)
           |> Enum.map(fn {_name, data} -> data end)

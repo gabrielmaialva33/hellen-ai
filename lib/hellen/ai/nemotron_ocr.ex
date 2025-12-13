@@ -71,8 +71,7 @@ defmodule Hellen.AI.NemotronOCR do
         results
         |> Enum.filter(&match?({:ok, _, _}, &1))
         |> Enum.sort_by(fn {:ok, idx, _} -> idx end)
-        |> Enum.map(fn {:ok, idx, text} -> "[Página #{idx}]\n#{text}" end)
-        |> Enum.join("\n\n---\n\n")
+        |> Enum.map_join("\n\n---\n\n", fn {:ok, idx, text} -> "[Página #{idx}]\n#{text}" end)
 
       {:ok, text}
     end
@@ -148,7 +147,11 @@ defmodule Hellen.AI.NemotronOCR do
   defp extract_text_from_response(response) do
     # The response contains the extracted text in tool_calls or content
     case response do
-      %{"choices" => [%{"message" => %{"tool_calls" => [%{"function" => %{"arguments" => args}}]}} | _]} ->
+      %{
+        "choices" => [
+          %{"message" => %{"tool_calls" => [%{"function" => %{"arguments" => args}}]}} | _
+        ]
+      } ->
         # Tool call response - arguments contains the extracted text
         extract_from_arguments(args)
 
