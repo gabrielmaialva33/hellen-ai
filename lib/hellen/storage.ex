@@ -25,10 +25,11 @@ defmodule Hellen.Storage do
     bucket = get_bucket()
     content_type = opts[:content_type] || guess_content_type(key)
 
+    # Note: R2 doesn't support x-amz-acl headers (public-read, etc.)
+    # Public access is configured at the bucket level in Cloudflare dashboard
     request =
       ExAws.S3.put_object(bucket, key, binary,
-        content_type: content_type,
-        acl: opts[:acl] || :public_read
+        content_type: content_type
       )
 
     case ExAws.request(request) do
