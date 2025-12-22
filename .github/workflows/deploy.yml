@@ -96,7 +96,7 @@ jobs:
           echo "Running migrations..."
           docker run --rm \
             --env-file .env \
-            --add-host=host.docker.internal:172.17.0.1 \
+            --network shared_network \
             hellen-ai:latest \
             bin/hellen eval "Hellen.Release.migrate()" || true
 
@@ -107,7 +107,7 @@ jobs:
             --restart unless-stopped \
             -p 4001:4000 \
             --env-file .env \
-            --add-host=host.docker.internal:172.17.0.1 \
+            --network shared_network \
             hellen-ai:latest
 
           # Fast health check loop (3s intervals, max 30s)
