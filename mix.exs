@@ -80,6 +80,9 @@ defmodule Hellen.MixProject do
       # Payments
       {:stripity_stripe, "~> 3.2"},
 
+      # Environment
+      {:dotenvy, "~> 0.8"},
+
       # Code quality
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
 

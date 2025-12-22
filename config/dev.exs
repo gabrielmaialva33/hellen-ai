@@ -1,6 +1,7 @@
 import Config
 
 # Configure your database
+# DATABASE_URL from .env takes precedence, otherwise use defaults
 config :hellen, Hellen.Repo,
   username: "hellen",
   password: "hellen_dev",
@@ -50,43 +51,15 @@ config :phoenix_live_view,
   debug_heex_annotations: true,
   enable_expensive_runtime_checks: true
 
-# Configure Redis
-config :hellen, :redis_url, "redis://localhost:6379"
+# Configure Redis (fallback if not in .env)
+config :hellen, :redis_url, "redis://localhost:6380"
 
-# Configure Qdrant
+# Configure Qdrant (fallback if not in .env)
 config :hellen, :qdrant_url, "http://localhost:6333"
 
-# AI API Keys (hardcoded for development convenience)
-config :hellen,
-       :nvidia_api_key,
-       "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"
-
-config :hellen, :groq_api_key, "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"
-
-# R2 Storage configuration for development
-config :ex_aws,
-  access_key_id: "62c911de26cc59e22b31b153920d35ca",
-  secret_access_key: "693ce5ae9fa33925bd7601ebbf7bdfcf7610ec4fe9b398bfb4d72623ada3944a",
-  region: "auto"
-
-config :ex_aws, :s3,
-  scheme: "https://",
-  host: "5e169ace5c37c07688d84589e2ee87b0.r2.cloudflarestorage.com",
-  region: "auto"
-
-config :hellen, :r2,
-  bucket: "hellen-r2",
-  public_url: "https://pub-0914ea82354f49a6a09816c8d7044329.r2.dev"
+# Note: API keys (NVIDIA, GROQ, R2, Stripe) are loaded from .env via runtime.exs
 
 # Swoosh local mailbox (dev only)
 config :swoosh, :api_client, false
 
-# Stripe test keys (development)
-config :stripity_stripe,
-  api_key:
-    "sk_test_51Sahg4Ge6PyigxRcP5MGjlJRWazTecpTul2utjt7GLZdRFkSMytATPJmKgPkHw6TY9Je3GIZsRmSCcr42hn7AbbQ00cmngXgul",
-  webhook_secret: "whsec_f0113e8b5b1aaf135582c55745c7886131506f8230c1e6a1b2aef9d35a448a95"
-
-config :hellen, :stripe,
-  publishable_key:
-    "pk_test_51Sahg4Ge6PyigxRcjONule4vS8EUOyIOXdRi5lQXOtmsXnu5cwCPHBXsEeOlngRA1RCExge6JpiP3hZ01QA6ohUs00rc1RwPZc"
+# Stripe keys loaded from .env via runtime.exs
