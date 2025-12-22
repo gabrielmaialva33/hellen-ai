@@ -20,7 +20,10 @@ defmodule Hellen.Workers.AnalysisJob do
   require Logger
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: %{"lesson_id" => lesson_id}, attempt: attempt, max_attempts: max_attempts} = job) do
+  def perform(
+        %Oban.Job{args: %{"lesson_id" => lesson_id}, attempt: attempt, max_attempts: max_attempts} =
+          job
+      ) do
     Logger.info("Starting analysis for lesson #{lesson_id} (attempt #{attempt}/#{max_attempts})")
 
     lesson = Lessons.get_lesson_with_transcription!(lesson_id)
@@ -350,7 +353,9 @@ defmodule Hellen.Workers.AnalysisJob do
       broadcast_progress(lesson.id, "analysis_failed", %{error: inspect(reason)})
     else
       # Will retry - don't update lesson status yet
-      Logger.warning("Attempt #{attempt}/#{max_attempts} failed for lesson #{lesson.id}, will retry")
+      Logger.warning(
+        "Attempt #{attempt}/#{max_attempts} failed for lesson #{lesson.id}, will retry"
+      )
     end
 
     {:error, reason}

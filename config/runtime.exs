@@ -9,10 +9,14 @@ import Config
 if config_env() in [:dev, :test] do
   {:ok, env_vars} =
     Dotenvy.source([
-      ".env",                          # Base config
-      ".env.#{config_env()}",          # Environment-specific (dev/test)
-      ".env.#{config_env()}.local",    # Local overrides (gitignored)
-      System.get_env()                 # System env vars take precedence
+      # Base config
+      ".env",
+      # Environment-specific (dev/test)
+      ".env.#{config_env()}",
+      # Local overrides (gitignored)
+      ".env.#{config_env()}.local",
+      # System env vars take precedence
+      System.get_env()
     ])
 
   # Actually set the variables in System for runtime access
@@ -89,8 +93,7 @@ if stripe_key = System.get_env("STRIPE_SECRET_KEY") do
     api_key: stripe_key,
     webhook_secret: System.get_env("STRIPE_WEBHOOK_SECRET")
 
-  config :hellen, :stripe,
-    publishable_key: System.get_env("STRIPE_PUBLISHABLE_KEY")
+  config :hellen, :stripe, publishable_key: System.get_env("STRIPE_PUBLISHABLE_KEY")
 end
 
 if config_env() == :prod do

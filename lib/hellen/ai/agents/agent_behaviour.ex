@@ -68,6 +68,7 @@ defmodule Hellen.AI.Agents.AgentBase do
   """
 
   defmacro __using__(_opts) do
+    # credo:disable-for-next-line Credo.Check.Refactor.LongQuoteBlocks
     quote do
       use GenServer
       require Logger
@@ -234,9 +235,7 @@ defmodule Hellen.AI.Agents.AgentBase do
         rag_context = retrieve_context(input, context)
 
         if map_size(rag_context) > 0 do
-          Logger.debug(
-            "[#{__MODULE__}] Retrieved RAG context with #{map_size(rag_context)} keys"
-          )
+          Logger.debug("[#{__MODULE__}] Retrieved RAG context with #{map_size(rag_context)} keys")
 
           Map.merge(context, rag_context)
         else

@@ -166,10 +166,13 @@ defmodule Hellen.AI.AnalysisOrchestrator do
         on_timeout: :kill_task
       )
       |> Enum.reduce(%{}, fn
-        {:ok, {type, result}}, acc -> Map.put(acc, type, result)
+        {:ok, {type, result}}, acc ->
+          Map.put(acc, type, result)
+
         {:exit, :timeout}, acc ->
           Logger.error("[AnalysisOrchestrator] Task timed out after 630s")
           acc
+
         {:exit, reason}, acc ->
           Logger.error("[AnalysisOrchestrator] Task exited: #{inspect(reason)}")
           acc

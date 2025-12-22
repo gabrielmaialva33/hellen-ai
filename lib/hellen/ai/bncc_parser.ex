@@ -207,7 +207,10 @@ defmodule Hellen.AI.BnccParser do
   defp pdf_to_images(pdf_path, pages) do
     if File.exists?(pdf_path) do
       Logger.info("[BnccParser] PDF exists, attempting conversion for pages: #{inspect(pages)}")
-      output_dir = Path.join(System.tmp_dir!(), "bncc_pages_#{:erlang.unique_integer([:positive])}")
+
+      output_dir =
+        Path.join(System.tmp_dir!(), "bncc_pages_#{:erlang.unique_integer([:positive])}")
+
       File.mkdir_p!(output_dir)
 
       pages
@@ -220,7 +223,18 @@ defmodule Hellen.AI.BnccParser do
 
   defp convert_page(pdf_path, output_dir, page) do
     output_file = Path.join(output_dir, "page_#{page}")
-    args = ["-png", "-f", to_string(page), "-l", to_string(page), "-r", "150", pdf_path, output_file]
+
+    args = [
+      "-png",
+      "-f",
+      to_string(page),
+      "-l",
+      to_string(page),
+      "-r",
+      "150",
+      pdf_path,
+      output_file
+    ]
 
     case System.cmd("pdftoppm", args) do
       {_, 0} -> find_output_png(output_file, page)

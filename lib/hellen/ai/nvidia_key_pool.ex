@@ -55,7 +55,7 @@ defmodule Hellen.AI.NvidiaKeyPool do
   defp get_configured_keys do
     # Try multiple keys first (comma-separated)
     case Application.get_env(:hellen, :nvidia_api_keys) do
-      keys when is_list(keys) and length(keys) > 0 ->
+      [_ | _] = keys ->
         keys
 
       _ ->
