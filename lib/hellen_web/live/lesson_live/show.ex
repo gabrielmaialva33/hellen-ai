@@ -1416,6 +1416,261 @@ defmodule HellenWeb.LessonLive.Show do
                   />
                 </div>
               </div>
+              <!-- V3.0: Validation Warning (Score Discrepancy Alert) -->
+              <div
+                :if={@latest_analysis && get_validation_warning(@latest_analysis)}
+                class="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/30 dark:to-orange-900/30 rounded-xl p-4 border-2 border-red-300 dark:border-red-700"
+              >
+                <div class="flex items-start gap-3">
+                  <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center flex-shrink-0">
+                    <.icon
+                      name="hero-exclamation-triangle"
+                      class="h-5 w-5 text-red-600 dark:text-red-400"
+                    />
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <h4 class="text-sm font-bold text-red-800 dark:text-red-200">
+                      Alerta de Validacao
+                    </h4>
+                    <p class="text-xs text-red-700 dark:text-red-300 mt-1">
+                      <%= get_validation_warning(@latest_analysis)["reason"] %>
+                    </p>
+                    <div class="mt-2 flex items-center gap-4 text-xs">
+                      <span class="text-red-600 dark:text-red-400">
+                        Score LLM: <%= get_validation_warning(@latest_analysis)["current_score"] %>%
+                      </span>
+                      <span class="text-emerald-600 dark:text-emerald-400 font-semibold">
+                        Score Rigoroso: <%= get_validation_warning(@latest_analysis)["rigorous_score"] %>%
+                      </span>
+                    </div>
+                    <p class="text-xs text-red-600 dark:text-red-400 mt-2 italic">
+                      <%= get_validation_warning(@latest_analysis)["recommendation"] %>
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <!-- V3.0: Behavior Alerts (Critical Issues) -->
+              <div
+                :if={
+                  @latest_analysis && get_behavior_analysis(@latest_analysis) &&
+                    length(extract_detected_behaviors(get_behavior_analysis(@latest_analysis))) > 0
+                }
+                class="space-y-3"
+              >
+                <div class="flex items-center gap-2">
+                  <.icon
+                    name="hero-shield-exclamation"
+                    class="h-4 w-4 text-red-600 dark:text-red-400"
+                  />
+                  <h3 class="text-sm font-semibold text-red-800 dark:text-red-200">
+                    Alertas de Comportamento
+                  </h3>
+                </div>
+
+                <div class="space-y-2">
+                  <div
+                    :for={
+                      behavior <-
+                        extract_detected_behaviors(get_behavior_analysis(@latest_analysis))
+                    }
+                    class={"rounded-xl p-4 border #{severity_color_class(behavior.severity)}"}
+                  >
+                    <div class="flex items-start gap-3">
+                      <.icon name={behavior_icon(behavior.type)} class="h-5 w-5 mt-0.5 flex-shrink-0" />
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                          <p class="text-sm font-semibold">
+                            <%= behavior_label(behavior.type) %>
+                          </p>
+                          <span class="px-1.5 py-0.5 text-xs font-bold rounded uppercase">
+                            <%= behavior.severity %>
+                          </span>
+                        </div>
+                        <!-- Evidence (clickable) -->
+                        <div
+                          :if={behavior.evidence != []}
+                          class="mt-2 space-y-1"
+                        >
+                          <p class="text-xs opacity-75 mb-1">Evidencias detectadas:</p>
+                          <div
+                            :for={evidence <- Enum.take(behavior.evidence, 2)}
+                            class="p-2 bg-white/50 dark:bg-black/20 rounded-lg cursor-pointer hover:bg-white/80 dark:hover:bg-black/40 transition-colors"
+                            phx-click="scroll_to_evidence"
+                            phx-value-text={evidence}
+                          >
+                            <p class="text-xs italic line-clamp-2">
+                              "<%= evidence %>"
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- V3.0: Analysis by Dimensions (13 dimensions) -->
+              <div
+                :if={@latest_analysis && has_v3_format?(@latest_analysis)}
+                class="space-y-3"
+              >
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <.icon
+                      name="hero-chart-bar-square"
+                      class="h-4 w-4 text-violet-600 dark:text-violet-400"
+                    />
+                    <h3 class="text-sm font-semibold text-slate-900 dark:text-white">
+                      Analise por Dimensoes
+                    </h3>
+                  </div>
+                  <span class="text-xs text-slate-500 dark:text-slate-400">
+                    <%= length(get_dimensions(@latest_analysis)) %> dimensoes
+                  </span>
+                </div>
+
+                <div class="space-y-2 max-h-80 overflow-y-auto pr-1">
+                  <div
+                    :for={dim <- get_dimensions(@latest_analysis)}
+                    class="bg-white dark:bg-slate-800 rounded-xl p-3 shadow-sm border border-slate-200/50 dark:border-slate-700/50"
+                  >
+                    <div class="flex items-start justify-between gap-2">
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span class="text-xs font-mono text-slate-400 dark:text-slate-500">
+                            D<%= dim["numero"] %>
+                          </span>
+                          <p class="text-sm font-medium text-slate-900 dark:text-white truncate">
+                            <%= dim["nome"] %>
+                          </p>
+                        </div>
+                        <!-- Score Bar -->
+                        <div class="mt-2 flex items-center gap-2">
+                          <div class="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <div
+                              class={"h-full rounded-full transition-all #{cond do (dim["conformidade_percent"] || 0) >= 70 -> "bg-emerald-500"; (dim["conformidade_percent"] || 0) >= 40 -> "bg-amber-500"; true -> "bg-red-500" end}"}
+                              style={"width: #{dim["conformidade_percent"] || 0}%"}
+                            >
+                            </div>
+                          </div>
+                          <span class="text-xs font-semibold text-slate-600 dark:text-slate-400 w-10 text-right">
+                            <%= dim["conformidade_percent"] || 0 %>%
+                          </span>
+                        </div>
+                        <!-- Status Badge -->
+                        <div class="mt-2 flex items-center gap-2">
+                          <span class={"px-2 py-0.5 text-xs font-medium rounded #{dimension_status_class(dim["status"])}"}>
+                            <%= dimension_status_label(dim["status"]) %>
+                          </span>
+                          <span
+                            :if={dim["gap_principal"]}
+                            class="text-xs text-slate-500 dark:text-slate-400 truncate"
+                          >
+                            <%= dim["gap_principal"] %>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Action (collapsed by default, show on hover) -->
+                    <div
+                      :if={dim["acao_recomendada"]}
+                      class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700"
+                    >
+                      <p class="text-xs text-teal-600 dark:text-teal-400">
+                        <.icon name="hero-light-bulb" class="h-3 w-3 inline" />
+                        <%= dim["acao_recomendada"] %>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- V3.0: Pontos Fortes -->
+              <div
+                :if={@latest_analysis && length(get_pontos_fortes(@latest_analysis)) > 0}
+                class="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 border border-emerald-200/50 dark:border-emerald-800/50"
+              >
+                <div class="flex items-center gap-2 mb-3">
+                  <.icon
+                    name="hero-check-circle"
+                    class="h-4 w-4 text-emerald-600 dark:text-emerald-400"
+                  />
+                  <h3 class="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
+                    Pontos Fortes
+                  </h3>
+                </div>
+                <ul class="space-y-2">
+                  <li
+                    :for={pf <- get_pontos_fortes(@latest_analysis)}
+                    class="flex items-start gap-2 text-sm text-emerald-700 dark:text-emerald-300"
+                  >
+                    <.icon
+                      name="hero-check-mini"
+                      class="h-4 w-4 mt-0.5 flex-shrink-0 text-emerald-500"
+                    />
+                    <div>
+                      <span class="font-medium"><%= pf["ponto"] %></span>
+                      <p
+                        :if={pf["evidencia"]}
+                        class="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5 italic cursor-pointer hover:underline"
+                        phx-click="scroll_to_evidence"
+                        phx-value-text={pf["evidencia"]}
+                      >
+                        "<%= String.slice(pf["evidencia"] || "", 0, 80) %>..."
+                      </p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+              <!-- V3.0: Pontos Criticos -->
+              <div
+                :if={@latest_analysis && length(get_pontos_criticos(@latest_analysis)) > 0}
+                class="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 border border-red-200/50 dark:border-red-800/50"
+              >
+                <div class="flex items-center gap-2 mb-3">
+                  <.icon
+                    name="hero-exclamation-circle"
+                    class="h-4 w-4 text-red-600 dark:text-red-400"
+                  />
+                  <h3 class="text-sm font-semibold text-red-800 dark:text-red-200">
+                    Pontos Criticos
+                  </h3>
+                </div>
+                <ul class="space-y-3">
+                  <li
+                    :for={pc <- get_pontos_criticos(@latest_analysis)}
+                    class="text-sm text-red-700 dark:text-red-300"
+                  >
+                    <div class="flex items-start gap-2">
+                      <.icon
+                        name="hero-x-circle"
+                        class="h-4 w-4 mt-0.5 flex-shrink-0 text-red-500"
+                      />
+                      <div>
+                        <span class="font-medium"><%= pc["titulo"] %></span>
+                        <p
+                          :if={pc["acao_imediata"]}
+                          class="text-xs text-red-600 dark:text-red-400 mt-1"
+                        >
+                          <.icon name="hero-bolt" class="h-3 w-3 inline" />
+                          <%= pc["acao_imediata"] %>
+                        </p>
+                        <div
+                          :if={pc["conformidade_percent"]}
+                          class="mt-1 flex items-center gap-2"
+                        >
+                          <div class="w-16 h-1.5 bg-red-200 dark:bg-red-800 rounded-full overflow-hidden">
+                            <div
+                              class="h-full bg-red-500 rounded-full"
+                              style={"width: #{pc["conformidade_percent"]}%"}
+                            >
+                            </div>
+                          </div>
+                          <span class="text-xs"><%= pc["conformidade_percent"] %>%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                </ul>
+              </div>
               <!-- BNCC Competencies with Evidence (NotebookLM-style) -->
               <div
                 :if={
@@ -1890,16 +2145,13 @@ defmodule HellenWeb.LessonLive.Show do
                     Guia BNCC
                   </button>
                 </div>
-
-                <p class="text-xs text-slate-400 dark:text-slate-500 mt-3 text-center">
-                  Em breve
-                </p>
               </div>
               <!-- No Analysis or Failed Parse State -->
               <div
                 :if={
                   !@latest_analysis ||
-                    (!@latest_analysis.overall_score && !@latest_analysis.result["feedback"])
+                    (!@latest_analysis.overall_score && !@latest_analysis.result["feedback"] &&
+                       !has_v3_format?(@latest_analysis))
                 }
                 class="text-center py-8"
               >
@@ -2067,5 +2319,116 @@ defmodule HellenWeb.LessonLive.Show do
       </span>
     </div>
     """
+  end
+
+  # ============================================================================
+  # V3.0 Analysis Format Helpers
+  # ============================================================================
+
+  # Check if analysis has v3.0 format (analise_dimensoes)
+  defp has_v3_format?(%{result: %{"analise_dimensoes" => dims}}) when is_list(dims), do: true
+  defp has_v3_format?(_), do: false
+
+  # Get dimensions from v3.0 format
+  defp get_dimensions(%{result: %{"analise_dimensoes" => dims}}) when is_list(dims), do: dims
+  defp get_dimensions(_), do: []
+
+  # Get pontos fortes from v3.0 format
+  defp get_pontos_fortes(%{result: %{"pontos_fortes" => pf}}) when is_list(pf), do: pf
+  defp get_pontos_fortes(_), do: []
+
+  # Get pontos criticos from v3.0 format
+  defp get_pontos_criticos(%{result: %{"pontos_criticos" => pc}}) when is_list(pc), do: pc
+  defp get_pontos_criticos(_), do: []
+
+  # Get behavior analysis from v3.0 format
+  defp get_behavior_analysis(%{result: %{"behavior_analysis" => ba}}) when is_map(ba), do: ba
+  defp get_behavior_analysis(_), do: nil
+
+  # Get validation warning from v3.0 format
+  defp get_validation_warning(%{result: %{"validation_warning" => vw}}) when is_map(vw), do: vw
+  defp get_validation_warning(_), do: nil
+
+  # Dimension status to color class
+  defp dimension_status_class("conforme"),
+    do: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
+
+  defp dimension_status_class("parcial"),
+    do: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300"
+
+  defp dimension_status_class("nao_conforme"),
+    do: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+
+  defp dimension_status_class("critico"),
+    do: "bg-red-200 dark:bg-red-900/50 text-red-800 dark:text-red-200"
+
+  defp dimension_status_class(_),
+    do: "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+
+  # Dimension status to label
+  defp dimension_status_label("conforme"), do: "Conforme"
+  defp dimension_status_label("parcial"), do: "Parcial"
+  defp dimension_status_label("nao_conforme"), do: "Não Conforme"
+  defp dimension_status_label("critico"), do: "Crítico"
+  defp dimension_status_label(_), do: "N/A"
+
+  # Behavior severity to color class
+  defp severity_color_class("critical"),
+    do: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800"
+
+  defp severity_color_class("high"),
+    do: "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800"
+
+  defp severity_color_class("medium"),
+    do: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+
+  defp severity_color_class("low"),
+    do: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800"
+
+  defp severity_color_class(_),
+    do: "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
+
+  # Behavior type labels in Portuguese
+  defp behavior_label("sarcasm"), do: "Sarcasmo"
+  defp behavior_label("disengagement"), do: "Desengajamento"
+  defp behavior_label("public_shame"), do: "Humilhação Pública"
+  defp behavior_label("exclusion"), do: "Exclusão"
+  defp behavior_label("aggression"), do: "Agressão Verbal"
+  defp behavior_label(other), do: String.capitalize(to_string(other))
+
+  # Behavior type icons
+  defp behavior_icon("sarcasm"), do: "hero-face-frown"
+  defp behavior_icon("disengagement"), do: "hero-user-minus"
+  defp behavior_icon("public_shame"), do: "hero-megaphone"
+  defp behavior_icon("exclusion"), do: "hero-user-group"
+  defp behavior_icon("aggression"), do: "hero-fire"
+  defp behavior_icon(_), do: "hero-exclamation-triangle"
+
+  # Extract detected behaviors from behavior_analysis
+  defp extract_detected_behaviors(nil), do: []
+
+  defp extract_detected_behaviors(behavior_analysis) do
+    behavior_map = behavior_analysis["behavior"] || %{}
+
+    behavior_map
+    |> Enum.filter(fn {_key, value} ->
+      is_map(value) && value["severity"] != nil
+    end)
+    |> Enum.map(fn {key, value} ->
+      %{
+        type: key,
+        severity: value["severity"],
+        evidence: value["evidence"] || []
+      }
+    end)
+    |> Enum.sort_by(fn b ->
+      case b.severity do
+        "critical" -> 0
+        "high" -> 1
+        "medium" -> 2
+        "low" -> 3
+        _ -> 4
+      end
+    end)
   end
 end
