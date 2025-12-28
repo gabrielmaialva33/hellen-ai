@@ -44,6 +44,9 @@ hellen-*.tar
 .env.local
 .env.*.local
 
+# Firebase config with secrets
+config/firebase.json
+
 # Editor
 .idea/
 *.swp

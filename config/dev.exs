@@ -57,7 +57,10 @@ config :hellen, :redis_url, "redis://localhost:6380"
 # Configure Qdrant (fallback if not in .env)
 config :hellen, :qdrant_url, "http://localhost:6333"
 
-# Note: API keys (NVIDIA, GROQ, R2, Stripe) are loaded from .env via runtime.exs
+# Note: All API keys are loaded from .env via runtime.exs
+# Required keys: NVIDIA_API_KEY (or NVIDIA_API_KEYS for multiple)
+# Optional keys: GROQ_API_KEY, STRIPE_SECRET_KEY, R2_ACCESS_KEY_ID, etc.
+# See .env.example for the full list
 
 # Swoosh local mailbox (dev only)
 config :swoosh, :api_client, false
